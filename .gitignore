@@ -2,6 +2,8 @@
 venv/
 env/
 .venv/
+healthModel/model/
+healthModel/healthModel/
 
 # 파이썬 캐시
 __pycache__/
@@ -18,19 +20,19 @@ models/
 **/*.md
 *.md
 
-# Ignore Python virtual environment/Conda directories inside healthModel
-healthModel/conda-meta/
-healthModel/DLLs/
-healthModel/etc/
-healthModel/include/
-healthModel/Lib/
-healthModel/Library/
-healthModel/libs/
-healthModel/Scripts/
-healthModel/share/
-healthModel/Tools/
+# Ignore Python virtual environment/Conda directories inside healthModel/healthModel
+healthModel/healthModel/conda-meta/
+healthModel/healthModel/DLLs/
+healthModel/healthModel/etc/
+healthModel/healthModel/include/
+healthModel/healthModel/Lib/
+healthModel/healthModel/Library/
+healthModel/healthModel/libs/
+healthModel/healthModel/Scripts/
+healthModel/healthModel/share/
+healthModel/healthModel/Tools/
 
-# Ensure requirements.txt is tracked
+# Ensure requirements.txt in the first folder is tracked
 !healthModel/requirements.txt
 
 # Ignore compiled DLL/DILL library binary files
@@ -39,8 +41,8 @@ healthModel/Tools/
 *.dll
 *.dill
 
-# Ignore Python interpreter files in healthModel
-healthModel/python*
-healthModel/*.pdb
-healthModel/.nonadmin
-healthModel/LICENSE_PYTHON.txt
+# Ignore Python interpreter files in healthModel/healthModel
+healthModel/healthModel/python*
+healthModel/healthModel/*.pdb
+healthModel/healthModel/.nonadmin
+healthModel/healthModel/LICENSE_PYTHON.txt
