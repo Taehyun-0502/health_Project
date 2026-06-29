@@ -1,0 +1,46 @@
+# 가상환경 폴더 (가장 중요)
+venv/
+env/
+.venv/
+
+# 파이썬 캐시
+__pycache__/
+*.pyc
+
+# 환경변수
+.env
+
+# (추후 모델 파일)
+models/
+*.pkl
+*.joblib
+# Ignore all markdown files everywhere in the project
+**/*.md
+*.md
+
+# Ignore Python virtual environment/Conda directories inside healthModel
+healthModel/conda-meta/
+healthModel/DLLs/
+healthModel/etc/
+healthModel/include/
+healthModel/Lib/
+healthModel/Library/
+healthModel/libs/
+healthModel/Scripts/
+healthModel/share/
+healthModel/Tools/
+
+# Ensure requirements.txt is tracked
+!healthModel/requirements.txt
+
+# Ignore compiled DLL/DILL library binary files
+**/*.dll
+**/*.dill
+*.dll
+*.dill
+
+# Ignore Python interpreter files in healthModel
+healthModel/python*
+healthModel/*.pdb
+healthModel/.nonadmin
+healthModel/LICENSE_PYTHON.txt
