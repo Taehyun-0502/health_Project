@@ -35,3 +35,7 @@ app:
     path: file:///C:/upload/health/
     # 파일에 접근하기위한 가상의 URI 만들기 위에가서찾으세요
     url: /files/**
+
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.health.app
