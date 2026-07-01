@@ -1,5 +1,6 @@
 package com.health.app.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,6 +17,9 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Value("${app.server.frontend-url}")
+    private String frontendUrl;
 
     // HTTP 보안 필터 체인 설정
     @Bean
@@ -35,7 +39,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
+        
+        // 환경변수(.env -> application.yml)로부터 전달받은 콤마 구분형 도메인 목록을 로드
+        List<String> origins = List.of(frontendUrl.split(","));
+        configuration.setAllowedOrigins(origins);
+        
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
