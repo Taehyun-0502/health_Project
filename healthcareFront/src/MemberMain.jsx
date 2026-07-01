@@ -12,7 +12,8 @@ function MemberMain() {
     { id: 'coupon', label: '🎫 쿠폰함', title: '내 쿠폰함', desc: '현재 보유 중인 할인 및 이벤트 혜택 쿠폰이 없습니다.' },
     { id: 'attendance', label: '📅 출석기록', title: '출석 일지', desc: '이번 달 출석 도장이 준비 중입니다. 매일 운동을 기록해 보세요.' },
     { id: 'membership', label: '💳 멤버십', title: '멤버십 등급 정보', desc: '등록하신 피트니스 회원권 기간 및 결제 정보 세부사항입니다.' },
-    { id: 'suggest', label: '✍️ 건의사항', title: '고객 건의함', desc: '센터나 서비스 개선 요구사항을 안전하게 작성하여 접수해 주세요.' }
+    { id: 'suggest', label: '✍️ 건의사항', title: '고객 건의함', desc: '센터나 서비스 개선 요구사항을 안전하게 작성하여 접수해 주세요.' },
+    { id: 'account', label: '⚙️ 계정설정', title: '내 정보 및 계정설정', desc: '비밀번호 변경, 이메일 주소 갱신 및 계정 탈퇴 등의 프로필 관리 옵션을 조작합니다.' }
   ];
 
   return (
