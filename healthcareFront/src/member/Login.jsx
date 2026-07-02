@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-// 로그인 페이지 컴포넌트
+// 로그인 페이지 컴포넌트 (디자인 제외 Plain 버전)
 function Login() {
   const formRef = useRef(null);
   const navigate = useNavigate();
@@ -12,7 +12,6 @@ function Login() {
     const formData = new FormData(formRef.current);
     const data = Object.fromEntries(formData.entries());
 
-    // 백엔드 수신 타입(Long)에 부합하도록 정수 가공
     const submitData = {
       username: parseInt(data.username?.trim(), 10),
       password: data.password,
@@ -24,7 +23,6 @@ function Login() {
     }
 
     try {
-      // 로그인 API 요청 발송
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/member/login`, {
         method: 'POST',
         headers: {
@@ -35,13 +33,11 @@ function Login() {
 
       if (response.ok) {
         const memberInfo = await response.json();
-        alert(`${memberInfo.name}님, 환영합니다. 로그인에 성공했습니다.`);
-        
-        // 로그인 성공 시 사용자의 권한(role)에 따른 분기 이동
+        alert(`${memberInfo.name}님, 로그인에 성공했습니다.`);
         if (memberInfo.role === 'member') {
-          navigate('/member/main');
+          navigate('/fit/c');
         } else {
-          navigate('/admin/main');
+          navigate('/fit/b');
         }
       } else {
         const errorText = await response.text();
@@ -54,36 +50,21 @@ function Login() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', justifyContent: 'center', alignItems: 'center', padding: '24px' }}>
-      {/* 로그인 폼 카드 */}
-      <div className="card-premium" style={{ maxWidth: '440px', width: '100%' }}>
-        <h2 className="gradient-title" style={{ fontSize: '28px', marginBottom: '8px', textAlign: 'center' }}>로그인</h2>
-        <p className="sub-title" style={{ textAlign: 'center', fontSize: '14px', marginBottom: '32px' }}>
-          서비스를 이용하기 위해 계정 정보를 입력하세요.
-        </p>
-
-        <form ref={formRef} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="form-group">
-            <label htmlFor="username" className="form-label">전화번호 (아이디)</label>
-            <input type="tel" id="username" name="username" required className="form-input" placeholder="숫자만 입력하세요. (예: 01012345678)" />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">비밀번호</label>
-            <input type="password" id="password" name="password" required className="form-input" placeholder="비밀번호를 입력하세요." />
-          </div>
-
-          <button type="submit" className="btn-premium" style={{ marginTop: '10px' }}>
-            로그인하기
-          </button>
-        </form>
-
-        <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '24px', paddingTop: '20px', textAlign: 'center' }}>
-          <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>아직 회원이 아니신가요? </span>
-          <Link to="/join" style={{ fontSize: '14px', color: 'var(--primary-accent)', fontWeight: '600', textDecoration: 'none' }}>
-            회원가입 하기
-          </Link>
+    <div>
+      <h2>로그인</h2>
+      <form ref={formRef} onSubmit={handleSubmit}>
+        <div>
+          <label>전화번호 (아이디): </label>
+          <input type="tel" name="username" required placeholder="예: 01012345678" />
         </div>
+        <div>
+          <label>비밀번호: </label>
+          <input type="password" name="password" required />
+        </div>
+        <button type="submit">로그인</button>
+      </form>
+      <div>
+        <Link to="/join">회원가입 하기</Link>
       </div>
     </div>
   );
