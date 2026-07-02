@@ -5,6 +5,8 @@ import AdminMain from './AdminMain.jsx';
 import Login from './member/Login.jsx';
 import Join from './member/Join.jsx';
 import './App.css';
+import Itempage from './item/Itempage.jsx';
+import Userpage from './user/Userpage.jsx';
 
 // 메인 애플리케이션 컴포넌트
 function App() {
@@ -16,6 +18,9 @@ function App() {
       <Route path="/main" element={<Dashboard />} />
       <Route path="/fitc" element={<MemberMain />} />
       <Route path="/fitb" element={<AdminMain />} />
+      <Route path="/fitb/itempage" element={<Itempage />} />
+      <Route path="/fitb/userpage" element={<Userpage />} />
+
     </Routes>
   );
 }
