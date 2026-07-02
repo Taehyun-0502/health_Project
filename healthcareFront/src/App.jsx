@@ -14,8 +14,8 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/join" element={<Join />} />
       <Route path="/main" element={<Dashboard />} />
-      <Route path="/fit/c" element={<MemberMain />} />
-      <Route path="/fit/b" element={<AdminMain />} />
+      <Route path="/fitc" element={<MemberMain />} />
+      <Route path="/fitb" element={<AdminMain />} />
     </Routes>
   );
 }
