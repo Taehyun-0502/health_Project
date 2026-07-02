@@ -35,9 +35,9 @@ function Login() {
         const memberInfo = await response.json();
         alert(`${memberInfo.name}님, 로그인에 성공했습니다.`);
         if (memberInfo.role === 'member') {
-          navigate('/fit/c');
+          navigate('/fitc');
         } else {
-          navigate('/fit/b');
+          navigate('/fitb');
         }
       } else {
         const errorText = await response.text();
