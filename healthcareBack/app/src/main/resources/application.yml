@@ -39,6 +39,8 @@ app:
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml
   type-aliases-package: com.health.app
+  configuration:
+    map-underscore-to-camel-case: true
 
   jwt:
-  secret: ${JWT_SECRET_KEY}
+    secret: ${JWT_SECRET_KEY}
