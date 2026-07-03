@@ -32,17 +32,20 @@ function Login() {
       });
 
       if (response.ok) {
-        const memberInfo = await response.json();
-        alert(`${memberInfo.name}님, 로그인에 성공했습니다.`);
-        if (memberInfo.role === 'member') {
-          navigate('/fitc');
-        } else {
-          navigate('/fitb');
-        }
+       const result = await response.json()
+
+       localStorage.setItem('accessToken',result.token)
+       localStorage.setItem('user',JSON.stringify(result.member))
+
+       alert(`${result.member.name}님 환영합니다.`)
+
+       if(result.member.role ==='member'){
+        navigate('/fitc')
+       }else{navigate('/fitb')}
       } else {
         const errorText = await response.text();
         alert(errorText || '아이디 또는 비밀번호가 올바르지 않습니다.');
-      }
+      } 
     } catch (error) {
       console.error('로그인 오류:', error);
       alert('서버와의 통신 중 오류가 발생했습니다.');

@@ -5,6 +5,8 @@ import AdminMain from './AdminMain.jsx';
 import Login from './member/Login.jsx';
 import Join from './member/Join.jsx';
 import './App.css';
+//import Itempage from './item/Itempage.jsx';
+//import Userpage from './user/Userpage.jsx';
 import Itempage from './item/Itempage.jsx';
 //import Userpage from './user/Userpage.jsx';
 
@@ -19,6 +21,8 @@ function App() {
       <Route path="/main" element={<Dashboard />} />
       <Route path="/fitc" element={<MemberMain />} />
       <Route path="/fitb" element={<AdminMain />} />
+      {/* <Route path="/fitb/itempage" element={<Itempage />} />
+      <Route path="/fitb/userpage" element={<Userpage />} /> */}
       <Route path="/fitb/itempage" element={<Itempage />} />
       {/* <Route path="/fitb/userpage" element={<Userpage />} /> */}
 
