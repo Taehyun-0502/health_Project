@@ -1,5 +1,8 @@
 package com.health.app.member;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -7,12 +10,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.health.app.config.JwtUtill;
+
 @RestController
 @RequestMapping("/member")
 public class MemberController {
 
     @Autowired
     private MemverService memverService;
+    
+    @Autowired
+    private JwtUtill jwtUtill;
 
     // 회원가입 처리 메서드
     @PostMapping("/join")
@@ -46,7 +54,14 @@ public class MemberController {
     public ResponseEntity<?> login(@RequestBody MemberDTO memberDTO) throws Exception {
         MemberDTO loginMember = memverService.login(memberDTO);
         if (loginMember != null) {
-            return ResponseEntity.ok(loginMember); // 로그인 성공 (회원정보 전달)
+            String token = jwtUtill.generateToken(String.valueOf(loginMember.getUsername()),
+            loginMember.getRole()
+        );
+            Map<String,Object> responseData = new HashMap<>();
+            responseData.put("member", loginMember);
+            responseData.put("token", token);
+
+            return ResponseEntity.ok(responseData); // 로그인 성공 (회원정보 전달)
         } else {
             return ResponseEntity.badRequest().body("아이디 또는 비밀번호가 올바르지 않습니다.");
         }

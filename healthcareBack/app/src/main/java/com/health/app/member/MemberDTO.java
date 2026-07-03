@@ -16,5 +16,6 @@ public class MemberDTO {
     private String email;        // 이메일 (varchar)
     private String role;         // 역할 권한 (varchar)
     private Long gymId;          // 사업장 정보 번호 (int8)
+    private Long contract;       // 계약방식
 
 }
