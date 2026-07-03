@@ -1,10 +1,12 @@
 import { Routes, Route } from 'react-router-dom';
 import Dashboard from './Dashboard.jsx';
-import MemberMain from './MemberMain.jsx';
 import AdminMain from './AdminMain.jsx';
 import Login from './member/Login.jsx';
 import Join from './member/Join.jsx';
+import MemberMain from './MemberMain.jsx';
 import './App.css';
+import B2cMain from './b2c_mypage/B2cMain.jsx';
+import B2cComplaint from './b2c_mypage/B2cComplaint.jsx';
 //import Itempage from './item/Itempage.jsx';
 //import Userpage from './user/Userpage.jsx';
 
@@ -17,10 +19,11 @@ function App() {
       <Route path="/join" element={<Join />} />
       <Route path="/main" element={<Dashboard />} />
       <Route path="/fitc" element={<MemberMain />} />
+      <Route path="/fitc/mypage" element={<B2cMain />}/>
+      <Route path="/fitc/mypage/b2ccomplaint" element={<B2cComplaint />} />
       <Route path="/fitb" element={<AdminMain />} />
       {/* <Route path="/fitb/itempage" element={<Itempage />} />
       <Route path="/fitb/userpage" element={<Userpage />} /> */}
-
     </Routes>
   );
 }
