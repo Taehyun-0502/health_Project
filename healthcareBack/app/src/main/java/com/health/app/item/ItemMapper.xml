@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.health.app.item.ItemMapper">
+
+<insert id="itemAdd" parameterType="ItemDTO">
+insert into "h_item" (item_id,gym_id,item_category,item_count,item_name,item_buy,item_price)
+values (default,#{gymId},#{itemCategory},#{itemCount},#{itemName},#{itemBuy},#{itemPrice})
+
+</insert>
+
+<select id="itemList" parameterType="int" resultType="ItemDTO">
+select * from "h_item"
+where 'gym_id'=#{gymId} 
+
+</select>
+
+
+
+
+
+
+
+
+
+
+
+</mapper>
