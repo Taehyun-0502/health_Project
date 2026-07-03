@@ -37,7 +37,7 @@ app:
     url: /files/**
 
 mybatis:
-  mapper-locations: classpath:mapper/**/*.xml
+  mapper-locations: classpath:com/health/app/**/*.xml
   type-aliases-package: com.health.app
   configuration:
     map-underscore-to-camel-case: true
