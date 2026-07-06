@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.health.app.user.UserMapper">
+
+    <!-- h_contract_data + h_contract + h_member(수신자) 조인 결과 매핑 -->
+    <resultMap id="contractUserMap" type="UserDTO">
+        <id property="dataId" column="data_id"/>
+        <result property="contract" column="contract"/>
+        <result property="gymId" column="gym_id"/>
+        <result property="senderId" column="sender_id"/>
+        <result property="receiverId" column="receiver_id"/>
+        <result property="receiverName" column="receiver_name"/>
+        <result property="receiverPhone" column="receiver_phone"/>
+        <result property="status" column="status"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="amount" column="amount"/>
+        <result property="amountType" column="amount_type"/>
+        <result property="ratePercent" column="rate_percent"/>
+        <result property="billingCycle" column="billing_cycle"/>
+        <result property="title" column="title"/>
+        <result property="quantity" column="quantity"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="validMonths" column="valid_months"/>
+        <result property="note" column="note"/>
+        <result property="issueDate" column="issue_date"/>
+        <result property="signedAt" column="signed_at"/>
+        <result property="contractType" column="contract_type"/>
+        <result property="contractName" column="contract_name"/>
+        <!-- 계약 상대방(수신자) 회원 정보 -->
+        <association property="member" javaType="com.health.app.member.MemberDTO">
+            <id property="username" column="m_username"/>
+            <result property="name" column="m_name"/>
+            <result property="email" column="m_email"/>
+            <result property="role" column="m_role"/>
+            <result property="gymId" column="m_gym_id"/>
+            <result property="contract" column="m_contract"/>
+        </association>
+    </resultMap>
+
+    <!-- 로그인 권한별 계약 유저 리스트 조회 SQL
+         ADMIN   : 제휴 계약(ADMIN_OWNER)을 맺은 Owner 리스트
+         OWNER   : 본인이 발행한 임금/이용권/PT 계약의 Trainer, Member 리스트
+         TRAINER : 본인 소속 헬스장의 PT 계약 Member 리스트 -->
+    <select id="contractUserList" parameterType="UserDTO" resultMap="contractUserMap">
+    select d.data_id, d.contract, d.gym_id, d.sender_id, d.receiver_id,
+           d.receiver_name, d.receiver_phone, d.status,
+           d.start_date, d.end_date, d.amount, d.amount_type, d.rate_percent, d.billing_cycle,
+           d.title, d.quantity, d.unit_price, d.valid_months, d.note,
+           d.issue_date, d.signed_at,
+           c.contract_type, c.contract_name,
+           m.username as m_username, m.name as m_name, m.email as m_email,
+           m.role as m_role, m.gym_id as m_gym_id, m.contract as m_contract
+    from "h_contract_data" d
+    join "h_contract" c on d.contract = c.contract_id
+    left join "h_member" m on d.receiver_id = m.username
+    <where>
+        <choose>
+            <when test="role == 'ADMIN'">
+                and c.contract_type = 'ADMIN_OWNER'
+            </when>
+            <when test="role == 'OWNER'">
+                and d.sender_id = #{username}
+                and c.contract_type in ('OWNER_TRAINER', 'OWNER_MEMBER_MEMBERSHIP', 'OWNER_MEMBER_PT')
+            </when>
+            <when test="role == 'TRAINER'">
+                and c.contract_type = 'OWNER_MEMBER_PT'
+                and d.gym_id = (select gym_id from "h_member" where username = #{username})
+            </when>
+            <!-- 그 외 권한은 조회 불가 -->
+            <otherwise>
+                and 1 = 0
+            </otherwise>
+        </choose>
+        <if test="contractType != null and contractType != ''">
+            and c.contract_type = #{contractType}
+        </if>
+    </where>
+    order by d.issue_date desc, d.data_id desc
+    </select>
+
+    <!-- 계약서 발행 SQL (초기 상태 ISSUED, 발행일 = 오늘) -->
+    <insert id="contractInsert" parameterType="UserDTO">
+    insert into "h_contract_data"
+    (contract, gym_id, sender_id, receiver_id, receiver_name, receiver_phone, status,
+     start_date, end_date, amount, amount_type, rate_percent, billing_cycle,
+     title, quantity, unit_price, valid_months, note, issue_date)
+    values
+    ((select contract_id from "h_contract" where contract_type = #{contractType}),
+     #{gymId, jdbcType=BIGINT},
+     #{senderId},
+     #{receiverId, jdbcType=BIGINT},
+     #{receiverName},
+     #{receiverPhone, jdbcType=VARCHAR},
+     #{status},
+     #{startDate, jdbcType=VARCHAR}::date,
+     #{endDate, jdbcType=VARCHAR}::date,
+     #{amount, jdbcType=BIGINT},
+     #{amountType},
+     #{ratePercent, jdbcType=NUMERIC},
+     #{billingCycle, jdbcType=VARCHAR},
+     #{title, jdbcType=VARCHAR},
+     #{quantity, jdbcType=INTEGER},
+     #{unitPrice, jdbcType=BIGINT},
+     #{validMonths, jdbcType=INTEGER},
+     #{note, jdbcType=VARCHAR},
+     current_date)
+    </insert>
+</mapper>
