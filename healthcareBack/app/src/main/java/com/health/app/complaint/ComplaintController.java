@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 
 @RestController
-@RequestMapping("/complaint")
+@RequestMapping("/complaint/*")
 public class ComplaintController {
 
     @Autowired
@@ -32,19 +32,27 @@ public class ComplaintController {
 
     // 일반 회원의 본인 건의글 조회 메서드
     @GetMapping("memberlist")
-    public ResponseEntity<List<ComplaintDTO>>memberList (@RequestParam Long username)throws Exception{
+    public ResponseEntity<List<ComplaintDTO>>memberList (@RequestParam("username") Long username)throws Exception{
         List<ComplaintDTO> list= complaintService.memberList(username);
         return ResponseEntity.ok(list);
     }
 
-    // // 사장님의 접수된 건의글 조회 메서드 
-    // public List <ComplaintDTO>ownerList(Long gymId)throws Exception{
-    //     return complaintMapper.ownerList(gymId);
-    // }
+    // 사장님의 접수된 건의글 조회 메서드 
+    @GetMapping("ownerlist")
+    public ResponseEntity<List<ComplaintDTO>> ownerList(@RequestParam("gymId") Long gymId) throws Exception {
+        List<ComplaintDTO> list = complaintService.ownerList(gymId);
+        return ResponseEntity.ok(list);
+    }
+    
 
-    // // 사장님의 접수된 건의글 처리상태 변경 메서드
-    // public int update(ComplaintDTO complaintDTO)throws Exception{
-    //     return complaintMapper.update(complaintDTO);
-    // }
+    // 사장님의 접수된 건의글 처리상태 변경 메서드
+    @PostMapping("status")
+    public ResponseEntity<String> update(@RequestBody ComplaintDTO complaintDTO)throws Exception{
+        int result = complaintService.update(complaintDTO);
+        if(result > 0){
+            return ResponseEntity.ok("success");
+        }
+        return ResponseEntity.badRequest().body("fail");
+    }
 
 }

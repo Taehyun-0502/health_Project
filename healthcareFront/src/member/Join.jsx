@@ -1,11 +1,25 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-// 회원가입 페이지 컴포넌트 (디자인 제외 Plain 버전)
+// 회원가입 페이지 컴포넌트 (디자인 제외 Plain 버전 - 관리자 전용 회원추가 개편)
 function Join() {
   const formRef = useRef(null);
   const checkedIdRef = useRef('');
   const navigate = useNavigate();
+
+  // [보안 인증 장치] 마운트 시 로그인 세션 권한을 판별하여 admin이 아닐 경우 즉각 튕겨냄
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.role !== 'admin') {
+      alert('접근 권한이 없습니다. 총괄 관리자(admin)만 회원 추가가 가능합니다.');
+      // 로그인되어 있는 사장님이라면 /fitb로, 그 외 일반 유저라면 / 로그인창으로 분기 이동
+      if (user.role === 'owner' || user.role === 'trainer') {
+        navigate('/fitb');
+      } else {
+        navigate('/');
+      }
+    }
+  }, [navigate]);
 
   // 아이디(전화번호) 중복 확인 핸들러
   const handleIdCheck = async () => {
@@ -35,7 +49,7 @@ function Join() {
       if (response.ok) {
         const result = await response.text();
         if (result === 'Available') {
-          alert('가입 가능한 전화번호입니다.');
+          alert('등록 가능한 전화번호입니다.');
           checkedIdRef.current = username;
         } else {
           alert('이미 가입된 전화번호입니다.');
@@ -87,11 +101,11 @@ function Join() {
       });
 
       if (response.ok) {
-        alert('회원가입이 완료되었습니다.');
-        navigate('/')
+        alert('신규 회원이 정상적으로 등록되었습니다.');
+        navigate('/fitb'); // 등록 완료 후 다시 대시보드로 복귀
       } else {
         const errorText = await response.text();
-        alert(errorText || '회원가입에 실패했습니다.');
+        alert(errorText || '회원 등록에 실패했습니다.');
       }
     } catch (error) {
       console.error('오류 발생:', error);
@@ -101,7 +115,7 @@ function Join() {
 
   return (
     <div>
-      <h2>회원가입</h2>
+      <h2>신규 회원 등록 (관리자 전용)</h2>
       <form ref={formRef} onSubmit={handleSubmit}>
         <div>
           <label>전화번호 (아이디): </label>
@@ -109,11 +123,11 @@ function Join() {
           <button type="button" onClick={handleIdCheck}>중복 확인</button>
         </div>
         <div>
-          <label>비밀번호: </label>
+          <label>임시 비밀번호: </label>
           <input type="password" name="password" required />
         </div>
         <div>
-          <label>비밀번호 확인: </label>
+          <label>임시 비밀번호 확인: </label>
           <input type="password" name="passwordCheck" required />
         </div>
         <div>
@@ -125,20 +139,20 @@ function Join() {
           <input type="email" name="email" />
         </div>
         <div>
-          <label>회원 유형: </label>
+          <label>등록할 권한 유형: </label>
           <select name="role" required>
-            <option value="member">일반 회원 (member)</option>
-            <option value="trainer">트레이너 (trainer)</option>
+            <option value="owner">체육관 사장 (owner)</option>
+            <option value="admin">총괄 관리자 (admin)</option>
           </select>
         </div>
         <div>
-          <label>사업장 번호 (Gym ID): </label>
+          <label>소속 사업장 번호 (Gym ID): </label>
           <input type="number" name="gymId" required />
         </div>
-        <button type="submit">가입하기</button>
+        <button type="submit">등록하기</button>
       </form>
-      <div>
-        <Link to="/login">로그인 하기</Link>
+      <div style={{ marginTop: '20px' }}>
+        <Link to="/fitb">관리자 대시보드로 돌아가기</Link>
       </div>
     </div>
   );

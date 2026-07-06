@@ -5,10 +5,11 @@
 <mapper namespace="com.health.app.member.MemberMapper">
 
     <!-- 회원 가입 SQL -->
-    <insert id="join" parameterType="MemberDTO">
+ <insert id="join" parameterType="MemberDTO">
     insert into "h_member" (username, password, name, email, role, gym_id)
     values(#{username}, #{password}, #{name}, #{email, jdbcType=VARCHAR}, #{role}, #{gymId})
-    </insert>
+    </insert>  
+
 
     <!-- 아이디(전화번호) 중복확인 SQL -->
     <select id="idcheck" parameterType="MemberDTO" resultType="MemberDTO">
