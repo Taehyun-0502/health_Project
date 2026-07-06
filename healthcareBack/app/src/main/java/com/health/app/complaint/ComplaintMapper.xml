@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.health.app.complaint.ComplaintMapper">
+
+    <!-- 건의사항 접수 SQL -->
+    <insert id="create" parameterType="ComplaintDTO">
+    insert into h_complaint (username, gym_id, title, content,create_at)
+    values(#{username}, #{gymId}, #{title}, #{content}, CURRENT_DATE)
+    </insert>
+
+    <!-- 회원의 건의사항조회 -->
+    <select id="memberList" parameterType="long" resultType="ComplaintDTO">
+    select * from h_complaint where username = #{username}
+    order by complaint_id desc
+    </select>
+
+    <!-- 사장의 건의사항조회 -->
+    <select id="ownerList" parameterType="long" resultType="ComplaintDTO">
+    select * from h_complaint where gym_id=#{gymId}
+    order by complaint_id desc
+    </select>
+
+    <!-- 사장의 건의사항 처리 -->
+    <update id="update" parameterType="ComplaintDTO">
+    update h_complaint
+    set status = #{status}
+    where complaint_id = #{complaintId}
+    </update>
+</mapper>

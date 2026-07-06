@@ -1,0 +1,1021 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import './Itempage.css';
+
+// SVG 아이콘 컴포넌트 정의
+const ListIcon = () => (
+  <svg viewBox="0 0 24 24">
+    <path d="M4 14h6v-10h-6v10zm0 6h6v-4h-6v4zm8-16v6h10v-6h-10zm0 16h10v-10h-10v10zm0-8h10v-2h-10v2z" fill="currentColor" />
+  </svg>
+);
+
+const FormIcon = () => (
+  <svg viewBox="0 0 24 24">
+    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor" />
+  </svg>
+);
+
+const LinksIcon = () => (
+  <svg viewBox="0 0 24 24">
+    <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" fill="currentColor" />
+  </svg>
+);
+
+function Itempage() {
+  const [activeTab, setActiveTab] = useState('list'); // 'list' | 'form' | 'links'
+  const [selectedItem, setSelectedItem] = useState(null); // 선택된 상세 물품 상태
+  const [detailList, setDetailList] = useState([]); // 선택된 물품의 상세 구매 이력 리스트
+
+  // 수정 기능 상태 관리
+  const [editingItem, setEditingItem] = useState(null); // 수정 중인 특정 물품 객체
+  const [editFormData, setEditFormData] = useState({
+    itemCategory: '기구',
+    itemName: '',
+    itemDate: '',
+    itemPrice: '',
+    itemCount: ''
+  });
+
+  // DB 테이블 스펙에 맞춘 물품 데이터 목록 상태 관리 (itemId, gymId, itemCategory, itemName, itemDate, itemPrice, itemCount)
+  const [items, setItems] = useState([
+    { itemId: 1, gymId: 1, itemCategory: '기구', itemName: '아령 (10kg)', itemDate: '2026-06-01', itemPrice: 25000, itemCount: 15 },
+    { itemId: 2, gymId: 1, itemCategory: '소모품', itemName: '요가매트 (두꺼움)', itemDate: '2026-06-15', itemPrice: 15000, itemCount: 30 },
+    { itemId: 3, gymId: 2, itemCategory: '기구', itemName: '런닝머신 A호기', itemDate: '2026-05-10', itemPrice: 1800000, itemCount: 1 },
+    { itemId: 4, gymId: 1, itemCategory: '식품', itemName: '단백질 쉐이크 (초코)', itemDate: '2026-06-28', itemPrice: 3500, itemCount: 50 },
+    { itemId: 5, gymId: 2, itemCategory: '소모품', itemName: '스트레칭 밴드', itemDate: '2026-06-20', itemPrice: 5000, itemCount: 20 },
+  ]);
+
+  // 로그인된 유저의 사업장 id (localStorage에서 조회, 없을 시 기본값 1)
+  const [gymId, setGymId] = useState(() => {
+    const saved = localStorage.getItem('user');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.gymId || 1;
+      } catch (e) {
+        return 1;
+      }
+    }
+    return 1;
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  // 백엔드로부터 물품 리스트 조회 API 호출
+  const fetchItems = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/list?gymId=${gymId}`);
+      if (response.ok) {
+        setItems(await response.json());
+      }
+    } catch (error) {
+      console.error('Failed to fetch items:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchItems();
+  }, [gymId]);
+
+  // 검색 상태
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // 백엔드로부터 특정 물품의 상세 구매 이력 조회 API 호출
+  const handleItemClick = async (item) => {
+    setSelectedItem(item);
+    setDetailList([]);
+    setSelectedMonthFilter(currentMonthKey); // 상세 클릭 시 항상 이번 달 필터로 리셋
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/detail?gymId=${gymId}&itemName=${encodeURIComponent(item.itemName)}`);
+      if (response.ok) {
+        setDetailList(await response.json());
+      }
+    } catch (error) {
+      console.error('Failed to fetch item details:', error);
+    }
+  };
+
+  // 수정 버튼 클릭 시 폼 바인딩
+  const handleEditClick = (item) => {
+    setEditingItem(item);
+    setEditFormData({
+      itemCategory: item.itemCategory || item.item_category || '기구',
+      itemName: item.itemName || item.item_name || '',
+      itemDate: item.itemDate || item.item_date || item.itemBuy || item.item_buy || '',
+      itemPrice: (item.itemPrice !== undefined ? item.itemPrice : item.item_price) || 0,
+      itemCount: (item.itemCount !== undefined ? item.itemCount : item.item_count) || 0
+    });
+  };
+
+  // 수정 정보 전송
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!editFormData.itemName.trim()) {
+      alert('물품명을 입력해주세요.');
+      return;
+    }
+    if (!editFormData.itemCount || parseInt(editFormData.itemCount, 10) <= 0) {
+      alert('올바른 갯수를 입력해주세요.');
+      return;
+    }
+
+    const updatedItem = {
+      itemId: editingItem.itemId !== undefined ? editingItem.itemId : editingItem.item_id,
+      gymId: gymId,
+      itemCategory: editFormData.itemCategory,
+      itemName: editFormData.itemName.trim(),
+      itemDate: editFormData.itemDate || editFormData.itemBuy || '',
+      itemPrice: editFormData.itemPrice ? parseInt(editFormData.itemPrice, 10) : 0,
+      itemCount: parseInt(editFormData.itemCount, 10)
+    };
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedItem)
+      });
+
+      if (response.ok) {
+        alert('물품 정보가 성공적으로 수정되었습니다.');
+        fetchItems();
+        handleItemClick(updatedItem); // 수정한 데이터 이름 기준으로 목록 새로고침 및 갱신
+        setEditingItem(null);
+      } else {
+        alert('물품 정보 수정에 실패하였습니다.');
+      }
+    } catch (error) {
+      console.error('Failed to update item:', error);
+      alert('서버와의 통신 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 물품 삭제 요청
+  const handleDeleteClick = async (item) => {
+    if (!window.confirm('정말로 이 물품 항목을 삭제하시겠습니까?')) {
+      return;
+    }
+
+    const payload = {
+      itemId: item.itemId !== undefined ? item.itemId : item.item_id,
+      gymId: gymId,
+      itemName: item.itemName || item.item_name || ''
+    };
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        alert('물품이 삭제되었습니다.');
+        fetchItems();
+        const deletedId = item.itemId !== undefined ? item.itemId : item.item_id;
+        setDetailList(prev => {
+          const remaining = prev.filter(d => {
+            const dId = d.itemId !== undefined ? d.itemId : d.item_id;
+            return dId !== deletedId;
+          });
+          if (remaining.length === 0) {
+            setSelectedItem(null);
+          }
+          return remaining;
+        });
+      } else {
+        alert('물품 삭제에 실패하였습니다.');
+      }
+    } catch (error) {
+      console.error('Failed to delete item:', error);
+      alert('서버와의 통신 중 오류가 발생했습니다.');
+    }
+  };
+
+  const currentMonthKey = useMemo(() => new Date().toISOString().split('T')[0].substring(0, 7), []);
+  const [selectedMonthFilter, setSelectedMonthFilter] = useState(currentMonthKey);
+
+  // 이력에 존재하는 고유 월 목록 추출 (항상 이번 달 포함)
+  const availableMonths = useMemo(() => {
+    const months = new Set();
+    months.add(currentMonthKey);
+    detailList.forEach((item) => {
+      const buyDate = item.itemDate || item.item_date || item.item_Date || item.itemBuy || item.item_buy;
+      if (buyDate) {
+        months.add(buyDate.substring(0, 7));
+      }
+    });
+    return Array.from(months).sort((a, b) => b.localeCompare(a));
+  }, [detailList, currentMonthKey]);
+
+  // 선택된 월 기준 필터링된 상세 내역
+  const filteredDetails = useMemo(() => {
+    if (selectedMonthFilter === 'all') {
+      return detailList;
+    }
+    return detailList.filter((item) => {
+      const buyDate = item.itemDate || item.item_date || item.item_Date || item.itemBuy || item.item_buy;
+      return buyDate && buyDate.substring(0, 7) === selectedMonthFilter;
+    });
+  }, [detailList, selectedMonthFilter]);
+
+  // 선택된 필터 기준 통계 계산 (총 갯수, 구매 갯수, 폐기 갯수)
+  const currentStats = useMemo(() => {
+    let totalCount = 0; // 해당 월(또는 전체)의 총 수량 (구매 - 폐기)
+    let purchaseCount = 0; // 해당 월(또는 전체)의 총 구매 수량
+    let disposalCount = 0; // 해당 월(또는 전체)의 총 폐기 수량
+
+    filteredDetails.forEach((item) => {
+      const count = item.itemCount !== undefined ? item.itemCount : item.item_count || 0;
+      const isDisposal = item.itemStatus === '폐기' || item.item_status === '폐기' || count < 0;
+      const displayCount = Math.abs(count);
+
+      if (isDisposal) {
+        disposalCount += displayCount;
+      } else {
+        purchaseCount += displayCount;
+      }
+    });
+
+    totalCount = purchaseCount - disposalCount;
+
+    return { totalCount, purchaseCount, disposalCount };
+  }, [filteredDetails]);
+
+  // 등록 폼 입력값 상태 관리 (ItemDTO 스펙과 변수명 100% 매칭)
+  const [formData, setFormData] = useState({
+    itemCategory: '기구',
+    itemName: '',
+    itemDate: new Date().toISOString().split('T')[0],
+    itemPrice: '',
+    itemCount: '',
+    itemStatus: '구매' // '구매' | '폐기' 추가 (DTO의 itemStatus 스펙 매칭)
+  });
+
+  // 해당 사업장(gymId) 내 중복 제거된 물품명 리스트
+  const existingItemNames = useMemo(() => {
+    const names = items
+      .filter(item => item.gymId === gymId)
+      .map(item => item.itemName)
+      .filter(Boolean);
+    return Array.from(new Set(names));
+  }, [items, gymId]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // 물품명 입력 변경 처리 (기존 품목 매핑 기능 포함)
+  const handleItemNameChange = (e) => {
+    const value = e.target.value;
+    setFormData(prev => {
+      const updated = { ...prev, itemName: value };
+      // 기존에 등록된 물품 중 명칭이 일치하는 것이 있다면 카테고리를 자동 선택
+      const matchedItem = items.find(item => item.itemName === value && item.gymId === gymId);
+      if (matchedItem) {
+        updated.itemCategory = matchedItem.itemCategory;
+      }
+      return updated;
+    });
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+
+    const finalItemName = formData.itemName.trim();
+
+    if (!finalItemName) {
+      alert('물품명을 입력하거나 선택해주세요.');
+      return;
+    }
+    if (!formData.itemCount || parseInt(formData.itemCount, 10) <= 0) {
+      alert('올바른 갯수를 입력해주세요.');
+      return;
+    }
+
+    const isDisposal = formData.itemStatus === '폐기';
+    const finalCount = parseInt(formData.itemCount, 10);
+    const newItem = {
+      itemId: 0,
+      gymId: gymId,
+      itemCategory: formData.itemCategory,
+      itemName: finalItemName,
+      itemDate: formData.itemDate,
+      // 폐기인 경우 단가는 0원으로 자동 지정
+      itemPrice: isDisposal ? 0 : (formData.itemPrice ? parseInt(formData.itemPrice, 10) : 0),
+      // 폐기인 경우 DB 수량을 마이너스로 차감 저장
+      itemCount: isDisposal ? -finalCount : finalCount,
+      itemStatus: formData.itemStatus // DTO의 itemStatus로 필드명 변경 전송
+    };
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newItem)
+      });
+
+      if (response.ok) {
+        alert('물품이 성공적으로 등록되었습니다.');
+        fetchItems();
+
+        // 폼 초기화 및 목록으로 돌아가기
+        setFormData({
+          itemCategory: '기구',
+          itemName: '',
+          itemDate: new Date().toISOString().split('T')[0],
+          itemPrice: '',
+          itemCount: '',
+          itemStatus: '구매'
+        });
+        setActiveTab('list');
+      } else {
+        alert('물품 등록에 실패하였습니다.');
+      }
+    } catch (error) {
+      console.error('Failed to add item:', error);
+      alert('서버와의 통신 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 검색어 및 gymId로 필터링된 아이템 리스트
+  const filteredItems = items.filter(item => {
+    const matchesGym = item.gymId === gymId;
+    const matchesSearch =
+      item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.itemCategory.includes(searchTerm);
+    return matchesGym && matchesSearch;
+  });
+
+  return (
+    <div className="item-page-container">
+      {/* 좌측 사이드바 탭 메뉴 영역 */}
+      <aside className="item-sidebar">
+        <div className="item-sidebar-title">물품 관리 시스템</div>
+        <nav>
+          <ul className="item-sidebar-menu">
+            <li>
+              <button
+                className={`item-tab-btn ${activeTab === 'list' ? 'active' : ''}`}
+                onClick={() => { setSelectedItem(null); setEditingItem(null); setActiveTab('list'); }}
+              >
+                <ListIcon />
+                물품 목록
+              </button>
+            </li>
+            <li>
+              <button
+                className={`item-tab-btn ${activeTab === 'form' ? 'active' : ''}`}
+                onClick={() => { setSelectedItem(null); setEditingItem(null); setActiveTab('form'); }}
+              >
+                <FormIcon />
+                물품 등록
+              </button>
+            </li>
+            <li>
+              <button
+                className={`item-tab-btn ${activeTab === 'links' ? 'active' : ''}`}
+                onClick={() => { setSelectedItem(null); setEditingItem(null); setActiveTab('links'); }}
+              >
+                <LinksIcon />
+                바로가기 링크
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </aside>
+
+      {/* 우측 상세 컨텐츠 영역 */}
+      <main className="item-content-area">
+        {activeTab === 'list' && (
+          <div className="item-tab-content">
+            {editingItem ? (
+              <div className="item-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+                  <h2 className="item-card-title" style={{ margin: 0 }}>물품 정보 수정</h2>
+                  <button
+                    onClick={() => setEditingItem(null)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '6px',
+                      backgroundColor: '#f1f5f9',
+                      color: '#475569',
+                      border: 'none',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#e2e8f0'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                  >
+                    취소
+                  </button>
+                </div>
+
+                <form onSubmit={handleEditSubmit} className="item-form">
+                  <div className="item-form-grid">
+                    {/* 물품명 */}
+                    <div className="item-form-group">
+                      <label htmlFor="editItemName">물품명 *</label>
+                      <input
+                        id="editItemName"
+                        type="text"
+                        name="itemName"
+                        className="item-input"
+                        value={editFormData.itemName}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, itemName: e.target.value }))}
+                        required
+                      />
+                    </div>
+
+                    {/* 카테고리 */}
+                    <div className="item-form-group">
+                      <label htmlFor="editItemCategory">분류</label>
+                      <select
+                        id="editItemCategory"
+                        name="itemCategory"
+                        className="item-select"
+                        value={editFormData.itemCategory}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, itemCategory: e.target.value }))}
+                      >
+                        <option value="기구">기구</option>
+                        <option value="소모품">소모품</option>
+                        <option value="식품">식품</option>
+                        <option value="기타">기타</option>
+                      </select>
+                    </div>
+
+                    {/* 등록일 */}
+                    <div className="item-form-group">
+                      <label htmlFor="editItemDate">등록일 (수정 불가)</label>
+                      <input
+                        id="editItemDate"
+                        type="date"
+                        name="itemDate"
+                        className="item-input"
+                        value={editFormData.itemDate || editFormData.itemBuy || ''}
+                        disabled
+                        style={{ backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#94a3b8' }}
+                      />
+                    </div>
+
+                    {/* 가격 */}
+                    <div className="item-form-group">
+                      <label htmlFor="editItemPrice">가격 (원)</label>
+                      <input
+                        id="editItemPrice"
+                        type="number"
+                        name="itemPrice"
+                        className="item-input"
+                        value={editFormData.itemPrice}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, itemPrice: e.target.value }))}
+                        min="0"
+                      />
+                    </div>
+
+                    {/* 갯수 */}
+                    <div className="item-form-group">
+                      <label htmlFor="editItemCount">갯수 *</label>
+                      <input
+                        id="editItemCount"
+                        type="number"
+                        name="itemCount"
+                        className="item-input"
+                        value={editFormData.itemCount}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, itemCount: e.target.value }))}
+                        min="1"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                    <button type="submit" className="item-submit-btn" style={{ flex: 1 }}>수정 완료</button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingItem(null)}
+                      style={{
+                        flex: 1,
+                        padding: '0.75rem',
+                        borderRadius: '8px',
+                        backgroundColor: '#f1f5f9',
+                        color: '#475569',
+                        border: 'none',
+                        fontWeight: '700',
+                        fontSize: '1rem',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#e2e8f0'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : !selectedItem ? (
+              <div className="item-card">
+                <h2 className="item-card-title">등록된 물품 목록</h2>
+
+                {/* 실제 운영 시에는 로그인 정보(gymId)에 따라 고정됩니다. */}
+
+                {/* 검색 바 */}
+                <div className="item-search-bar">
+                  <input
+                    type="text"
+                    className="item-search-input"
+                    placeholder="물품명 또는 카테고리로 검색..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                {/* 테이블 목록 (분류, 물품 명, 갯수 항목만 출력) */}
+                <div className="item-table-wrapper">
+                  <table className="item-table">
+                    <thead>
+                      <tr>
+                        <th>번호</th>
+                        <th>분류</th>
+                        <th>물품명</th>
+                        <th>갯수</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredItems.length > 0 ? (
+                        filteredItems.map((item, index) => (
+                          <tr
+                            key={item.itemId || index}
+                            onClick={() => handleItemClick(item)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <td>{filteredItems.length - index}</td>
+                            <td>
+                              <span style={{
+                                padding: '0.25rem 0.55rem',
+                                borderRadius: '6px',
+                                backgroundColor: '#e0e7ff',
+                                color: '#4f46e5',
+                                fontSize: '0.8rem',
+                                fontWeight: '600'
+                              }}>
+                                {item.itemCategory}
+                              </span>
+                            </td>
+                            <td style={{ fontWeight: '600' }}>{item.itemName}</td>
+                            <td>
+                              <span style={{ fontWeight: '700', color: '#0f172a' }}>
+                                {item.itemCount.toLocaleString()}
+                              </span> 개
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                            검색 조건에 맞는 물품이 없거나 현재 사업장에 등록된 물품이 없습니다.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="item-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+                  <div>
+                    <span style={{
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '20px',
+                      backgroundColor: '#e0e7ff',
+                      color: '#4f46e5',
+                      fontSize: '0.85rem',
+                      fontWeight: '700',
+                      marginRight: '0.75rem',
+                      display: 'inline-block',
+                      verticalAlign: 'middle'
+                    }}>
+                      {selectedItem.itemCategory}
+                    </span>
+                    <h2 className="item-card-title" style={{ margin: 0, display: 'inline-block', verticalAlign: 'middle' }}>
+                      {selectedItem.itemName} 상세 정보
+                    </h2>
+                  </div>
+                  <button
+                    onClick={() => setSelectedItem(null)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '6px',
+                      backgroundColor: '#f1f5f9',
+                      color: '#475569',
+                      border: 'none',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#e2e8f0'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                  >
+                    ← 목록으로 돌아가기
+                  </button>
+                </div>
+
+                {/* 요약 카드 그리드 */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                  <div style={{ padding: '1.25rem', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600' }}>
+                      {selectedMonthFilter === 'all' ? '전체 기간 총 갯수' : '선택 월 총 갯수'}
+                    </div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#4f46e5' }}>
+                      {currentStats.totalCount.toLocaleString()} 개
+                    </div>
+                  </div>
+                  <div style={{ padding: '1.25rem', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600' }}>
+                      {selectedMonthFilter === 'all' ? '전체 기간 구매 갯수' : '선택 월 구매 갯수'}
+                    </div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#16a34a' }}>
+                      {currentStats.purchaseCount.toLocaleString()} 개
+                    </div>
+                  </div>
+                  <div style={{ padding: '1.25rem', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600' }}>
+                      {selectedMonthFilter === 'all' ? '전체 기간 폐기 갯수' : '선택 월 폐기 갯수'}
+                    </div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#ef4444' }}>
+                      {currentStats.disposalCount.toLocaleString()} 개
+                    </div>
+                  </div>
+                </div>
+
+                {/* 상세 내역 필터바 영역 */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
+                    📦 등록 및 관리 내역 리스트 ({detailList.length}건)
+                  </h3>
+                  
+                  {/* 월별 필터 셀렉트 */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600' }}>조회 월 선택:</span>
+                    <select
+                      value={selectedMonthFilter}
+                      onChange={(e) => setSelectedMonthFilter(e.target.value)}
+                      style={{
+                        padding: '0.4rem 0.8rem',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        color: '#334155',
+                        backgroundColor: '#ffffff',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        transition: 'border-color 0.2s'
+                      }}
+                    >
+                      <option value="all">전체 내역</option>
+                      {availableMonths.map(m => {
+                        const isCurrent = m === currentMonthKey;
+                        return (
+                          <option key={m} value={m}>
+                            {m.substring(0, 4)}년 {m.substring(5, 7)}월 {isCurrent ? '(이번 달)' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                </div>
+
+                {filteredDetails.length > 0 ? (
+                  <div className="item-table-wrapper">
+                    <table className="item-table">
+                      <thead>
+                        <tr>
+                          <th>물품 ID</th>
+                          <th>구분</th>
+                          <th>등록일자</th>
+                          <th>단가 (가격)</th>
+                          <th>수량</th>
+                          <th>합계 금액</th>
+                          <th>관리</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredDetails.map((item) => {
+                          const id = item.itemId !== undefined ? item.itemId : item.item_id;
+                          const buyDate = item.itemDate || item.item_date || item.itemBuy || item.item_buy || '-';
+                          const price = item.itemPrice !== undefined ? item.itemPrice : item.item_price;
+                          const count = item.itemCount !== undefined ? item.itemCount : item.item_count;
+                          
+                          const isDisposal = item.itemStatus === '폐기' || item.item_status === '폐기' || count < 0;
+                          const displayCount = Math.abs(count);
+                          const totalPrice = (price || 0) * displayCount;
+
+                          return (
+                            <tr key={id}>
+                              <td style={{ fontWeight: '500', color: '#64748b' }}>#{id}</td>
+                              <td>
+                                <span style={{
+                                  padding: '0.2rem 0.5rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '700',
+                                  backgroundColor: isDisposal ? '#fee2e2' : '#dcfce7',
+                                  color: isDisposal ? '#ef4444' : '#16a34a'
+                                }}>
+                                  {isDisposal ? '폐기' : '구매'}
+                                </span>
+                              </td>
+                              <td style={{ fontWeight: '600', color: '#334155' }}>{buyDate}</td>
+                              <td style={{ color: '#0f172a' }}>{isDisposal ? '-' : (price ? `${price.toLocaleString()} 원` : '0 원')}</td>
+                              <td style={{ fontWeight: '700', color: isDisposal ? '#ef4444' : '#4f46e5' }}>
+                                {isDisposal ? `-${displayCount} 개` : `${displayCount} 개`}
+                              </td>
+                              <td style={{ fontWeight: '700', color: '#0f172a' }}>
+                                {isDisposal ? '-' : `${totalPrice.toLocaleString()} 원`}
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <button
+                                    onClick={() => handleEditClick(item)}
+                                    style={{
+                                      padding: '0.3rem 0.6rem',
+                                      borderRadius: '4px',
+                                      backgroundColor: '#e2e8f0',
+                                      color: '#334155',
+                                      border: 'none',
+                                      fontWeight: '600',
+                                      fontSize: '0.8rem',
+                                      cursor: 'pointer',
+                                      transition: 'background-color 0.2s',
+                                    }}
+                                    onMouseEnter={(e) => e.target.style.backgroundColor = '#cbd5e1'}
+                                    onMouseLeave={(e) => e.target.style.backgroundColor = '#e2e8f0'}
+                                  >
+                                    수정
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteClick(item)}
+                                    style={{
+                                      padding: '0.3rem 0.6rem',
+                                      borderRadius: '4px',
+                                      backgroundColor: '#fee2e2',
+                                      color: '#ef4444',
+                                      border: 'none',
+                                      fontWeight: '600',
+                                      fontSize: '0.8rem',
+                                      cursor: 'pointer',
+                                      transition: 'background-color 0.2s',
+                                    }}
+                                    onMouseEnter={(e) => e.target.style.backgroundColor = '#fca5a5'}
+                                    onMouseLeave={(e) => e.target.style.backgroundColor = '#fee2e2'}
+                                  >
+                                    삭제
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '3rem 2rem', color: '#94a3b8', border: '1px dashed #e2e8f0', borderRadius: '12px' }}>
+                    {selectedMonthFilter === 'all' 
+                      ? '등록된 상세 내역이 없습니다.' 
+                      : `${selectedMonthFilter.substring(0, 4)}년 ${selectedMonthFilter.substring(5, 7)}월에 등록된 내역이 없습니다.`}
+                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.5rem' }}>
+                      (상단의 '조회 월 선택'에서 다른 월을 고르거나 전체 내역을 볼 수 있습니다.)
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'form' && (
+          <div className="item-tab-content">
+            <div className="item-card">
+              <h2 className="item-card-title" style={{ marginBottom: '1.5rem' }}>물품 등록</h2>
+              <form onSubmit={handleFormSubmit} className="item-form">
+                <div className="item-form-grid">
+
+                  {/* 물품명 입력칸 (직접 입력하거나 기존 목록에서 선택) */}
+                  <div className="item-form-group" style={{ gridColumn: 'span 2' }}>
+                    <label htmlFor="itemName">물품명 *</label>
+                    <input
+                      id="itemName"
+                      type="text"
+                      name="itemName"
+                      className="item-input"
+                      placeholder="물품명을 직접 입력하거나 아래 추천 품목에서 선택하세요..."
+                      value={formData.itemName}
+                      onChange={handleItemNameChange}
+                      required
+                    />
+                    {existingItemNames.length > 0 && (
+                      <div style={{ marginTop: '0.75rem' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: '600' }}>
+                          💡 내가 등록한 전체 물품 목록 (클릭 시 자동 입력):
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                          {existingItemNames.map((name) => {
+                            const isSelected = formData.itemName === name;
+                            const matchedItem = items.find(item => item.itemName === name && item.gymId === gymId);
+
+                            return (
+                              <button
+                                key={name}
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    itemName: name,
+                                    itemCategory: matchedItem ? matchedItem.itemCategory : prev.itemCategory
+                                  }));
+                                }}
+                                style={{
+                                  padding: '0.2rem 0.5rem',
+                                  borderRadius: '4px',
+                                  border: 'none',
+                                  backgroundColor: isSelected ? '#e0e7ff' : '#f1f5f9',
+                                  color: isSelected ? '#4f46e5' : '#475569',
+                                  fontWeight: '600',
+                                  fontSize: '0.75rem',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                  outline: 'none'
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isSelected) {
+                                    e.target.style.backgroundColor = '#e2e8f0';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isSelected) {
+                                    e.target.style.backgroundColor = '#f1f5f9';
+                                  }
+                                }}
+                              >
+                                {name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 구분 (구매 / 폐기) */}
+                  <div className="item-form-group">
+                    <label htmlFor="itemStatus">구분 *</label>
+                    <select
+                      id="itemStatus"
+                      name="itemStatus"
+                      className="item-select"
+                      value={formData.itemStatus}
+                      onChange={handleInputChange}
+                    >
+                      <option value="구매">구매 (입고)</option>
+                      <option value="폐기">폐기 (출고)</option>
+                    </select>
+                  </div>
+
+                  {/* 카테고리 */}
+                  <div className="item-form-group">
+                    <label htmlFor="itemCategory">분류</label>
+                    <select
+                      id="itemCategory"
+                      name="itemCategory"
+                      className="item-select"
+                      value={formData.itemCategory}
+                      onChange={handleInputChange}
+                    >
+                      <option value="기구">기구</option>
+                      <option value="소모품">소모품</option>
+                      <option value="식품">식품</option>
+                      <option value="기타">기타</option>
+                    </select>
+                  </div>
+
+                  {/* 등록일 */}
+                  <div className="item-form-group">
+                    <label htmlFor="itemDate">등록일 *</label>
+                    <input
+                      id="itemDate"
+                      type="date"
+                      name="itemDate"
+                      className="item-input"
+                      value={formData.itemDate}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  {/* 가격 */}
+                  <div className="item-form-group">
+                    <label htmlFor="itemPrice">가격 (원)</label>
+                    <input
+                      id="itemPrice"
+                      type="number"
+                      name="itemPrice"
+                      className="item-input"
+                      placeholder="금액 입력"
+                      value={formData.itemPrice}
+                      onChange={handleInputChange}
+                      min="0"
+                    />
+                  </div>
+
+                  {/* 갯수 */}
+                  <div className="item-form-group">
+                    <label htmlFor="itemCount">갯수 *</label>
+                    <input
+                      id="itemCount"
+                      type="number"
+                      name="itemCount"
+                      className="item-input"
+                      placeholder="개수 입력"
+                      value={formData.itemCount}
+                      onChange={handleInputChange}
+                      min="1"
+                      required
+                    />
+                  </div>
+
+                </div>
+
+                <button type="submit" className="item-submit-btn">물품 등록하기</button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'links' && (
+          <div className="item-tab-content">
+            <div className="item-card">
+              <h2 className="item-card-title">바로가기 링크 (팀원 매핑 영역)</h2>
+              <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.95rem' }}>
+                팀 프로젝트 작업 시 다른 개발자분이 실제 라우터 링크를 이곳에 연결할 예정입니다.
+              </p>
+
+              <div className="item-link-grid">
+                <div className="item-link-card" onClick={() => alert('대시보드로 이동하는 링크 카드입니다. (경로 매핑 필요)')}>
+                  <div className="item-link-title">
+                    <span style={{ fontSize: '1.25rem' }}>📊</span>
+                    관리자 대시보드
+                  </div>
+                  <div className="item-link-desc">
+                    전체 통계, 주요 지표 및 최근 현황을 한눈에 볼 수 있는 관리자 대시보드로 이동합니다.
+                  </div>
+                  <div className="item-link-hint">
+                    이동하기 ➔
+                  </div>
+                </div>
+
+                <div className="item-link-card" onClick={() => alert('회원 관리 페이지로 이동하는 링크 카드입니다. (경로 매핑 필요)')}>
+                  <div className="item-link-title">
+                    <span style={{ fontSize: '1.25rem' }}>👥</span>
+                    회원 관리
+                  </div>
+                  <div className="item-link-desc">
+                    헬스장 등록 회원 목록 확인, 신규 등록 및 이용권 만료 기간을 관리하는 페이지로 이동합니다.
+                  </div>
+                  <div className="item-link-hint">
+                    이동하기 ➔
+                  </div>
+                </div>
+
+                <div className="item-link-card" onClick={() => alert('수업/예약 일정 관리 페이지로 이동하는 링크 카드입니다. (경로 매핑 필요)')}>
+                  <div className="item-link-title">
+                    <span style={{ fontSize: '1.25rem' }}>🗓️</span>
+                    수업 및 예약 일정
+                  </div>
+                  <div className="item-link-desc">
+                    트레이너별 피티 수업 스케줄 및 예약 현황을 조회하고 조율하는 페이지로 이동합니다.
+                  </div>
+                  <div className="item-link-hint">
+                    이동하기 ➔
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default Itempage;
