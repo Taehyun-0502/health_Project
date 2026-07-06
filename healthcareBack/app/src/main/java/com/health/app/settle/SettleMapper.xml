@@ -4,10 +4,49 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.health.app.settle.SettleMapper">
 
-<insert id="payAdd" parameterType="PayDTO">
-insert into 'h_payment' (pay_id,username,gym_id,installment,pay_price,pay_date,pay_name,data_id)
-values (default,#{username},#{gymId},#{installment},#{payPrice},#{payDate},#{payName},#{dataId})
-</insert>
+    <insert id="payAdd" parameterType="com.health.app.settle.PayDTO">
+        INSERT INTO "h_payment" (username, gym_id, installment, pay_price, pay_date, pay_name, data_id)
+        VALUES (#{username}, #{gymId}, #{installment}, #{payPrice}, #{payDate}, #{payName}, #{dataId})
+    </insert>
 
+    <select id="payList" resultType="com.health.app.settle.PayDTO">
+        SELECT 
+            pay_id as payId,
+            username,
+            gym_id as gymId,
+            installment,
+            pay_price as payPrice,
+            pay_date as payDate,
+            pay_name as payName,
+            data_id as dataId
+        FROM "h_payment"
+        ORDER BY pay_id DESC
+    </select>
+
+    <select id="unpaidContractList" parameterType="Long" resultType="com.health.app.user.UserDTO">
+        SELECT 
+            d.data_id as dataId,
+            d.contract,
+            d.gym_id as gymId,
+            d.sender_id as senderId,
+            d.receiver_id as receiverId,
+            d.receiver_name as receiverName,
+            d.status,
+            d.start_date as startDate,
+            d.end_date as endDate,
+            d.amount,
+            d.quantity,
+            d.issue_date as issueDate,
+            d.signed_at as signedAt,
+            d.manager_id as managerId
+        FROM "h_contract_data" d
+        WHERE d.sender_id = #{username}
+          AND d.status = 'SIGNED'
+          AND d.contract IN (3, 4)
+          AND d.data_id NOT IN (
+              SELECT data_id FROM "h_payment" WHERE data_id IS NOT NULL
+          )
+        ORDER BY d.issue_date DESC, d.data_id DESC
+    </select>
 
 </mapper>
