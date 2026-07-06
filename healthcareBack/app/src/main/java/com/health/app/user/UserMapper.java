@@ -12,4 +12,10 @@ public interface UserMapper {
 
     // 계약서 발행(등록) 메서드
     public int contractInsert(UserDTO userDTO) throws Exception;
+
+    // 계약서 상세 조회 메서드
+    public UserDTO contractDetail(UserDTO userDTO) throws Exception;
+
+    // 계약서 서명 처리 메서드 (ISSUED -> SIGNED)
+    public int contractSign(UserDTO userDTO) throws Exception;
 }
