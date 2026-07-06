@@ -18,17 +18,20 @@ public class ItemController {
     @Autowired
     private ItemService itemService;
 
+    // 아이템 등록 메서드
     @PostMapping("add")
     public int itemAdd(@RequestBody ItemDTO newItem) throws Exception {
         System.err.println(newItem);
         return itemService.itemAdd(newItem);
     }
 
+    // 아이템 리스트 조회 메서드
     @GetMapping("list")
-    public List<ItemDTO> itemList(int gymId) throws Exception {
+    public List<ItemDTO> itemList(Long gymId) throws Exception {
         return itemService.itemList(gymId);
     }
 
+    // 아이템 상세보기 메서드
     @GetMapping("detail")
     public List<ItemDTO> itemDetail(ItemDTO itemDTO) throws Exception {
 
@@ -36,12 +39,14 @@ public class ItemController {
 
     }
 
+    // 아이템 업테이트(수정) 메서드
     @PostMapping("update")
     public int itemUpdate(@RequestBody ItemDTO itemDTO) throws Exception {
 
         return itemService.itemUpdate(itemDTO);
     }
 
+    // 등록된 아이템 삭제 메서드
     @PostMapping("delete")
     public int itemDelete(@RequestBody ItemDTO itemDTO) throws Exception {
 

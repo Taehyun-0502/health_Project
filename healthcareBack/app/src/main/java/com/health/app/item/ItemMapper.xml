@@ -10,7 +10,7 @@ values (default,#{gymId},#{itemCategory},#{itemCount},#{itemName},#{itemDate},#{
 
 </insert>
 
-<select id="itemList" parameterType="int" resultType="ItemDTO">
+<select id="itemList" parameterType="Long" resultType="ItemDTO">
 select 
     gym_id as gymId,
     item_category as itemCategory,

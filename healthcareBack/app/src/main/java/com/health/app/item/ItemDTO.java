@@ -11,13 +11,13 @@ import lombok.ToString;
 @ToString
 public class ItemDTO {
 
-    private int itemId;
-    private int gymId;
+    private Long itemId;
+    private Long gymId;
     private String itemCategory;
-    private int itemCount;
+    private Long itemCount;
     private String itemName;
     private LocalDate itemDate;
-    private int itemPrice;
+    private Long itemPrice;
     private String itemStatus;
 
 }
