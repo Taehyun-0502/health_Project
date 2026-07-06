@@ -1,10 +1,11 @@
 import { useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 // 회원가입 페이지 컴포넌트 (디자인 제외 Plain 버전)
 function Join() {
   const formRef = useRef(null);
   const checkedIdRef = useRef('');
+  const navigate = useNavigate();
 
   // 아이디(전화번호) 중복 확인 핸들러
   const handleIdCheck = async () => {
@@ -87,6 +88,7 @@ function Join() {
 
       if (response.ok) {
         alert('회원가입이 완료되었습니다.');
+        navigate('/')
       } else {
         const errorText = await response.text();
         alert(errorText || '회원가입에 실패했습니다.');
