@@ -66,9 +66,6 @@ function Login() {
         </div>
         <button type="submit">로그인</button>
       </form>
-      <div>
-        <Link to="/join">회원가입 하기</Link>
-      </div>
     </div>
   );
 }

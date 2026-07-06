@@ -9,6 +9,8 @@ import lombok.ToString;
 @ToString
 public class MemberDTO {
 
+    
+
     private Long username;       // 전화번호 (int8)
     private String password;     // 비밀번호 (varchar)
     private String passwordCheck;// 비밀번호 확인
