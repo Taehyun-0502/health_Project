@@ -1,5 +1,4 @@
 import { Routes, Route } from 'react-router-dom';
-import Dashboard from './Dashboard.jsx';
 import AdminMain from './AdminMain.jsx';
 import Login from './member/Login.jsx';
 import Join from './member/Join.jsx';
@@ -17,7 +16,6 @@ function App() {
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
       <Route path="/join" element={<Join />} />
-      <Route path="/main" element={<Dashboard />} />
       <Route path="/fitc" element={<MemberMain />} />
       <Route path="/fitc/mypage" element={<B2cMain />}/>
       <Route path="/fitc/mypage/b2ccomplaint" element={<B2cComplaint />} />
