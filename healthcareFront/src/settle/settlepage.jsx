@@ -1,0 +1,925 @@
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import './settlepage.css';
+
+// 사업장 ID와 지점 이름 매핑
+const GYM_NAMES = {
+  101: 'A 피트니스 강남점',
+  102: 'B 필라테스 홍대점',
+  103: 'C 크로스핏 역삼점',
+};
+
+// --- Mock Data 정의 (API 연동 실패 시 폴백 데이터로 사용) ---
+const mockCommissions = [
+  {
+    settlementId: 1,
+    gymId: 101,
+    commission: 1500000,
+    commissionRate: 0.10,
+    settleMonth: '2026-06-01',
+    settledAt: '2026-06-15',
+    status: '지급',
+    expenseId: null
+  },
+  {
+    settlementId: 2,
+    gymId: 102,
+    commission: 2400000,
+    commissionRate: 0.12,
+    settleMonth: '2026-06-01',
+    settledAt: '2026-06-15',
+    status: '지급',
+    expenseId: null
+  },
+  {
+    settlementId: 3,
+    gymId: 101,
+    commission: 1850000,
+    commissionRate: 0.10,
+    settleMonth: '2026-07-01',
+    settledAt: null,
+    status: '미지급',
+    expenseId: null
+  },
+  {
+    settlementId: 4,
+    gymId: 103,
+    commission: 950000,
+    commissionRate: 0.08,
+    settleMonth: '2026-07-01',
+    settledAt: null,
+    status: '미지급',
+    expenseId: null
+  }
+];
+
+const mockExpenses = [
+  {
+    expenseId: 1,
+    gymId: 101,
+    dateId: 1001,
+    expenseName: '헬스장 기구 유지 보수',
+    expenseDate: '2026-06-10',
+    expensePrice: 450000,
+    expenseRate: 0.0
+  },
+  {
+    expenseId: 2,
+    gymId: 101,
+    dateId: 1002,
+    expenseName: '임대료 및 관리비',
+    expenseDate: '2026-06-25',
+    expensePrice: 3500000,
+    expenseRate: 0.0
+  },
+  {
+    expenseId: 3,
+    gymId: 101,
+    dateId: 1003,
+    expenseName: '트레이너 인센티브 (김트레이너)',
+    expenseDate: '2026-06-28',
+    expensePrice: 1200000,
+    expenseRate: 0.15
+  },
+  {
+    expenseId: 4,
+    gymId: 101,
+    dateId: 1004,
+    expenseName: '센터 소모품(수건/비누) 구매',
+    expenseDate: '2026-07-02',
+    expensePrice: 280000,
+    expenseRate: 0.0
+  }
+];
+
+const mockPays = [
+  {
+    payId: 1,
+    username: 1012345678,
+    gymId: 101,
+    dataId: 2001,
+    installment: 0,
+    payPrice: 660000,
+    payDate: '2026-06-02',
+    payName: '정기 12개월 이용권'
+  },
+  {
+    payId: 2,
+    username: 1098765432,
+    gymId: 101,
+    dataId: 2002,
+    installment: 3,
+    payPrice: 1500000,
+    payDate: '2026-06-12',
+    payName: '1:1 개인 PT 20회'
+  },
+  {
+    payId: 3,
+    username: 1022223333,
+    gymId: 101,
+    dataId: 2003,
+    installment: 0,
+    payPrice: 120000,
+    payDate: '2026-06-20',
+    payName: '1개월 이용권'
+  },
+  {
+    payId: 4,
+    username: 1044445555,
+    gymId: 101,
+    dataId: 2004,
+    installment: 6,
+    payPrice: 2200000,
+    payDate: '2026-07-01',
+    payName: '1:1 개인 PT 30회 + 락커룸'
+  },
+  {
+    payId: 5,
+    username: 1012345678,
+    gymId: 101,
+    dataId: 2005,
+    installment: 0,
+    payPrice: 480000,
+    payDate: '2026-07-04',
+    payName: '기구 필라테스 10회'
+  }
+];
+
+function Settlepage() {
+  const navigate = useNavigate();
+
+  // 로그인 유저 정보 및 토큰 조회
+  const loginUser = JSON.parse(localStorage.getItem('user') || 'null');
+  const token = localStorage.getItem('accessToken');
+
+  // 개발 및 테스트를 위한 수동 역할 상태 (로그인 상태가 없거나 테스트 시 사용)
+  const [testRole, setTestRole] = useState(null);
+
+  // 현재 활성화된 역할 확인
+  const activeRole = (testRole || loginUser?.role || '').toUpperCase();
+
+  // 데이터 상태 관리
+  const [commissions, setCommissions] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [pays, setPays] = useState([]);
+  
+  // UI 상태 관리
+  const [loading, setLoading] = useState(false);
+  const [errorInfo, setErrorInfo] = useState('');
+  
+  // 사장님 뷰 서브 탭
+  const [ownerTab, setOwnerTab] = useState('sales'); // 'sales', 'expenses', 'pnl'
+
+  // 필터 상태
+  const [adminStatusFilter, setAdminStatusFilter] = useState('ALL');
+  const [adminMonthFilter, setAdminMonthFilter] = useState('ALL');
+  const [ownerMonthFilter, setOwnerMonthFilter] = useState('ALL');
+  const [ownerSearchQuery, setOwnerSearchQuery] = useState('');
+
+  // 지출 등록 폼 상태
+  const [newExpenseName, setNewExpenseName] = useState('');
+  const [newExpensePrice, setNewExpensePrice] = useState('');
+  const [newExpenseDate, setNewExpenseDate] = useState('');
+  const [newExpenseRate, setNewExpenseRate] = useState('0');
+
+  // 백엔드 연동 데이터 조회
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setErrorInfo('');
+
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      // 1. 관리자 권한용 커미션 내역 조회
+      try {
+        const response = await fetch(`${backendUrl}/fitb/settle/commission`, { headers });
+        if (response.ok) {
+          const data = await response.json();
+          setCommissions(data);
+        } else {
+          throw new Error('커미션 조회 실패');
+        }
+      } catch (err) {
+        console.warn('관리자 커미션 API 조회 실패 - 목업 데이터 사용:', err.message);
+        setCommissions(mockCommissions);
+      }
+
+      // 2. 사장님 권한용 지출 내역 조회
+      try {
+        const response = await fetch(`${backendUrl}/fitb/settle/expense`, { headers });
+        if (response.ok) {
+          const data = await response.json();
+          setExpenses(data);
+        } else {
+          throw new Error('지출 내역 조회 실패');
+        }
+      } catch (err) {
+        console.warn('사장님 지출 API 조회 실패 - 목업 데이터 사용:', err.message);
+        setExpenses(mockExpenses);
+      }
+
+      // 3. 사장님 권한용 매출 내역 조회
+      try {
+        const response = await fetch(`${backendUrl}/fitb/settle/pay`, { headers });
+        if (response.ok) {
+          const data = await response.json();
+          setPays(data);
+        } else {
+          throw new Error('매출 내역 조회 실패');
+        }
+      } catch (err) {
+        console.warn('사장님 매출 API 조회 실패 - 목업 데이터 사용:', err.message);
+        setPays(mockPays);
+      }
+
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [token]);
+
+  // 커미션 지급 상태 토글 (ADMIN 기능)
+  const handleToggleCommissionStatus = async (settlementId) => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    };
+
+    // 로컬 상태 변경 우선 수행 (인터랙티브 UX 제공)
+    setCommissions(prev =>
+      prev.map(c => {
+        if (c.settlementId === settlementId) {
+          const isPaid = c.status === '지급';
+          return {
+            ...c,
+            status: isPaid ? '미지급' : '지급',
+            settledAt: isPaid ? null : new Date().toISOString().split('T')[0],
+          };
+        }
+        return c;
+      })
+    );
+
+    // 백엔드로 상태 저장 요청 시도
+    try {
+      await fetch(`${backendUrl}/fitb/settle/commission/status`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ settlementId })
+      });
+    } catch (err) {
+      console.warn('백엔드 업데이트 실패 - 로컬에서 상태 적용 완료:', err.message);
+    }
+  };
+
+  // 지출 등록 핸들러 (OWNER 기능)
+  const handleAddExpense = async (e) => {
+    e.preventDefault();
+    if (!newExpenseName || !newExpensePrice || !newExpenseDate) {
+      alert('모든 지출 정보를 올바르게 입력해 주세요.');
+      return;
+    }
+
+    const gymId = loginUser?.gymId || 101; // 사장님의 소속 gymId 사용
+    const newExpenseObj = {
+      expenseId: Date.now(), // 고유 ID 임시 생성
+      gymId: parseInt(gymId, 10),
+      dateId: Date.now() + 10,
+      expenseName: newExpenseName,
+      expenseDate: newExpenseDate,
+      expensePrice: parseInt(newExpensePrice, 10),
+      expenseRate: parseFloat(newExpenseRate) || 0.0,
+    };
+
+    // 로컬 상태 업데이트
+    setExpenses(prev => [newExpenseObj, ...prev]);
+
+    // 입력 폼 리셋
+    setNewExpenseName('');
+    setNewExpensePrice('');
+    setNewExpenseDate('');
+    setNewExpenseRate('0');
+
+    // 백엔드 전송 시도
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    };
+    try {
+      await fetch(`${backendUrl}/fitb/settle/expense`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(newExpenseObj)
+      });
+    } catch (err) {
+      console.warn('백엔드 지출 저장 실패 - 로컬 반영 완료:', err.message);
+    }
+  };
+
+  // 지출 삭제 핸들러 (OWNER 기능)
+  const handleDeleteExpense = async (expenseId) => {
+    if (!window.confirm('해당 지출 내역을 삭제하시겠습니까?')) return;
+
+    setExpenses(prev => prev.filter(exp => exp.expenseId !== expenseId));
+
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    try {
+      await fetch(`${backendUrl}/fitb/settle/expense/${expenseId}`, {
+        method: 'DELETE',
+        headers,
+      });
+    } catch (err) {
+      console.warn('백엔드 지출 삭제 실패 - 로컬 반영 완료:', err.message);
+    }
+  };
+
+  // 금액 포맷 함수
+  const formatWon = (value) => {
+    return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
+  };
+
+  // 날짜 연월(YYYY-MM) 파싱 함수
+  const getYearMonth = (dateStr) => {
+    if (!dateStr) return '';
+    return dateStr.substring(0, 7);
+  };
+
+  // --- 권한별 화면 렌더링 분기 ---
+
+  // 1. 권한 없음 / 비로그인 화면 (테스트용 역할 선택기 포함)
+  if (activeRole !== 'ADMIN' && activeRole !== 'OWNER') {
+    return (
+      <div className="settle-container">
+        {/* 개발 테스트 바 */}
+        <div className="tester-bar">
+          <div className="tester-title">
+            <span>⚙️ 역할 테스트 도구 (비로그인 상태)</span>
+          </div>
+          <div className="tester-actions">
+            <button className="tester-btn" onClick={() => setTestRole('ADMIN')}>관리자(ADMIN) 뷰 보기</button>
+            <button className="tester-btn" onClick={() => setTestRole('OWNER')}>사장님(OWNER) 뷰 보기</button>
+          </div>
+        </div>
+
+        <div className="card-premium unauth-card">
+          <div className="unauth-icon">⚠️</div>
+          <h2 className="unauth-title">정산 페이지 접근 제한</h2>
+          <p className="unauth-desc">
+            이 페이지는 <strong>관리자(ADMIN)</strong> 또는 <strong>사장님(OWNER)</strong> 권한이 있는 사용자만 접근할 수 있습니다.<br />
+            로그인을 진행하거나 상단의 테스트 도구를 이용하여 페이지 뷰를 전환해 보세요.
+          </p>
+          <button className="btn-premium btn-back-login" onClick={() => navigate('/login')}>
+            로그인 화면으로 이동
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="settle-container">
+      {/* 개발자 도구 세션 토글 바 */}
+      <div className="tester-bar">
+        <div className="tester-title">
+          <span>⚙️ 디버깅 역할 전환기</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '10px' }}>
+            현재 역할: {activeRole === 'ADMIN' ? '관리자 (ADMIN)' : '사장님 (OWNER)'} {testRole && '(테스트 모드)'}
+          </span>
+        </div>
+        <div className="tester-actions">
+          <button 
+            className={`tester-btn ${activeRole === 'ADMIN' ? 'active' : ''}`} 
+            onClick={() => setTestRole('ADMIN')}
+          >
+            관리자(ADMIN) 뷰
+          </button>
+          <button 
+            className={`tester-btn ${activeRole === 'OWNER' ? 'active' : ''}`} 
+            onClick={() => setTestRole('OWNER')}
+          >
+            사장님(OWNER) 뷰
+          </button>
+          {testRole && (
+            <button className="tester-btn" onClick={() => setTestRole(null)}>
+              원래 계정 상태 복구
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 헤더 */}
+      <header className="settle-header">
+        <div className="settle-title-area">
+          <h1 className="gradient-title" style={{ fontSize: '32px', marginBottom: '0' }}>정산 관리 시스템</h1>
+          <span className="settle-subtitle">
+            {activeRole === 'ADMIN' 
+              ? '가맹점 계약에 따른 플랫폼 커미션 정산 관리 화면' 
+              : '사업장 운영 매출 내역 및 지출 비용 손익 대시보드'}
+          </span>
+        </div>
+        <div className="settle-user-info">
+          <span>접속자: <span className="settle-user-name">{loginUser?.name || '테스트 사용자'}</span></span>
+          <span className={`settle-role-badge ${activeRole.toLowerCase()}`}>{activeRole}</span>
+          <Link to="/fitb" style={{ fontSize: '13px', color: 'var(--primary-accent)', textDecoration: 'none', marginLeft: '10px' }}>
+            대시보드로 돌아가기
+          </Link>
+        </div>
+      </header>
+
+      {loading && <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-secondary)' }}>데이터 로드 중...</div>}
+
+      {/* ======================================================== */}
+      {/* 2. 관리자 (ADMIN) 뷰 구현                                */}
+      {/* ======================================================== */}
+      {!loading && activeRole === 'ADMIN' && (
+        <div>
+          {/* 주요 지표 요약 카드 */}
+          <section className="settle-stats">
+            <div className="card-premium stat-card">
+              <div className="stat-card-title">누적 수수료 수익</div>
+              <div className="stat-card-value" style={{ color: 'var(--primary-accent)' }}>
+                {formatWon(commissions.reduce((acc, curr) => acc + (curr.status === '지급' ? curr.commission : 0), 0))}
+              </div>
+              <div className="stat-card-desc">지급 완료 기준 총 정산 금액</div>
+            </div>
+            <div className="card-premium stat-card">
+              <div className="stat-card-title">미지급 정산 대기</div>
+              <div className="stat-card-value" style={{ color: '#f59e0b' }}>
+                {commissions.filter(c => c.status === '미지급').length} 건
+              </div>
+              <div className="stat-card-desc">신속한 확인 및 지급 처리가 필요합니다.</div>
+            </div>
+            <div className="card-premium stat-card">
+              <div className="stat-card-title">평균 커미션 수수료율</div>
+              <div className="stat-card-value">
+                {(commissions.reduce((acc, curr) => acc + curr.commissionRate, 0) / (commissions.length || 1) * 100).toFixed(1)}%
+              </div>
+              <div className="stat-card-desc">등록된 전체 사업장 기준 평균</div>
+            </div>
+          </section>
+
+          {/* 테이블 필터링 제어 영역 */}
+          <div className="filter-row">
+            <div className="filter-left">
+              <select 
+                className="select-premium" 
+                value={adminStatusFilter} 
+                onChange={(e) => setAdminStatusFilter(e.target.value)}
+              >
+                <option value="ALL">정산 상태: 전체</option>
+                <option value="지급">지급 완료</option>
+                <option value="미지급">미지급 대기</option>
+              </select>
+
+              <select 
+                className="select-premium" 
+                value={adminMonthFilter} 
+                onChange={(e) => setAdminMonthFilter(e.target.value)}
+              >
+                <option value="ALL">정산 대상 월: 전체</option>
+                <option value="2026-06">2026년 06월</option>
+                <option value="2026-07">2026년 07월</option>
+              </select>
+            </div>
+            <div className="filter-right">
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                총 <strong>{
+                  commissions.filter(c => 
+                    (adminStatusFilter === 'ALL' || c.status === adminStatusFilter) &&
+                    (adminMonthFilter === 'ALL' || getYearMonth(c.settleMonth) === adminMonthFilter)
+                  ).length
+                }</strong>건 검색됨
+              </span>
+            </div>
+          </div>
+
+          {/* 커미션 정산 내역 목록 테이블 */}
+          <div className="settle-table-container">
+            <table className="settle-table">
+              <thead>
+                <tr>
+                  <th>정산 ID</th>
+                  <th>사업장 (Gym)</th>
+                  <th>대상 월</th>
+                  <th>정산 커미션 금액</th>
+                  <th>커미션율</th>
+                  <th>상태</th>
+                  <th>지급일(결제 완료일)</th>
+                  <th>작업</th>
+                </tr>
+              </thead>
+              <tbody>
+                {commissions
+                  .filter(c => 
+                    (adminStatusFilter === 'ALL' || c.status === adminStatusFilter) &&
+                    (adminMonthFilter === 'ALL' || getYearMonth(c.settleMonth) === adminMonthFilter)
+                  )
+                  .map(c => (
+                    <tr key={c.settlementId}>
+                      <td>#{c.settlementId}</td>
+                      <td>
+                        <strong>{GYM_NAMES[c.gymId] || `사업장 ID: ${c.gymId}`}</strong>
+                      </td>
+                      <td>{getYearMonth(c.settleMonth)}</td>
+                      <td style={{ fontWeight: '600' }}>{formatWon(c.commission)}</td>
+                      <td>{(c.commissionRate * 100).toFixed(0)}%</td>
+                      <td>
+                        <span className={`status-badge ${c.status === '지급' ? 'paid' : 'pending'}`}>
+                          {c.status}
+                        </span>
+                      </td>
+                      <td>{c.settledAt || '-'}</td>
+                      <td>
+                        <button 
+                          className={`btn-action btn-action-primary`}
+                          style={{ padding: '6px 12px', fontSize: '12px' }}
+                          onClick={() => handleToggleCommissionStatus(c.settlementId)}
+                        >
+                          {c.status === '지급' ? '미지급 처리' : '지급 완료 처리'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                {commissions.filter(c => 
+                  (adminStatusFilter === 'ALL' || c.status === adminStatusFilter) &&
+                  (adminMonthFilter === 'ALL' || getYearMonth(c.settleMonth) === adminMonthFilter)
+                ).length === 0 && (
+                  <tr>
+                    <td colSpan="8" className="no-data-row">조건에 해당하는 정산 내역이 없습니다.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* 3. 사장님 (OWNER) 뷰 구현                                */}
+      {/* ======================================================== */}
+      {!loading && activeRole === 'OWNER' && (
+        <div>
+          {/* 사장님 뷰 서브 탭 제어 */}
+          <div className="settle-tabs">
+            <button 
+              className={`settle-tab-btn ${ownerTab === 'sales' ? 'active' : ''}`}
+              onClick={() => setOwnerTab('sales')}
+            >
+              📊 매출 내역
+            </button>
+            <button 
+              className={`settle-tab-btn ${ownerTab === 'expenses' ? 'active' : ''}`}
+              onClick={() => setOwnerTab('expenses')}
+            >
+              💸 지출 관리
+            </button>
+            <button 
+              className={`settle-tab-btn ${ownerTab === 'pnl' ? 'active' : ''}`}
+              onClick={() => setOwnerTab('pnl')}
+            >
+              📈 손익 분석
+            </button>
+          </div>
+
+          {/* 공통 필터 영역 (매출 및 지출 목록용) */}
+          {ownerTab !== 'pnl' && (
+            <div className="filter-row">
+              <div className="filter-left">
+                <select 
+                  className="select-premium" 
+                  value={ownerMonthFilter} 
+                  onChange={(e) => setOwnerMonthFilter(e.target.value)}
+                >
+                  <option value="ALL">날짜 기준: 전체</option>
+                  <option value="2026-06">2026년 06월</option>
+                  <option value="2026-07">2026년 07월</option>
+                </select>
+
+                <input 
+                  type="text" 
+                  className="input-search-premium"
+                  placeholder={ownerTab === 'sales' ? "상품명 / 연락처 검색..." : "지출 항목명 검색..."}
+                  value={ownerSearchQuery}
+                  onChange={(e) => setOwnerSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 3.1 매출 내역 탭 */}
+          {ownerTab === 'sales' && (
+            <div>
+              <div className="settle-stats">
+                <div className="card-premium stat-card">
+                  <div className="stat-card-title">총 매출 합계</div>
+                  <div className="stat-card-value" style={{ color: 'var(--primary-accent)' }}>
+                    {formatWon(
+                      pays
+                        .filter(p => 
+                          (ownerMonthFilter === 'ALL' || getYearMonth(p.payDate) === ownerMonthFilter) &&
+                          (p.payName.includes(ownerSearchQuery) || p.username.toString().includes(ownerSearchQuery))
+                        )
+                        .reduce((acc, curr) => acc + curr.payPrice, 0)
+                    )}
+                  </div>
+                  <div className="stat-card-desc">검색 필터 기준 전체 매출 금액</div>
+                </div>
+                <div className="card-premium stat-card">
+                  <div className="stat-card-title">결제 승인 건수</div>
+                  <div className="stat-card-value">
+                    {
+                      pays.filter(p => 
+                        (ownerMonthFilter === 'ALL' || getYearMonth(p.payDate) === ownerMonthFilter) &&
+                        (p.payName.includes(ownerSearchQuery) || p.username.toString().includes(ownerSearchQuery))
+                      ).length
+                    } 건
+                  </div>
+                  <div className="stat-card-desc">정상 결제 승인 완료 기준 건수</div>
+                </div>
+              </div>
+
+              <div className="settle-table-container">
+                <table className="settle-table">
+                  <thead>
+                    <tr>
+                      <th>결제 ID</th>
+                      <th>회원 연락처(ID)</th>
+                      <th>결제 항목</th>
+                      <th>결제 금액</th>
+                      <th>결제 방법</th>
+                      <th>결제일</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pays
+                      .filter(p => 
+                        (ownerMonthFilter === 'ALL' || getYearMonth(p.payDate) === ownerMonthFilter) &&
+                        (p.payName.includes(ownerSearchQuery) || p.username.toString().includes(ownerSearchQuery))
+                      )
+                      .map(p => (
+                        <tr key={p.payId}>
+                          <td>#{p.payId}</td>
+                          <td>0{p.username}</td>
+                          <td><strong>{p.payName}</strong></td>
+                          <td style={{ fontWeight: '600' }}>{formatWon(p.payPrice)}</td>
+                          <td>{p.installment === 0 ? '일시불' : `${p.installment}개월 할부`}</td>
+                          <td>{p.payDate}</td>
+                        </tr>
+                      ))}
+                    {pays.filter(p => 
+                      (ownerMonthFilter === 'ALL' || getYearMonth(p.payDate) === ownerMonthFilter) &&
+                      (p.payName.includes(ownerSearchQuery) || p.username.toString().includes(ownerSearchQuery))
+                    ).length === 0 && (
+                      <tr>
+                        <td colSpan="6" className="no-data-row">조건에 해당하는 매출 내역이 없습니다.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 3.2 지출 관리 탭 */}
+          {ownerTab === 'expenses' && (
+            <div>
+              <div className="settle-stats">
+                <div className="card-premium stat-card">
+                  <div className="stat-card-title">지출 총액</div>
+                  <div className="stat-card-value" style={{ color: '#f43f5e' }}>
+                    {formatWon(
+                      expenses
+                        .filter(e => 
+                          (ownerMonthFilter === 'ALL' || getYearMonth(e.expenseDate) === ownerMonthFilter) &&
+                          e.expenseName.includes(ownerSearchQuery)
+                        )
+                        .reduce((acc, curr) => acc + curr.expensePrice, 0)
+                    )}
+                  </div>
+                  <div className="stat-card-desc">검색 필터 기준 사업장 총 운영 지출비</div>
+                </div>
+                <div className="card-premium stat-card">
+                  <div className="stat-card-title">등록된 지출 건수</div>
+                  <div className="stat-card-value">
+                    {
+                      expenses.filter(e => 
+                        (ownerMonthFilter === 'ALL' || getYearMonth(e.expenseDate) === ownerMonthFilter) &&
+                        e.expenseName.includes(ownerSearchQuery)
+                      ).length
+                    } 건
+                  </div>
+                  <div className="stat-card-desc">자체 관리 지출 내역 합산</div>
+                </div>
+              </div>
+
+              {/* 지출 리스트 테이블 */}
+              <div className="settle-table-container">
+                <table className="settle-table">
+                  <thead>
+                    <tr>
+                      <th>지출 ID</th>
+                      <th>지출 항목명</th>
+                      <th>지출 금액</th>
+                      <th>결제일</th>
+                      <th>수수료/인센 비율</th>
+                      <th>작업</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {expenses
+                      .filter(e => 
+                        (ownerMonthFilter === 'ALL' || getYearMonth(e.expenseDate) === ownerMonthFilter) &&
+                        e.expenseName.includes(ownerSearchQuery)
+                      )
+                      .map(e => (
+                        <tr key={e.expenseId}>
+                          <td>#{e.expenseId}</td>
+                          <td><strong>{e.expenseName}</strong></td>
+                          <td style={{ fontWeight: '600', color: '#f43f5e' }}>{formatWon(e.expensePrice)}</td>
+                          <td>{e.expenseDate}</td>
+                          <td>{e.expenseRate > 0 ? `${(e.expenseRate * 100).toFixed(0)}%` : '없음'}</td>
+                          <td>
+                            <button 
+                              className="btn-action btn-action-danger"
+                              style={{ padding: '4px 10px', fontSize: '12px' }}
+                              onClick={() => handleDeleteExpense(e.expenseId)}
+                            >
+                              삭제
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    {expenses.filter(e => 
+                      (ownerMonthFilter === 'ALL' || getYearMonth(e.expenseDate) === ownerMonthFilter) &&
+                      e.expenseName.includes(ownerSearchQuery)
+                    ).length === 0 && (
+                      <tr>
+                        <td colSpan="6" className="no-data-row">등록된 지출 비용 데이터가 없습니다.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 지출 등록 폼 */}
+              <div className="card-premium expense-form-card">
+                <h3>💸 신규 지출 항목 등록</h3>
+                <form onSubmit={handleAddExpense}>
+                  <div className="expense-form-grid">
+                    <div className="form-group">
+                      <label className="form-label">지출 항목명</label>
+                      <input 
+                        type="text" 
+                        className="form-input"
+                        placeholder="예: 월세, 광고 마케팅비, 기구 보수 등"
+                        required
+                        value={newExpenseName}
+                        onChange={(e) => setNewExpenseName(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">지출 금액 (원)</label>
+                      <input 
+                        type="number" 
+                        className="form-input"
+                        placeholder="숫자만 입력"
+                        required
+                        value={newExpensePrice}
+                        onChange={(e) => setNewExpensePrice(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">지출일 (결제일)</label>
+                      <input 
+                        type="date" 
+                        className="form-input"
+                        required
+                        value={newExpenseDate}
+                        onChange={(e) => setNewExpenseDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">인센티브 비율 (선택)</label>
+                      <select 
+                        className="form-input"
+                        value={newExpenseRate}
+                        onChange={(e) => setNewExpenseRate(e.target.value)}
+                      >
+                        <option value="0">비율 없음 (0%)</option>
+                        <option value="0.05">5%</option>
+                        <option value="0.10">10%</option>
+                        <option value="0.15">15%</option>
+                        <option value="0.20">20%</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="btn-submit-container">
+                    <button type="submit" className="btn-premium btn-submit-premium">
+                      지출 등록하기
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* 3.3 손익 분석 (Profit & Loss) 탭 */}
+          {ownerTab === 'pnl' && (
+            <div className="pnl-dashboard">
+              {/* 수익/비용 분석 수치 연산 */}
+              {(() => {
+                const totalSales = pays.reduce((acc, curr) => acc + curr.payPrice, 0);
+                const totalExpenses = expenses.reduce((acc, curr) => acc + curr.expensePrice, 0);
+                // 10%의 수수료를 플랫폼 이용 커미션으로 가정 계산
+                const estimatedCommission = totalSales * 0.10;
+                const netProfit = totalSales - totalExpenses - estimatedCommission;
+
+                // CSS 퍼센트 계산용 최대 한계치 계산
+                const maxVal = Math.max(totalSales, totalExpenses + estimatedCommission, 1);
+                const salesPercent = 100;
+                const expensePercent = (totalExpenses / maxVal) * 100;
+                const commissionPercent = (estimatedCommission / maxVal) * 100;
+                const profitPercent = netProfit > 0 ? (netProfit / maxVal) * 100 : 0;
+
+                return (
+                  <>
+                    <div className="card-premium pnl-chart-box">
+                      <h3 className="chart-title">📊 누적 운영 매출 및 지출 비용 분석 (P&L Summary)</h3>
+                      
+                      <div className="pnl-bars-container">
+                        <div className="pnl-bar-group">
+                          <div className="pnl-bar-label-row">
+                            <span>총 매출 (Gross Sales)</span>
+                            <span className="value">{formatWon(totalSales)}</span>
+                          </div>
+                          <div className="pnl-progress-track">
+                            <div className="pnl-progress-fill revenue" style={{ width: `${salesPercent}%` }}></div>
+                          </div>
+                        </div>
+
+                        <div className="pnl-bar-group">
+                          <div className="pnl-bar-label-row">
+                            <span>총 지출 비용 (Operating Expenses)</span>
+                            <span className="value" style={{ color: '#f43f5e' }}>{formatWon(totalExpenses)}</span>
+                          </div>
+                          <div className="pnl-progress-track">
+                            <div className="pnl-progress-fill expense" style={{ width: `${expensePercent}%` }}></div>
+                          </div>
+                        </div>
+
+                        <div className="pnl-bar-group">
+                          <div className="pnl-bar-label-row">
+                            <span>예상 플랫폼 수수료 (Est. Commission - 10%)</span>
+                            <span className="value" style={{ color: '#f59e0b' }}>{formatWon(estimatedCommission)}</span>
+                          </div>
+                          <div className="pnl-progress-track">
+                            <div className="pnl-progress-fill commission" style={{ width: `${commissionPercent}%` }}></div>
+                          </div>
+                        </div>
+
+                        <div className="pnl-bar-group" style={{ marginTop: '10px' }}>
+                          <div className="pnl-bar-label-row">
+                            <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>순 마진 이익 (Net Operating Profit)</span>
+                            <span className="value" style={{ color: netProfit >= 0 ? '#10b981' : '#ef4444', fontSize: '16px' }}>
+                              {formatWon(netProfit)} ({totalSales > 0 ? ((netProfit / totalSales) * 100).toFixed(1) : 0}%)
+                            </span>
+                          </div>
+                          <div className="pnl-progress-track" style={{ height: '26px' }}>
+                            <div className={`pnl-progress-fill profit`} style={{ width: `${profitPercent}%`, background: netProfit < 0 ? '#ef4444' : undefined }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pnl-comparison-cards">
+                      <div className="card-premium" style={{ padding: '24px' }}>
+                        <h4 style={{ marginBottom: '12px', fontSize: '15px' }}>📈 이익 극대화를 위한 분석 리포트</h4>
+                        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                          현재 매장의 총 매출 중 <strong>{totalSales > 0 ? ((totalExpenses / totalSales) * 100).toFixed(1) : 0}%</strong>가 기구 정비, 임대료 및 인센티브 비용으로 지출되고 있습니다.<br />
+                          순 마진은 <strong>{totalSales > 0 ? ((netProfit / totalSales) * 100).toFixed(1) : 0}%</strong>이며, 지출 최적화 및 추가 이용권 프로모션을 통해 이익률 개선이 가능합니다.
+                        </p>
+                      </div>
+                      <div className="card-premium" style={{ padding: '24px' }}>
+                        <h4 style={{ marginBottom: '12px', fontSize: '15px' }}>💡 수수료 정산 알림</h4>
+                        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                          플랫폼 수수료는 매월 초 전월 매출 합산 기준으로 정산 처리됩니다.<br />
+                          현재 청구 대기 중인 예상 수수료는 <strong>{formatWon(estimatedCommission)}</strong> 입니다. 관리자의 승인에 맞춰 입금을 대기해 주세요.
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default Settlepage;

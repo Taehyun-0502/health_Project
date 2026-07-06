@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.health.app.settle.SettleMapper">
+
+<insert id="payAdd" parameterType="PayDTO">
+insert into 'h_payment' (pay_id,username,gym_id,installment,pay_price,pay_date,pay_name,data_id)
+values (default,#{username},#{gymId},#{installment},#{payPrice},#{payDate},#{payName},#{dataId})
+</insert>
+
+
+</mapper>
