@@ -25,8 +25,28 @@ public class ItemController {
     }
 
     @GetMapping("list")
-    public List itemList(int gymId) throws Exception {
+    public List<ItemDTO> itemList(int gymId) throws Exception {
         return itemService.itemList(gymId);
+    }
+
+    @GetMapping("detail")
+    public List<ItemDTO> itemDetail(ItemDTO itemDTO) throws Exception {
+
+        return itemService.itemDetail(itemDTO);
+
+    }
+
+    @PostMapping("update")
+    public int itemUpdate(@RequestBody ItemDTO itemDTO) throws Exception {
+
+        return itemService.itemUpdate(itemDTO);
+    }
+
+    @PostMapping("delete")
+    public int itemDelete(@RequestBody ItemDTO itemDTO) throws Exception {
+
+        return itemService.itemDelete(itemDTO);
+
     }
 
 }

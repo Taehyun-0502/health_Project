@@ -16,6 +16,8 @@ public class ItemDTO {
     private String itemCategory;
     private int itemCount;
     private String itemName;
-    private LocalDate itemBuy;
+    private LocalDate itemDate;
     private int itemPrice;
+    private String itemStatus;
+
 }

@@ -22,4 +22,18 @@ public class ItemService {
 
     }
 
+    public List<ItemDTO> itemDetail(ItemDTO itemDTO) throws Exception {
+
+        return itemMapper.itemDetail(itemDTO);
+    }
+
+    public int itemUpdate(ItemDTO itemDTO) throws Exception {
+
+        return itemMapper.itemUpdate(itemDTO);
+    }
+
+    public int itemDelete(ItemDTO itemDTO) throws Exception {
+        return itemMapper.itemDelete(itemDTO);
+    }
+
 }
