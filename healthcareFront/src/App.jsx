@@ -8,6 +8,7 @@ import B2cMain from './b2c_mypage/B2cMain.jsx';
 import B2cComplaint from './b2c_mypage/B2cComplaint.jsx';
 import Membership from './b2c_mypage/Membership.jsx'; // 멤버십 컴포넌트 임포트
 import ContractNew from './user/ContractNew.jsx';
+import ContractDetail from './user/ContractDetail.jsx';
 import Itempage from './item/Itempage.jsx';
 import Userpage from './user/Userpage.jsx';
 import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
@@ -29,6 +30,7 @@ function App() {
       <Route path="/fitc/mypage/membership" element={<Membership />} /> {/* 자식 경로로 멤버십 안착 */}
       <Route path="/fitb" element={<AdminMain />} />
       <Route path="/fitb/contract/new" element={<ContractNew />} />
+      <Route path="/fitb/contract/:dataId" element={<ContractDetail />} />
       <Route path="/fitb/itempage" element={<Itempage />} />
       <Route path="/fitb/userpage" element={<Userpage />} />
       <Route path="/fitb/b2bmypage" element={<B2bMain />}/>

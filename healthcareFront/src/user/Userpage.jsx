@@ -1,22 +1,30 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// 계약 유형은 contract FK로 판별 (1=제휴, 2=임금, 3=이용권, 4=PT)
+const CONTRACT_LABEL = {
+  1: '제휴 계약서',
+  2: '임금 계약서',
+  3: '이용권 계약서',
+  4: 'PT 이용권 계약서',
+};
+
 // 로그인 권한별 발행 가능한 계약서 버튼 목록
 // ADMIN: 제휴 계약서 / OWNER: 임금·이용권·PT 계약서 / TRAINER·MEMBER: 발행 불가
 const CREATE_BUTTONS = {
-  admin: [{ type: 'ADMIN_OWNER', label: '제휴 계약서 작성' }],
+  admin: [{ contract: 1, label: '제휴 계약서 작성' }],
   owner: [
-    { type: 'OWNER_TRAINER', label: '임금 계약서 작성' },
-    { type: 'OWNER_MEMBER_MEMBERSHIP', label: '이용권 계약서 작성' },
-    { type: 'OWNER_MEMBER_PT', label: 'PT 계약서 작성' },
+    { contract: 2, label: '임금 계약서 작성' },
+    { contract: 3, label: '이용권 계약서 작성' },
+    { contract: 4, label: 'PT 계약서 작성' },
   ],
 };
 
 // 로그인 권한별 계약 유저 리스트 확인용 테스트 페이지 (B2B 어드민, 디자인 제외 Plain 버전)
-// ADMIN: 제휴 계약 Owner / OWNER: 임금·이용권·PT 계약 상대 / TRAINER: PT 계약 Member / MEMBER: 접근 불가
+// ADMIN: 제휴 계약 Owner / OWNER: 임금·이용권·PT 계약 상대 / TRAINER: 담당 PT 계약 Member / MEMBER: 접근 불가
 function Userpage() {
   const navigate = useNavigate();
-  const [contractType, setContractType] = useState('');
+  const [contract, setContract] = useState('');
   const [userList, setUserList] = useState([]);
   const [message, setMessage] = useState('');
 
@@ -36,7 +44,7 @@ function Userpage() {
 
     try {
       const params = new URLSearchParams();
-      if (contractType) params.append('contractType', contractType);
+      if (contract) params.append('contract', contract);
 
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/list?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -67,7 +75,7 @@ function Userpage() {
       {/* 권한별 계약서 작성 버튼 */}
       <div>
         {createButtons.map((btn) => (
-          <button key={btn.type} onClick={() => navigate(`/fitb/contract/new?type=${btn.type}`)}>
+          <button key={btn.contract} onClick={() => navigate(`/fitb/contract/new?contract=${btn.contract}`)}>
             {btn.label}
           </button>
         ))}
@@ -75,12 +83,12 @@ function Userpage() {
 
       <div>
         <label>계약 유형 필터: </label>
-        <select value={contractType} onChange={(e) => setContractType(e.target.value)}>
+        <select value={contract} onChange={(e) => setContract(e.target.value)}>
           <option value="">전체</option>
-          <option value="ADMIN_OWNER">ADMIN_OWNER (제휴)</option>
-          <option value="OWNER_TRAINER">OWNER_TRAINER (임금)</option>
-          <option value="OWNER_MEMBER_MEMBERSHIP">OWNER_MEMBER_MEMBERSHIP (이용권)</option>
-          <option value="OWNER_MEMBER_PT">OWNER_MEMBER_PT (PT)</option>
+          <option value="1">제휴 계약서</option>
+          <option value="2">임금 계약서</option>
+          <option value="3">이용권 계약서</option>
+          <option value="4">PT 이용권 계약서</option>
         </select>
         <button onClick={handleList}>조회</button>
       </div>
@@ -92,9 +100,9 @@ function Userpage() {
             <th>계약유형</th>
             <th>상태</th>
             <th>상대방 이름</th>
-            <th>상대방 연락처</th>
+            <th>상대방 아이디(연락처)</th>
             <th>상대방 권한</th>
-            <th>금액</th>
+            <th>금액(만원)</th>
             <th>기간</th>
             <th>발행일</th>
           </tr>
@@ -102,11 +110,13 @@ function Userpage() {
         <tbody>
           {userList.map((item) => (
             <tr key={item.dataId}>
-              <td>{item.dataId}</td>
-              <td>{item.contractType}</td>
+              <td>
+                <button onClick={() => navigate(`/fitb/contract/${item.dataId}`)}>{item.dataId}</button>
+              </td>
+              <td>{CONTRACT_LABEL[item.contract] ?? item.contract}</td>
               <td>{item.status}</td>
               <td>{item.member?.name ?? item.receiverName}</td>
-              <td>{item.receiverPhone}</td>
+              <td>{item.member?.username ?? '(미가입)'}</td>
               <td>{item.member?.role ?? '(미가입)'}</td>
               <td>{item.amount}</td>
               <td>{item.startDate} ~ {item.endDate}</td>
