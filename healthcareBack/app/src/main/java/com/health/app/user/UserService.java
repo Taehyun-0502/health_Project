@@ -4,9 +4,11 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.health.app.member.MemberDTO;
 import com.health.app.member.MemberMapper;
+import com.health.app.member.MemberService;
 
 @Service
 public class UserService {
@@ -16,6 +18,9 @@ public class UserService {
 
     @Autowired
     private MemberMapper memberMapper;
+
+    @Autowired
+    private MemberService memberService;
 
     // 로그인 권한별 계약 유저 리스트 조회 비즈니스 로직
     // ADMIN/OWNER/TRAINER만 접근 가능, MEMBER는 B2B 어드민 페이지 접근 불가
@@ -35,6 +40,8 @@ public class UserService {
     // 계약서 발행 비즈니스 로직
     // 계약 유형은 contract FK로 판별 (1=제휴, 2=임금, 3=이용권, 4=PT)
     // ADMIN: 제휴(1)만 / OWNER: 임금(2)·이용권(3)·PT(4)만 발행 가능
+    // 미가입 수신자(trainer/member)는 발행 시 자동 회원가입 후 연결 - 발행과 가입을 한 트랜잭션으로 묶음
+    @Transactional
     public int contractInsert(UserDTO userDTO) throws Exception {
         String role = userDTO.getRole() == null ? null : userDTO.getRole().toUpperCase();
         Long contract = userDTO.getContract();
@@ -61,6 +68,19 @@ public class UserService {
             if (gymOwner != null) {
                 userDTO.setGymId(gymOwner.getGymId());
             }
+        }
+
+        // 수신자 번호를 회원 아이디와 동일한 뒷 8자리 포맷으로 정돈 (MemberService 포맷 규칙과 일치)
+        if (userDTO.getReceiverId() != null) {
+            String phoneStr = String.valueOf(userDTO.getReceiverId());
+            if (phoneStr.length() > 8) {
+                phoneStr = phoneStr.substring(phoneStr.length() - 8);
+            }
+            userDTO.setReceiverId(Long.parseLong(phoneStr));
+
+            // 미가입 trainer/member 수신자 자동 회원가입 (MemberService 회원가입 로직 연결)
+            // 이미 가입된 경우(0)와 자동가입 대상이 아닌 계약(-4)은 그대로 진행됨
+            memberService.autoJoin(userDTO);
         }
 
         // 초기 상태는 발행됨(서명대기)
