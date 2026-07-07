@@ -7,7 +7,7 @@
     <!-- 회원 가입 SQL -->
  <insert id="join" parameterType="MemberDTO">
     insert into "h_member" (username, password, name, email, role, gym_id, birth)
-    values(#{username}, #{password}, #{name}, #{email, jdbcType=VARCHAR}, #{role}, #{gymId} #{birth})
+    values(#{username}, #{password}, #{name}, #{email, jdbcType=VARCHAR}, #{role}, #{gymId}, #{birth})
     </insert>  
 
 
