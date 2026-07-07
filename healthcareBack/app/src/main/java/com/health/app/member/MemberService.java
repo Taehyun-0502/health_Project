@@ -2,7 +2,7 @@ package com.health.app.member;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.health.app.user.UserDTO;
+import com.health.app.contract.ContractDTO;
 
 @Service
 public class MemberService {
@@ -41,13 +41,14 @@ public class MemberService {
     } 
 
     // 자동회원가입 메서드 (trainer, member 계약서 등록 시 연쇄 가입 전용)
-    public int autoJoin(UserDTO userDTO) throws Exception {
-        if (userDTO.getReceiverId() == null) {
+    // 매개변수 타입을 UserDTO에서 ContractDTO로 리팩토링 정정
+    public int autoJoin(ContractDTO contractDTO) throws Exception {
+        if (contractDTO.getReceiverId() == null) {
             return -3;
         }
 
         // 계약서의 수신자 번호(receiverId)를 가져와 뒷 8자리 전화번호로 변환
-        Long username = this.formatUsernameToEightDigits(userDTO.getReceiverId());
+        Long username = this.formatUsernameToEightDigits(contractDTO.getReceiverId());
 
         // 중복 가입 여부 체크
         MemberDTO check = new MemberDTO();
@@ -56,17 +57,17 @@ public class MemberService {
             return 0; // 이미 존재하는 계정은 자동가입 생략하고 성공 반환
         }
 
-        // 회원가입 전용 DTO 바인딩 조립 (임시 비밀번호는 8자리 username 문자열로 강제 지정)
+        // 회원가입 전용 DTO 바인딩 조립
         MemberDTO newMember = new MemberDTO();
         newMember.setUsername(username);
         newMember.setPassword(username.toString());
         newMember.setPasswordCheck(username.toString());
-        newMember.setName(userDTO.getReceiverName());
-        newMember.setGymId(userDTO.getGymId());
-        newMember.setBirth(userDTO.getBirthDate());
+        newMember.setName(contractDTO.getReceiverName());
+        newMember.setGymId(contractDTO.getGymId());
+        newMember.setBirth(contractDTO.getBirthDate());
 
         // contract 번호 스펙에 따른 권한(Role) 분기 처리
-        Long contractVal = userDTO.getContract();
+        Long contractVal = contractDTO.getContract();
         if (contractVal != null) {
             if (contractVal == 2L) {
                 // contract 2 -> 트레이너 권한 부여

@@ -2,10 +2,10 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.health.app.user.UserMapper">
+<mapper namespace="com.health.app.contract.ContractMapper">
 
-    <!-- h_contract_data + h_member(수신자) 조인 결과 매핑 -->
-    <resultMap id="contractUserMap" type="UserDTO">
+    <!-- h_contract_data + h_member(수신자) 조인 결과 매핑 (UserDTO -> ContractDTO 정정) -->
+    <resultMap id="contractUserMap" type="com.health.app.contract.ContractDTO">
         <id property="dataId" column="data_id"/>
         <result property="contract" column="contract"/>
         <result property="gymId" column="gym_id"/>
@@ -35,47 +35,42 @@
         </association>
     </resultMap>
 
-    <!-- 로그인 권한별 계약 유저 리스트 조회 SQL
-         계약 유형은 contract FK로 판별 (1=제휴, 2=임금, 3=이용권, 4=PT)
-         ADMIN   : 제휴 계약(1)을 맺은 Owner 리스트
-         OWNER   : 본인이 발행한 임금(2)/이용권(3)/PT(4) 계약의 Trainer, Member 리스트
-         TRAINER : 본인이 담당(manager_id)하는 PT 계약(4) Member 리스트 -->
-    <select id="contractUserList" parameterType="UserDTO" resultMap="contractUserMap">
+    <!-- 로그인 권한별 계약 유저 리스트 조회 SQL -->
+    <select id="contractUserList" parameterType="com.health.app.contract.ContractDTO" resultMap="contractUserMap">
     select d.data_id, d.contract, d.gym_id, d.sender_id, d.receiver_id,
            d.receiver_name, d.status,
            d.start_date, d.end_date, d.amount, d.contract_rate, d.quantity,
            d.issue_date, d.signed_at, d.manager_id, d.birth_date, d.avg_workout_hour, d.avg_workout_minute,
            m.username as m_username, m.name as m_name, m.email as m_email,
            m.role as m_role, m.gym_id as m_gym_id
-    from "h_contract_data" d
-    left join "h_member" m on d.receiver_id = m.username
-    <where>
-        <choose>
-            <when test="role == 'ADMIN'">
-                and d.contract = 1
-            </when>
-            <when test="role == 'OWNER'">
-                and d.sender_id = #{username}
-                and d.contract in (2, 3, 4)
-            </when>
-            <when test="role == 'TRAINER'">
-                and d.contract = 4
-                and d.manager_id = #{username}
-            </when>
-            <!-- 그 외 권한은 조회 불가 -->
-            <otherwise>
-                and 1 = 0
-            </otherwise>
-        </choose>
-        <if test="contract != null">
-            and d.contract = #{contract}
-        </if>
-    </where>
-    order by d.issue_date desc, d.data_id desc
+     from "h_contract_data" d
+     left join "h_member" m on d.receiver_id = m.username
+     <where>
+         <choose>
+             <when test="role == 'ADMIN'">
+                 and d.contract = 1
+             </when>
+             <when test="role == 'OWNER'">
+                 and d.sender_id = #{username}
+                 and d.contract in (2, 3, 4)
+             </when>
+             <when test="role == 'TRAINER'">
+                 and d.contract = 4
+                 and d.manager_id = #{username}
+             </when>
+             <otherwise>
+                 and 1 = 0
+             </otherwise>
+         </choose>
+         <if test="contract != null">
+             and d.contract = #{contract}
+         </if>
+     </where>
+     order by d.issue_date desc, d.data_id desc
     </select>
 
-    <!-- 계약서 상세 조회 SQL (계약서 문서 표시용 - 헬스장명 포함) -->
-    <select id="contractDetail" parameterType="UserDTO" resultMap="contractUserMap">
+    <!-- 계약서 상세 조회 SQL -->
+    <select id="contractDetail" parameterType="com.health.app.contract.ContractDTO" resultMap="contractUserMap">
     select d.data_id, d.contract, d.gym_id, d.sender_id, d.receiver_id,
            d.receiver_name, d.status,
            d.start_date, d.end_date, d.amount, d.contract_rate, d.quantity,
@@ -83,14 +78,14 @@
            g.gym_name as j_gym_name,
            m.username as m_username, m.name as m_name, m.email as m_email,
            m.role as m_role, m.gym_id as m_gym_id
-    from "h_contract_data" d
-    left join "h_gym" g on d.gym_id = g.gym_id
-    left join "h_member" m on d.receiver_id = m.username
-    where d.data_id = #{dataId}
+     from "h_contract_data" d
+     left join "h_gym" g on d.gym_id = g.gym_id
+     left join "h_member" m on d.receiver_id = m.username
+     where d.data_id = #{dataId}
     </select>
 
-    <!-- 계약서 서명 처리 SQL (서명대기 상태에서만 서명 가능 - 동시성/중복 서명 방어) -->
-    <update id="contractSign" parameterType="UserDTO">
+    <!-- 계약서 서명 처리 SQL -->
+    <update id="contractSign" parameterType="com.health.app.contract.ContractDTO">
     update "h_contract_data"
     set status = 'SIGNED',
         signed_at = now()
@@ -98,8 +93,8 @@
       and status = 'ISSUED'
     </update>
 
-    <!-- 계약서 발행 SQL (초기 상태 ISSUED, 발행일 = 오늘) -->
-    <insert id="contractInsert" parameterType="UserDTO">
+    <!-- 계약서 발행 SQL -->
+    <insert id="contractInsert" parameterType="com.health.app.contract.ContractDTO">
     insert into "h_contract_data"
     (contract, gym_id, sender_id, receiver_id, receiver_name, status,
      start_date, end_date, amount, contract_rate, quantity, manager_id, birth_date, avg_workout_hour, avg_workout_minute, issue_date)

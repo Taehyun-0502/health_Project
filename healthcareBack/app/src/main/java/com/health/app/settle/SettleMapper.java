@@ -1,9 +1,8 @@
 package com.health.app.settle;
 
 import java.util.List;
-
 import org.apache.ibatis.annotations.Mapper;
-import com.health.app.user.UserDTO;
+import com.health.app.contract.ContractDTO;
 
 /**
  * 정산(Settle), 매출(Payment), 지출(Expense) 및 커미션(Settlement) 처리를 담당하는 MyBatis 매퍼 인터페이스
@@ -17,8 +16,8 @@ public interface SettleMapper {
     // 등록된 전체 매출 내역 목록 조회
     public List<PayDTO> payList(Long username) throws Exception;
 
-    // 미결제 상태이며 서명이 완료된 계약 정보 목록 조회 (매출 자동 연동용)
-    public List<UserDTO> unpaidContractList(Long username) throws Exception;
+    // 미결제 상태이며 서명이 완료된 계약 정보 목록 조회 (UserDTO -> ContractDTO 정정)
+    public List<ContractDTO> unpaidContractList(Long username) throws Exception;
 
     // 플랫폼 가맹점의 전체 커미션(정산) 내역 목록 조회 (ADMIN 기능)
     public List<CommissionDTO> commissionList() throws Exception;
@@ -51,8 +50,8 @@ public interface SettleMapper {
     // 신규 플랫폼 정산 커미션 등록
     public int insertCommission(CommissionDTO commissionDTO) throws Exception;
 
-    // 사장님용: 지출 처리해야 할 임금/제휴 계약서 목록 조회
-    public List<com.health.app.user.UserDTO> unpaidExpenseContractList(Long username) throws Exception;
+    // 사장님용: 지출 처리해야 할 임금/제휴 계약서 목록 조회 (UserDTO -> ContractDTO 정정)
+    public List<ContractDTO> unpaidExpenseContractList(Long username) throws Exception;
 
     // 사장님의 지출 등록 시 연동된 제휴 계약에 대한 플랫폼 정산 상태를 자동으로 '지급 완료'로 변경
     public int updateSettlementStatusByContract(

@@ -55,7 +55,7 @@ function ContractNew() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/contract`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/contract/insert`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

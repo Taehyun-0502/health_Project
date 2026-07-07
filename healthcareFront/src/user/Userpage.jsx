@@ -46,7 +46,7 @@ function Userpage() {
       const params = new URLSearchParams();
       if (contract) params.append('contract', contract);
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/list?${params}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/contract/list?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

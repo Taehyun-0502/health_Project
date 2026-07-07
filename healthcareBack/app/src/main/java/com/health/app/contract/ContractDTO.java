@@ -1,10 +1,8 @@
-package com.health.app.user;
+package com.health.app.contract;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
 import com.health.app.member.MemberDTO;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -12,9 +10,9 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-public class UserDTO {
+public class ContractDTO {
 
-    // h_contract_data 컬럼
+    // h_contract_data 컬럼에 매핑되는 필드
     private Long dataId; // 계약 id (int8, PK)
     private Long contract; // 계약종류 h_contract (int8, FK)
     private Long gymId; // 사업장 ID (int8, FK)
@@ -37,7 +35,6 @@ public class UserDTO {
     private LocalDate birthDate; // 수신자 생년월일 (date, 이용권(3)/PT(4) 계약용)
     private Integer avgWorkoutHour; // 하루평균 운동 시간 - 시 (int4, 이용권(3)/PT(4) 계약용)
     private Integer avgWorkoutMinute; // 하루평균 운동 시간 - 분 (int4, 이용권(3)/PT(4) 계약용)
- 
 
     // h_gym 조인 컬럼 (상세 조회 - 계약서 문서 표시용)
     private String gymName; // 헬스장 상호명
@@ -45,7 +42,7 @@ public class UserDTO {
     // 계약 상대방(수신자) 회원 정보 (h_member 조인)
     private MemberDTO member;
 
-    // 조회 조건용 필드 (로그인 사용자 - JWT에서 추출)
+    // 조회 조건용 임시 필드 (로그인 사용자 - JWT에서 추출)
     private Long username; // 로그인한 사용자 아이디(전화번호)
     private String role; // 로그인한 사용자 권한 ADMIN/OWNER/TRAINER/MEMBER
 }

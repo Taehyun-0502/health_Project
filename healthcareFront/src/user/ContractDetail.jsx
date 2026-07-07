@@ -141,7 +141,7 @@ function ContractDetail() {
       return;
     }
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/contract/${dataId}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/contract/detail/${dataId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -205,7 +205,7 @@ function ContractDetail() {
     const token = localStorage.getItem('accessToken');
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/user/contract/${dataId}/sign`,
+        `${import.meta.env.VITE_BACKEND_URL}/contract/detail/${dataId}/sign`,
         { method: 'PUT', headers: { Authorization: `Bearer ${token}` } },
       );
       if (response.ok) {
