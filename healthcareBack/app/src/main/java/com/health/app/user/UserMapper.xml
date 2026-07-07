@@ -108,13 +108,13 @@
      #{receiverId, jdbcType=BIGINT},
      #{receiverName},
      #{status},
-     #{startDate, jdbcType=VARCHAR}::date,
-     #{endDate, jdbcType=VARCHAR}::date,
+     #{startDate, jdbcType=DATE},
+     #{endDate, jdbcType=DATE},
      #{amount, jdbcType=BIGINT},
      #{contractRate, jdbcType=NUMERIC},
      #{quantity, jdbcType=INTEGER},
      #{managerId, jdbcType=BIGINT},
-     #{birthDate, jdbcType=VARCHAR}::date,
+     #{birthDate, jdbcType=DATE},
      current_date)
     </insert>
 </mapper>

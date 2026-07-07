@@ -274,7 +274,7 @@ function ContractDetail() {
               {detail.receiverName ?? '-'} (인)
               <br />
               {detail.status === 'SIGNED' || detail.status === 'EXPIRED'
-                ? `전자서명 완료 · ${detail.signedAt ?? '-'}`
+                ? `전자서명 완료 · ${detail.signedAt?.replace('T', ' ') ?? '-'}`
                 : '서명 대기 중'}
             </td>
           </tr>
@@ -344,7 +344,7 @@ function ContractDetail() {
       {detail.status === 'SIGNED' && (
         <div>
           <h2>계약 체결 완료</h2>
-          <p>서명일시: {detail.signedAt ?? '-'}</p>
+          <p>서명일시: {detail.signedAt?.replace('T', ' ') ?? '-'}</p>
           <Activation d={detail} />
         </div>
       )}
