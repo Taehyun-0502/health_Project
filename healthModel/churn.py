@@ -30,6 +30,8 @@ from psycopg.rows import dict_row
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+import pandas as pd
+import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -224,6 +226,124 @@ def fetch_gyms():
         return cur.fetchall()
 
 
+def fetch_recent_inouts(username: int = None) -> list:
+    """h_check_inout 테이블에서 최근 30일간의 출결 데이터를 조회"""
+    with get_conn() as conn, conn.cursor() as cur:
+        if username is not None:
+            query = '''
+                SELECT username, check_in, duration 
+                FROM "h_check_inout"
+                WHERE username = %s 
+                  AND check_in >= CURRENT_DATE - INTERVAL '30 days'
+            '''
+            cur.execute(query, (username,))
+        else:
+            query = '''
+                SELECT username, check_in, duration 
+                FROM "h_check_inout"
+                WHERE check_in >= CURRENT_DATE - INTERVAL '30 days'
+            '''
+            cur.execute(query)
+        return cur.fetchall()
+
+
+def calculate_visit_per_week_pandas(inouts_list: list, username: int) -> float:
+    """Pandas를 사용해 특정 회원의 최근 30일간 주당 방문 횟수를 계산 (소수점 둘째자리 반올림)"""
+    if not inouts_list:
+        return 0.0
+    df = pd.DataFrame(inouts_list)
+    user_df = df[df['username'] == username]
+    if user_df.empty:
+        return 0.0
+    
+    # check_in을 datetime 및 date 형식으로 변환하여 고유 일수 계산
+    user_df['date'] = pd.to_datetime(user_df['check_in']).dt.date
+    unique_days = user_df['date'].nunique()
+    
+    return round(float(unique_days / 4.2857), 2)
+
+
+def calculate_all_visit_per_week_pandas(inouts_list: list) -> dict:
+    """Pandas를 사용해 전체 회원별 최근 30일간 주당 방문 횟수를 계산하여 dict로 반환 {username: visit_per_week} (소수점 둘째자리 반올림)"""
+    if not inouts_list:
+        return {}
+    df = pd.DataFrame(inouts_list)
+    df['date'] = pd.to_datetime(df['check_in']).dt.date
+    
+    # username별 고유 방문 일수 집계
+    grouped = df.groupby('username')['date'].nunique()
+    visit_per_week_series = (grouped / 4.2857).round(2)
+    return visit_per_week_series.to_dict()
+
+
+def calculate_aver_exercise_pandas(inouts_list: list, username: int) -> float:
+    """Pandas를 사용해 특정 회원의 최근 30일간 하루 평균 운동시간(분)을 계산 (duration 평균 * 60)"""
+    if not inouts_list:
+        return 0.0
+    df = pd.DataFrame(inouts_list)
+    user_df = df[df['username'] == username]
+    if user_df.empty:
+        return 0.0
+    
+    avg_duration = user_df['duration'].fillna(0).mean()
+    return float(avg_duration * 60)
+
+
+def calculate_all_aver_exercise_pandas(inouts_list: list) -> dict:
+    """Pandas를 사용해 전체 회원별 최근 30일간 하루 평균 운동시간(분)을 계산하여 dict로 반환 {username: aver_exercise}"""
+    if not inouts_list:
+        return {}
+    df = pd.DataFrame(inouts_list)
+    df['duration'] = df['duration'].fillna(0)
+    
+    grouped = df.groupby('username')['duration'].mean()
+    aver_exercise_series = grouped * 60
+    return aver_exercise_series.to_dict()
+
+
+def fetch_last_check_in_date_by_username(username: int) -> datetime.date:
+    """특정 회원의 h_check_inout 테이블 기준 가장 최근 입실일(check_in)을 조회"""
+    with get_conn() as conn, conn.cursor() as cur:
+        query = '''
+            SELECT MAX(check_in) AS max_check_in
+            FROM "h_check_inout"
+            WHERE username = %s
+        '''
+        cur.execute(query, (username,))
+        res = cur.fetchone()
+        return res.get("max_check_in").date() if res and res.get("max_check_in") else None
+
+
+def fetch_all_last_check_in_dates() -> dict:
+    """전체 회원의 h_check_inout 테이블 기준 가장 최근 입실일(check_in)을 조회하여 {username: check_in_date} 반환"""
+    with get_conn() as conn, conn.cursor() as cur:
+        query = '''
+            SELECT username, MAX(check_in) AS max_check_in
+            FROM "h_check_inout"
+            GROUP BY username
+        '''
+        cur.execute(query)
+        return {row.get("username"): row.get("max_check_in").date() for row in cur.fetchall() if row.get("max_check_in")}
+
+
+def calculate_last_days(username: int) -> int:
+    """특정 회원의 마지막 방문 후 경과일(last_days) 계산 (현재날짜 - 마지막 check_in 날짜)"""
+    import datetime
+    last_date = fetch_last_check_in_date_by_username(username)
+    if last_date is None:
+        return 999  # 출석 기록이 아예 없는 회원은 999일 경과로 셋팅
+    today = datetime.date.today()
+    return (today - last_date).days
+
+
+def calculate_all_last_days() -> dict:
+    """전체 회원의 마지막 방문 후 경과일(last_days) 계산하여 dict로 반환 {username: last_days}"""
+    import datetime
+    today = datetime.date.today()
+    last_dates = fetch_all_last_check_in_dates()
+    return {username: (today - dt).days for username, dt in last_dates.items()}
+
+
 # ─────────────────────────── FastAPI ───────────────────────────
 app = FastAPI(title="Churn Prediction API", version="0.1.0")
 
@@ -249,10 +369,24 @@ def churn_member(username: int):
     if row is None:
         raise HTTPException(status_code=404,
                             detail=f"member {username} not found in {TABLE}")
+    
+    # 최근 30일 출결을 바탕으로 주당 방문 횟수 및 일평균 운동시간 계산
+    inouts = fetch_recent_inouts(username)
+    visit_per_week = calculate_visit_per_week_pandas(inouts, username)
+    aver_exercise = calculate_aver_exercise_pandas(inouts, username)
+    last_days = calculate_last_days(username)
+    
     member = row_to_member(row)
+    member["이번달_주당방문횟수"] = visit_per_week
+    member["최근한달_일평균_운동시간"] = aver_exercise
+    member["마지막_방문_경과일"] = last_days
+    
     return {
         "username": row["username"],
         "contract_type": row.get("contract_type"),
+        "visit_per_week": visit_per_week,  # 백엔드 기입용
+        "aver_exercise": aver_exercise,    # 백엔드 기입용
+        "last_days": last_days,            # 백엔드 기입용
         "진단": predict(member),
         "시뮬레이션": simulate(member),
     }
@@ -264,7 +398,21 @@ def churn_gym():
     rows = fetch_all()
     if not rows:
         raise HTTPException(status_code=404, detail=f"no rows in {TABLE}")
-    members = [row_to_member(r) for r in rows]
+    
+    # 최근 30일 출결을 바탕으로 전체 회원의 주당 방문 횟수 및 일평균 운동시간 계산
+    inouts = fetch_recent_inouts()
+    visits_map = calculate_all_visit_per_week_pandas(inouts)
+    exercise_map = calculate_all_aver_exercise_pandas(inouts)
+    last_days_map = calculate_all_last_days()
+    
+    members = []
+    for r in rows:
+        m = row_to_member(r)
+        m["이번달_주당방문횟수"] = visits_map.get(r["username"], 0.0)
+        m["최근한달_일평균_운동시간"] = exercise_map.get(r["username"], 0.0)
+        m["마지막_방문_경과일"] = last_days_map.get(r["username"], 999)
+        members.append(m)
+        
     return predict_gym(members)
 
 

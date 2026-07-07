@@ -28,4 +28,29 @@
            pt_yn, group_yn, time_cong, last_days, contract_type
        from "h_model_data"
     </select>
+
+    <!-- 회원 1명의 주당 방문횟수, 일평균 운동시간, 마지막 방문 경과일 UPSERT -->
+    <insert id="upsertChurnFeatures">
+    insert into "h_model_data" (username, visit_per_week, aver_exercise, last_days)
+    values (#{username}, #{visitPerWeek}, #{averExercise}, #{lastDays})
+    on conflict (username)
+    do update set
+        visit_per_week = excluded.visit_per_week,
+        aver_exercise = excluded.aver_exercise,
+        last_days = excluded.last_days
+    </insert>
+
+    <!-- 전체 회원의 주당 방문횟수, 일평균 운동시간, 마지막 방문 경과일 일괄 UPSERT (벌크 UPSERT) -->
+    <insert id="upsertChurnFeaturesAll" parameterType="java.util.List">
+    insert into "h_model_data" (username, visit_per_week, aver_exercise, last_days)
+    values
+    <foreach collection="list" item="item" separator=",">
+        (#{item.username}, #{item.visitPerWeek}, #{item.averExercise}, #{item.lastDays})
+    </foreach>
+    on conflict (username)
+    do update set
+        visit_per_week = excluded.visit_per_week,
+        aver_exercise = excluded.aver_exercise,
+        last_days = excluded.last_days
+    </insert>
 </mapper>
