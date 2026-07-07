@@ -10,10 +10,13 @@ import Membership from './b2c_mypage/Membership.jsx';
 import B2cNotification from './b2c_mypage/B2cNotification.jsx'; // 알림 컴포넌트 임포트
 import B2cCoupon from './b2c_mypage/B2cCoupon.jsx';             // 쿠폰 컴포넌트 임포트
 import B2cCheckIn from './b2c_mypage/B2cCheckIn.jsx';     // 출석 컴포넌트 임포트
-import ContractNew from './user/ContractNew.jsx';
+import ContractNew from './contract/ContractNew.jsx';
+import ContractDetail from './contract/ContractDetail.jsx';
 import Itempage from './item/Itempage.jsx';
-import Userpage from './user/Userpage.jsx';
+
+import Contractpage from './contract/Contractpage.jsx';
 import Settlepage from './settle/settlepage.jsx'
+
 
 // 메인 애플리케이션 컴포넌트
 function App() {
@@ -23,7 +26,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/join" element={<Join />} />
       <Route path="/fitc" element={<MemberMain />} />
-      
+
       {/* 일반 회원 마이페이지 하위 중첩 탭 전체 매핑 */}
       <Route path="/fitc/mypage" element={<B2cMain />}>
         <Route path="membership" element={<Membership />} />
@@ -37,9 +40,13 @@ function App() {
       <Route path="/fitb" element={<AdminMain />} />
 
       <Route path="/fitb/contract/new" element={<ContractNew />} />
+      <Route path="/fitb/contract/:dataId" element={<ContractDetail />} />
       <Route path="/fitb/itempage" element={<Itempage />} />
-      <Route path="/fitb/userpage" element={<Userpage />} />
+
+      <Route path="/fitb/contractpage" element={<Contractpage />} />
+
       <Route path="/fitb/Settlepage" element={<Settlepage />} />
+
     </Routes>
   );
 }

@@ -22,12 +22,12 @@ function ContractNew() {
       <div>
         <h1>계약서 작성</h1>
         <p>잘못된 계약 유형입니다.</p>
-        <button onClick={() => navigate('/fitb/userpage')}>리스트로 돌아가기</button>
+        <button onClick={() => navigate('/fitb/contractpage')}>리스트로 돌아가기</button>
       </div>
     );
   }
 
-  // 계약서 발행 제출 핸들러 (POST /user/contract)
+  // 계약서 발행 제출 핸들러 (POST /contract/insert)
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -66,7 +66,7 @@ function ContractNew() {
 
       if (response.ok) {
         alert('계약서가 발행되었습니다. (상태: ISSUED)');
-        navigate('/fitb/userpage');
+        navigate('/fitb/contractpage');
       } else {
         setMessage(`발행 실패(${response.status}): ${await response.text()}`);
       }
@@ -172,7 +172,7 @@ function ContractNew() {
         </div>
 
         <button type="submit">계약서 발행</button>
-        <button type="button" onClick={() => navigate('/fitb/userpage')}>취소</button>
+        <button type="button" onClick={() => navigate('/fitb/contractpage')}>취소</button>
       </form>
     </div>
   );
