@@ -13,9 +13,8 @@ import Itempage from './item/Itempage.jsx';
 import Userpage from './user/Userpage.jsx';
 import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
 import B2bMain from './b2b_mypage/B2bMain.jsx';
+import Settlepage from './settle/Settlepage.jsx';
 
-// import Settlepage from './settle/Settlepage';
-// import ContractDetail from './user/ContractDetail.jsx';
 
 // 메인 애플리케이션 컴포넌트
 function App() {
@@ -35,9 +34,7 @@ function App() {
       <Route path="/fitb/userpage" element={<Userpage />} />
       <Route path="/fitb/b2bmypage" element={<B2bMain />}/>
       <Route path="/fitb/b2bmypage/b2bcomplaint" element={<B2bComplaint />} />
-
-      {/* <Route path="/fitb/contract/:dataId" element={<ContractDetail />} />
-      <Route path="/fitb/settlepage" element={<Settlepage />} /> */}
+      <Route path="/fitb/settlepage" element={<Settlepage />} />
     </Routes>
   );
 }
