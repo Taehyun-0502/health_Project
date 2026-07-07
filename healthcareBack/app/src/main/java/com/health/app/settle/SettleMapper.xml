@@ -10,8 +10,8 @@
         VALUES (#{username}, #{gymId}, #{installment}, #{payPrice}, #{payDate}, #{payName}, #{dataId})
     </insert>
 
-    <!-- 전체 등록된 매출 내역 목록 조회 -->
-    <select id="payList" resultType="com.health.app.settle.PayDTO">
+    <!-- 사장님용: 해당 지점(gym_id)의 매출 내역 목록 조회 -->
+    <select id="payList" parameterType="Long" resultType="com.health.app.settle.PayDTO">
         SELECT 
             pay_id as payId,
             username,
@@ -22,6 +22,7 @@
             pay_name as payName,
             data_id as dataId
         FROM "h_payment"
+        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
         ORDER BY pay_id DESC
     </select>
 
@@ -55,31 +56,35 @@
     <!-- 관리자용: 가맹점별 전체 커미션 정산 내역 조회 -->
     <select id="commissionList" resultType="com.health.app.settle.CommissionDTO">
         SELECT 
-            settlement_id as settlementId,
-            gym_id as gymId,
-            commission,
-            settled_at as settledAt,
-            commission_rate as commissionRate,
-            settle_month as settleMonth,
-            status,
-            expense_id as expenseId
-        FROM "h_settlement"
-        ORDER BY settlement_id DESC
+            s.settlement_id as settlementId,
+            s.gym_id as gymId,
+            g.gym_name as gymName,
+            s.commission,
+            s.settled_at as settledAt,
+            s.commission_rate as commissionRate,
+            s.settle_month as settleMonth,
+            s.status,
+            s.expense_id as expenseId
+        FROM "h_settlement" s
+        LEFT JOIN "h_gym" g ON s.gym_id = g.gym_id
+        ORDER BY s.settlement_id DESC
     </select>
 
     <!-- 개별 커미션 정산 상세 단건 조회 (상태 변경용) -->
     <select id="getCommissionById" parameterType="Long" resultType="com.health.app.settle.CommissionDTO">
         SELECT 
-            settlement_id as settlementId,
-            gym_id as gymId,
-            commission,
-            settled_at as settledAt,
-            commission_rate as commissionRate,
-            settle_month as settleMonth,
-            status,
-            expense_id as expenseId
-        FROM "h_settlement"
-        WHERE settlement_id = #{settlementId}
+            s.settlement_id as settlementId,
+            s.gym_id as gymId,
+            g.gym_name as gymName,
+            s.commission,
+            s.settled_at as settledAt,
+            s.commission_rate as commissionRate,
+            s.settle_month as settleMonth,
+            s.status,
+            s.expense_id as expenseId
+        FROM "h_settlement" s
+        LEFT JOIN "h_gym" g ON s.gym_id = g.gym_id
+        WHERE s.settlement_id = #{settlementId}
     </select>
 
     <!-- 관리자용: 커미션 정산 지급 상태 업데이트 -->
@@ -199,5 +204,23 @@
           )
         ORDER BY d.issue_date DESC, d.data_id DESC
     </select>
+
+    <!-- 사장님 지출 등록 시 연동된 제휴 계약서에 매핑되는 수수료 정산 건을 자동 지급 완료(지급)로 업데이트 -->
+    <update id="updateSettlementStatusByContract">
+        UPDATE "h_settlement"
+        SET status = '지급',
+            settled_at = CURRENT_DATE,
+            expense_id = #{expenseId}
+        WHERE settlement_id = (
+            SELECT s.settlement_id
+            FROM "h_settlement" s
+            JOIN "h_contract_data" c ON s.gym_id = c.gym_id
+            WHERE c.data_id = #{dataId}
+              AND c.contract = 1
+              AND s.status = '미지급'
+            ORDER BY s.settle_month ASC
+            LIMIT 1
+        )
+    </update>
 
 </mapper>

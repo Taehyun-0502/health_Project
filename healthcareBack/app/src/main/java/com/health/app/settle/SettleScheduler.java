@@ -37,24 +37,25 @@ public class SettleScheduler {
      * 임시 테스트 기능: 서버 구동(ApplicationReadyEvent) 완료 즉시
      * 전월 및 당월의 수수료 정산 내역을 자동으로 강제 집계하여 생성합니다.
      */
-    // @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
-    // public void runOnStartup() {
-    // try {
-    // // 1. 전월 정산 강제 집계 생성
-    // LocalDate prevMonth = LocalDate.now().minusMonths(1);
-    // int prevCount = settleService.generateMonthlyCommissions(prevMonth);
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    public void runOnStartup() {
+    try {
+    // 1. 전월 정산 강제 집계 생성
+    LocalDate prevMonth = LocalDate.now().minusMonths(1);
+    int prevCount = settleService.generateMonthlyCommissions(prevMonth);
 
-    // // 2. 당월 정산 강제 집계 생성 (오늘 날짜 기준 누적 매출분)
-    // LocalDate currentMonth = LocalDate.now();
-    // int currentCount = settleService.generateMonthlyCommissions(currentMonth);
+    // 2. 당월 정산 강제 집계 생성 (오늘 날짜 기준 누적 매출분)
+    LocalDate currentMonth = LocalDate.now();
+    int currentCount = settleService.generateMonthlyCommissions(currentMonth);
 
-    // System.out.println("[서버기동정산 완료] 전월(" + prevMonth.getYear() + "-" +
-    // prevMonth.getMonthValue() + "): " + prevCount + "건 / " +
-    // "당월(" + currentMonth.getYear() + "-" + currentMonth.getMonthValue() + "): " +
-    // currentCount + "건이 생성/업데이트 되었습니다.");
-    // } catch (Exception e) {
-    // System.err.println("[서버기동정산 실패] 에러: " + e.getMessage());
-    // e.printStackTrace();
-    // }
-    // }
+    System.out.println("[서버기동정산 완료] 전월(" + prevMonth.getYear() + "-" +
+    prevMonth.getMonthValue() + "): " + prevCount + "건 / " +
+    "당월(" + currentMonth.getYear() + "-" + currentMonth.getMonthValue() + "): " +
+    currentCount + "건이 생성/업데이트 되었습니다.");
+    }catch(Exception e) {
+  
+  System.err.println("[서버기동정산 실패] 에러: " + e.getMessage());
+    e.printStackTrace();
+    }
+    }
 }

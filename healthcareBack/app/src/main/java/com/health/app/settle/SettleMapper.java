@@ -15,7 +15,7 @@ public interface SettleMapper {
     public int payAdd(PayDTO payDTO) throws Exception;
 
     // 등록된 전체 매출 내역 목록 조회
-    public List<PayDTO> payList() throws Exception;
+    public List<PayDTO> payList(Long username) throws Exception;
 
     // 미결제 상태이며 서명이 완료된 계약 정보 목록 조회 (매출 자동 연동용)
     public List<UserDTO> unpaidContractList(Long username) throws Exception;
@@ -53,5 +53,10 @@ public interface SettleMapper {
 
     // 사장님용: 지출 처리해야 할 임금/제휴 계약서 목록 조회
     public List<com.health.app.user.UserDTO> unpaidExpenseContractList(Long username) throws Exception;
+
+    // 사장님의 지출 등록 시 연동된 제휴 계약에 대한 플랫폼 정산 상태를 자동으로 '지급 완료'로 변경
+    public int updateSettlementStatusByContract(
+            @org.apache.ibatis.annotations.Param("dataId") Long dataId, 
+            @org.apache.ibatis.annotations.Param("expenseId") Long expenseId) throws Exception;
 
 }

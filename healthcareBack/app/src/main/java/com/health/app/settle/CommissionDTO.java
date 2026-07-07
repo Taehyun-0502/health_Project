@@ -31,5 +31,7 @@ public class CommissionDTO {
     private String status;
     // 지출 입력 id
     private Long expenseId;
+    // 사업장 이름
+    private String gymName;
 
 }

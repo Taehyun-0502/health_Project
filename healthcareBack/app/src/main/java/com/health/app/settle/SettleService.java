@@ -23,9 +23,9 @@ public class SettleService {
     }
 
     // 매출 목록 조회 처리
-    public List<PayDTO> payList() throws Exception {
+    public List<PayDTO> payList(Long username) throws Exception {
 
-        return settleMapper.payList();
+        return settleMapper.payList(username);
     }
 
     // 미결제 계약서 목록 조회 처리 (매출 연동용)
@@ -61,9 +61,14 @@ public class SettleService {
         return settleMapper.expenseList(username);
     }
 
-    // 지점 운영 지출 항목 추가
+    // 지점 운영 지출 항목 추가 및 제휴 수수료 정산 상태 자동 갱신
+    @org.springframework.transaction.annotation.Transactional
     public int expenseAdd(ExpenseDTO expenseDTO) throws Exception {
-        return settleMapper.expenseAdd(expenseDTO);
+        int result = settleMapper.expenseAdd(expenseDTO);
+        if (result > 0 && expenseDTO.getDataId() != null) {
+            settleMapper.updateSettlementStatusByContract(expenseDTO.getDataId(), expenseDTO.getExpenseId());
+        }
+        return result;
     }
 
     // 지점 운영 지출 항목 삭제

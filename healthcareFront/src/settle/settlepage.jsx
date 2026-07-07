@@ -206,13 +206,22 @@ function Settlepage() {
   const [errorInfo, setErrorInfo] = useState('');
   
   // 사장님 뷰 서브 탭
-  const [ownerTab, setOwnerTab] = useState('sales'); // 'sales', 'expenses', 'pnl'
+  const [ownerTab, setOwnerTab] = useState('sales'); // 'sales', 'expenses'
 
   // 필터 상태
   const [adminStatusFilter, setAdminStatusFilter] = useState('ALL');
   const [adminMonthFilter, setAdminMonthFilter] = useState('ALL');
   const [ownerMonthFilter, setOwnerMonthFilter] = useState('ALL');
   const [ownerSearchQuery, setOwnerSearchQuery] = useState('');
+
+  // 1월부터 12월까지의 연월 리스트 생성 (2026년 기준)
+  const filterMonths = Array.from({ length: 12 }, (_, i) => {
+    const monthStr = (i + 1).toString().padStart(2, '0');
+    return {
+      value: `2026-${monthStr}`,
+      label: `2026년 ${monthStr}월`
+    };
+  });
 
   // 지출 등록 폼 상태
   const [newExpenseName, setNewExpenseName] = useState('');
@@ -661,8 +670,9 @@ function Settlepage() {
                 onChange={(e) => setAdminMonthFilter(e.target.value)}
               >
                 <option value="ALL">정산 대상 월: 전체</option>
-                <option value="2026-06">2026년 06월</option>
-                <option value="2026-07">2026년 07월</option>
+                {filterMonths.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
               </select>
             </div>
             <div className="filter-right">
@@ -702,7 +712,7 @@ function Settlepage() {
                     <tr key={c.settlementId}>
                       <td>#{c.settlementId}</td>
                       <td>
-                        <strong>{GYM_NAMES[c.gymId] || `사업장 ID: ${c.gymId}`}</strong>
+                        <strong>{c.gymName || `사업장 ID: ${c.gymId}`}</strong>
                       </td>
                       <td>{getYearMonth(c.settleMonth)}</td>
                       <td style={{ fontWeight: '600' }}>{formatWon(c.commission)}</td>
@@ -757,12 +767,6 @@ function Settlepage() {
             >
               💸 지출 관리
             </button>
-            <button 
-              className={`settle-tab-btn ${ownerTab === 'pnl' ? 'active' : ''}`}
-              onClick={() => setOwnerTab('pnl')}
-            >
-              📈 손익 분석
-            </button>
           </div>
 
           {/* 공통 필터 영역 (매출 및 지출 목록용) */}
@@ -775,8 +779,9 @@ function Settlepage() {
                   onChange={(e) => setOwnerMonthFilter(e.target.value)}
                 >
                   <option value="ALL">날짜 기준: 전체</option>
-                  <option value="2026-06">2026년 06월</option>
-                  <option value="2026-07">2026년 07월</option>
+                  {filterMonths.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
                 </select>
 
                 <input 
@@ -1217,95 +1222,7 @@ function Settlepage() {
             </div>
           )}
 
-          {/* 3.3 손익 분석 (Profit & Loss) 탭 */}
-          {ownerTab === 'pnl' && (
-            <div className="pnl-dashboard">
-              {/* 수익/비용 분석 수치 연산 */}
-              {(() => {
-                const totalSales = pays.reduce((acc, curr) => acc + curr.payPrice, 0);
-                const totalExpenses = expenses.reduce((acc, curr) => acc + curr.expensePrice, 0);
-                // 10%의 수수료를 플랫폼 이용 커미션으로 가정 계산
-                const estimatedCommission = totalSales * 0.10;
-                const netProfit = totalSales - totalExpenses - estimatedCommission;
 
-                // CSS 퍼센트 계산용 최대 한계치 계산
-                const maxVal = Math.max(totalSales, totalExpenses + estimatedCommission, 1);
-                const salesPercent = 100;
-                const expensePercent = (totalExpenses / maxVal) * 100;
-                const commissionPercent = (estimatedCommission / maxVal) * 100;
-                const profitPercent = netProfit > 0 ? (netProfit / maxVal) * 100 : 0;
-
-                return (
-                  <>
-                    <div className="card-premium pnl-chart-box">
-                      <h3 className="chart-title">📊 누적 운영 매출 및 지출 비용 분석 (P&L Summary)</h3>
-                      
-                      <div className="pnl-bars-container">
-                        <div className="pnl-bar-group">
-                          <div className="pnl-bar-label-row">
-                            <span>총 매출 (Gross Sales)</span>
-                            <span className="value">{formatWon(totalSales)}</span>
-                          </div>
-                          <div className="pnl-progress-track">
-                            <div className="pnl-progress-fill revenue" style={{ width: `${salesPercent}%` }}></div>
-                          </div>
-                        </div>
-
-                        <div className="pnl-bar-group">
-                          <div className="pnl-bar-label-row">
-                            <span>총 지출 비용 (Operating Expenses)</span>
-                            <span className="value" style={{ color: '#f43f5e' }}>{formatWon(totalExpenses)}</span>
-                          </div>
-                          <div className="pnl-progress-track">
-                            <div className="pnl-progress-fill expense" style={{ width: `${expensePercent}%` }}></div>
-                          </div>
-                        </div>
-
-                        <div className="pnl-bar-group">
-                          <div className="pnl-bar-label-row">
-                            <span>예상 플랫폼 수수료 (Est. Commission - 10%)</span>
-                            <span className="value" style={{ color: '#f59e0b' }}>{formatWon(estimatedCommission)}</span>
-                          </div>
-                          <div className="pnl-progress-track">
-                            <div className="pnl-progress-fill commission" style={{ width: `${commissionPercent}%` }}></div>
-                          </div>
-                        </div>
-
-                        <div className="pnl-bar-group" style={{ marginTop: '10px' }}>
-                          <div className="pnl-bar-label-row">
-                            <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>순 마진 이익 (Net Operating Profit)</span>
-                            <span className="value" style={{ color: netProfit >= 0 ? '#10b981' : '#ef4444', fontSize: '16px' }}>
-                              {formatWon(netProfit)} ({totalSales > 0 ? ((netProfit / totalSales) * 100).toFixed(1) : 0}%)
-                            </span>
-                          </div>
-                          <div className="pnl-progress-track" style={{ height: '26px' }}>
-                            <div className={`pnl-progress-fill profit`} style={{ width: `${profitPercent}%`, background: netProfit < 0 ? '#ef4444' : undefined }}></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pnl-comparison-cards">
-                      <div className="card-premium" style={{ padding: '24px' }}>
-                        <h4 style={{ marginBottom: '12px', fontSize: '15px' }}>📈 이익 극대화를 위한 분석 리포트</h4>
-                        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-                          현재 매장의 총 매출 중 <strong>{totalSales > 0 ? ((totalExpenses / totalSales) * 100).toFixed(1) : 0}%</strong>가 기구 정비, 임대료 및 인센티브 비용으로 지출되고 있습니다.<br />
-                          순 마진은 <strong>{totalSales > 0 ? ((netProfit / totalSales) * 100).toFixed(1) : 0}%</strong>이며, 지출 최적화 및 추가 이용권 프로모션을 통해 이익률 개선이 가능합니다.
-                        </p>
-                      </div>
-                      <div className="card-premium" style={{ padding: '24px' }}>
-                        <h4 style={{ marginBottom: '12px', fontSize: '15px' }}>💡 수수료 정산 알림</h4>
-                        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-                          플랫폼 수수료는 매월 초 전월 매출 합산 기준으로 정산 처리됩니다.<br />
-                          현재 청구 대기 중인 예상 수수료는 <strong>{formatWon(estimatedCommission)}</strong> 입니다. 관리자의 승인에 맞춰 입금을 대기해 주세요.
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          )}
         </div>
       )}
     </div>

@@ -67,7 +67,15 @@ public class SettleController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
 
-        List<PayDTO> list = settleService.payList();
+        Claims claims;
+        try {
+            claims = jwtUtill.extractAllClaims(authorization.substring(7));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        }
+
+        Long ownerPhone = Long.parseLong(claims.getSubject());
+        List<PayDTO> list = settleService.payList(ownerPhone);
         return ResponseEntity.ok(list);
     }
 
