@@ -16,15 +16,15 @@ import org.springframework.web.client.RestTemplate;
 public class ResultService {
 
     private final ResultMapper resultMapper;
-    private final com.health.app.churn.ChurnMapper churnMapper;
+    private final com.health.app.churn.ChurnService churnService;
     private final RestTemplate restTemplate;
 
     @Value("${app.churn.fastapi-url:http://localhost:8000}")
     private String churnFastapiUrl;
 
-    public ResultService(ResultMapper resultMapper, com.health.app.churn.ChurnMapper churnMapper) {
+    public ResultService(ResultMapper resultMapper, com.health.app.churn.ChurnService churnService) {
         this.resultMapper = resultMapper;
-        this.churnMapper = churnMapper;
+        this.churnService = churnService;
         this.restTemplate = new RestTemplate();
     }
 
@@ -41,7 +41,7 @@ public class ResultService {
     // 전체 또는 특정 지점에 대해 일괄 분석 및 저장 수행
     @Transactional
     public int analyzeAndSaveAll(Long gymId) throws Exception {
-        List<com.health.app.churn.ChurnDTO> allData = churnMapper.selectAll();
+        List<com.health.app.churn.ChurnDTO> allData = churnService.selectAll();
         int successCount = 0;
         for (com.health.app.churn.ChurnDTO dto : allData) {
             try {
@@ -84,6 +84,9 @@ public class ResultService {
         if (body == null) {
             throw new RuntimeException("FastAPI response is null for username: " + username);
         }
+
+        // FastAPI에서 계산되어 돌아온 visit_per_week를 DB(h_model_data)에 UPSERT 위임
+        churnService.upsertChurnFeaturesFromResponse(body, username);
 
         // 3. 응답 맵에서 분석 데이터 추출
         @SuppressWarnings("unchecked")
