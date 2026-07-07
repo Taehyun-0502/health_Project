@@ -6,6 +6,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+/**
+ * 회원의 계약 연동 결제(매출) 데이터를 담는 데이터 전송 객체 (DTO)
+ * h_payment 테이블과 매핑됩니다.
+ */
 @Setter
 @Getter
 @ToString

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import './Itempage.css';
-
+import { Link } from 'react-router-dom';
 // SVG 아이콘 컴포넌트 정의
 const ListIcon = () => (
   <svg viewBox="0 0 24 24">
@@ -21,7 +21,7 @@ const LinksIcon = () => (
 );
 
 function Itempage() {
-  const [activeTab, setActiveTab] = useState('list'); // 'list' | 'form' | 'links'
+  const [activeTab, setActiveTab] = useState('list'); // 'list' | 'form'
   const [selectedItem, setSelectedItem] = useState(null); // 선택된 상세 물품 상태
   const [detailList, setDetailList] = useState([]); // 선택된 물품의 상세 구매 이력 리스트
 
@@ -380,13 +380,14 @@ function Itempage() {
               </button>
             </li>
             <li>
-              <button
-                className={`item-tab-btn ${activeTab === 'links' ? 'active' : ''}`}
-                onClick={() => { setSelectedItem(null); setEditingItem(null); setActiveTab('links'); }}
+              <Link
+                to="/fitb"
+                className="item-tab-btn"
+                style={{ textDecoration: 'none' }}
               >
                 <LinksIcon />
-                바로가기 링크
-              </button>
+                대시보드로 가기
+              </Link>
             </li>
           </ul>
         </nav>
@@ -662,7 +663,7 @@ function Itempage() {
                   <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
                     📦 등록 및 관리 내역 리스트 ({detailList.length}건)
                   </h3>
-                  
+
                   {/* 월별 필터 셀렉트 */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600' }}>조회 월 선택:</span>
@@ -715,7 +716,7 @@ function Itempage() {
                           const buyDate = item.itemDate || item.item_date || item.itemBuy || item.item_buy || '-';
                           const price = item.itemPrice !== undefined ? item.itemPrice : item.item_price;
                           const count = item.itemCount !== undefined ? item.itemCount : item.item_count;
-                          
+
                           const isDisposal = item.itemStatus === '폐기' || item.item_status === '폐기' || count < 0;
                           const displayCount = Math.abs(count);
                           const totalPrice = (price || 0) * displayCount;
@@ -791,8 +792,8 @@ function Itempage() {
                   </div>
                 ) : (
                   <div style={{ textAlign: 'center', padding: '3rem 2rem', color: '#94a3b8', border: '1px dashed #e2e8f0', borderRadius: '12px' }}>
-                    {selectedMonthFilter === 'all' 
-                      ? '등록된 상세 내역이 없습니다.' 
+                    {selectedMonthFilter === 'all'
+                      ? '등록된 상세 내역이 없습니다.'
                       : `${selectedMonthFilter.substring(0, 4)}년 ${selectedMonthFilter.substring(5, 7)}월에 등록된 내역이 없습니다.`}
                     <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.5rem' }}>
                       (상단의 '조회 월 선택'에서 다른 월을 고르거나 전체 내역을 볼 수 있습니다.)
@@ -962,57 +963,7 @@ function Itempage() {
           </div>
         )}
 
-        {activeTab === 'links' && (
-          <div className="item-tab-content">
-            <div className="item-card">
-              <h2 className="item-card-title">바로가기 링크 (팀원 매핑 영역)</h2>
-              <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.95rem' }}>
-                팀 프로젝트 작업 시 다른 개발자분이 실제 라우터 링크를 이곳에 연결할 예정입니다.
-              </p>
 
-              <div className="item-link-grid">
-                <div className="item-link-card" onClick={() => alert('대시보드로 이동하는 링크 카드입니다. (경로 매핑 필요)')}>
-                  <div className="item-link-title">
-                    <span style={{ fontSize: '1.25rem' }}>📊</span>
-                    관리자 대시보드
-                  </div>
-                  <div className="item-link-desc">
-                    전체 통계, 주요 지표 및 최근 현황을 한눈에 볼 수 있는 관리자 대시보드로 이동합니다.
-                  </div>
-                  <div className="item-link-hint">
-                    이동하기 ➔
-                  </div>
-                </div>
-
-                <div className="item-link-card" onClick={() => alert('회원 관리 페이지로 이동하는 링크 카드입니다. (경로 매핑 필요)')}>
-                  <div className="item-link-title">
-                    <span style={{ fontSize: '1.25rem' }}>👥</span>
-                    회원 관리
-                  </div>
-                  <div className="item-link-desc">
-                    헬스장 등록 회원 목록 확인, 신규 등록 및 이용권 만료 기간을 관리하는 페이지로 이동합니다.
-                  </div>
-                  <div className="item-link-hint">
-                    이동하기 ➔
-                  </div>
-                </div>
-
-                <div className="item-link-card" onClick={() => alert('수업/예약 일정 관리 페이지로 이동하는 링크 카드입니다. (경로 매핑 필요)')}>
-                  <div className="item-link-title">
-                    <span style={{ fontSize: '1.25rem' }}>🗓️</span>
-                    수업 및 예약 일정
-                  </div>
-                  <div className="item-link-desc">
-                    트레이너별 피티 수업 스케줄 및 예약 현황을 조회하고 조율하는 페이지로 이동합니다.
-                  </div>
-                  <div className="item-link-hint">
-                    이동하기 ➔
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

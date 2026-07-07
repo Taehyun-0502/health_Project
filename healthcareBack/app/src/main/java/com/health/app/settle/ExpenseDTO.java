@@ -6,6 +6,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+/**
+ * 사업장(Gym)에서 자체적으로 기록 및 관리하는 지출 및 운영 비용 데이터를 담는 DTO
+ * h_expense 테이블과 매핑됩니다.
+ */
 @Getter
 @Setter
 @ToString
@@ -16,7 +20,7 @@ public class ExpenseDTO {
     // 사업장 id
     private Long gymId;
     // 계약 데이터 id
-    private Long dateId;
+    private Long dataId;
     // 지출 항목
     private String expenseName;
     // 지출 날짜(결제일)
