@@ -13,6 +13,7 @@ import B2cCheckIn from './b2c_mypage/B2cCheckIn.jsx';     // 출석 컴포넌트
 import ContractNew from './user/ContractNew.jsx';
 import Itempage from './item/Itempage.jsx';
 import Userpage from './user/Userpage.jsx';
+import Settlepage from './settle/settlepage.jsx'
 
 // 메인 애플리케이션 컴포넌트
 function App() {
@@ -38,6 +39,7 @@ function App() {
       <Route path="/fitb/contract/new" element={<ContractNew />} />
       <Route path="/fitb/itempage" element={<Itempage />} />
       <Route path="/fitb/userpage" element={<Userpage />} />
+      <Route path="/fitb/Settlepage" element={<Settlepage />} />
     </Routes>
   );
 }
