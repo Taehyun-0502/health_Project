@@ -409,6 +409,16 @@ function Settlepage() {
     }
   };
 
+  // 직원(트레이너) 인센티브 추가금 계산 헬퍼 함수
+  const getIncentiveAmount = (c) => {
+    if (!c || c.contract !== 2 || !c.contractRate) return 0;
+    let rate = parseFloat(c.contractRate);
+    if (rate > 1) {
+      rate = rate / 100; // 데이터베이스에 10.0 또는 15.0 형식으로 저장된 경우 대응
+    }
+    return Math.floor(c.amount * rate);
+  };
+
   // 사장님용 지출 대기 계약서 클릭 핸들러
   const handleSelectExpenseContract = (contract) => {
     setSelectedExpenseContractId(contract.dataId.toString());
@@ -416,13 +426,21 @@ function Settlepage() {
     const otherParty = contract.contract === 2 ? `${contract.receiverName} 트레이너` : '플랫폼';
     const name = `[계약 #${contract.dataId}] ${labelName} - ${otherParty}`;
     setNewExpenseName(name);
-    setNewExpensePrice(contract.amount.toString());
+
+    // 금액 설정: 임금의 경우 기본급 + 인센티브 합산액으로 자동 계산
+    const incentive = getIncentiveAmount(contract);
+    const totalPrice = contract.amount + incentive;
+    setNewExpensePrice(totalPrice.toString());
+
     setNewExpenseDate(new Date().toISOString().split('T')[0]);
     
-    // contractRate 값 포맷 정리 (예: 0.1 -> 0.10, 0 -> 0)
+    // contractRate 값 포맷 정리 (예: 10 또는 0.1 -> 0.10, 0 -> 0)
     let rateStr = '0';
     if (contract.contractRate) {
-      const rateNum = parseFloat(contract.contractRate);
+      let rateNum = parseFloat(contract.contractRate);
+      if (rateNum > 1) {
+        rateNum = rateNum / 100;
+      }
       if (rateNum > 0) {
         rateStr = rateNum.toFixed(2); // 0.1 -> "0.10"
       }
@@ -996,8 +1014,27 @@ function Settlepage() {
                         <tr key={e.expenseId}>
                           <td>#{e.expenseId}</td>
                           <td><strong>{e.expenseName}</strong></td>
-                          <td style={{ fontWeight: '600', color: '#f43f5e' }}>{formatWon(e.expensePrice)}</td>
-                          <td>{e.expenseDate}</td>
+                           <td style={{ fontWeight: '600', color: '#f43f5e' }}>
+                             {(() => {
+                               if (e.expenseRate > 0) {
+                                 const base = Math.round(e.expensePrice / (1 + e.expenseRate));
+                                 const incentive = e.expensePrice - base;
+                                 return (
+                                   <div>
+                                     {formatWon(e.expensePrice)}
+                                     <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 'normal', marginTop: '2px' }}>
+                                       {formatWon(base)} 
+                                       <span style={{ color: '#ef4444', fontWeight: 'bold', marginLeft: '4px' }}>
+                                         + {formatWon(incentive)}
+                                       </span>
+                                     </div>
+                                   </div>
+                                 );
+                               }
+                               return formatWon(e.expensePrice);
+                             })()}
+                           </td>
+                           <td>{e.expenseDate}</td>
                           <td>{e.expenseRate > 0 ? `${(e.expenseRate * 100).toFixed(0)}%` : '없음'}</td>
                           <td>
                             <button 
@@ -1061,8 +1098,19 @@ function Settlepage() {
                             {c.contract === 2 ? `지출 대상: ${c.receiverName} 트레이너` : `지출 대상: 플랫폼 제휴 수수료`}
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                            <span>금액: <strong>{formatWon(c.amount)}</strong></span>
-                            {c.contractRate !== null && c.contractRate !== undefined && <span>비율: {(c.contractRate * 100).toFixed(0)}%</span>}
+                            <span>
+                              금액: <strong>{formatWon(c.amount)}</strong>
+                              {c.contract === 2 && getIncentiveAmount(c) > 0 && (
+                                <span style={{ color: '#ef4444', fontWeight: 'bold', marginLeft: '6px' }}>
+                                  + {formatWon(getIncentiveAmount(c))}
+                                </span>
+                              )}
+                            </span>
+                            {c.contractRate !== null && c.contractRate !== undefined && (
+                              <span>
+                                비율: {parseFloat(c.contractRate) > 1 ? parseFloat(c.contractRate) : (parseFloat(c.contractRate) * 100).toFixed(0)}%
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))
@@ -1104,6 +1152,14 @@ function Settlepage() {
                           value={newExpensePrice}
                           onChange={(e) => setNewExpensePrice(e.target.value)}
                         />
+                        {selectedExpenseContractId && unpaidExpenses.find(c => c.dataId.toString() === selectedExpenseContractId)?.contract === 2 && (
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                            기본급: {formatWon(unpaidExpenses.find(c => c.dataId.toString() === selectedExpenseContractId).amount)}
+                            <span style={{ color: '#ef4444', fontWeight: 'bold', marginLeft: '6px' }}>
+                              + 인센티브: {formatWon(getIncentiveAmount(unpaidExpenses.find(c => c.dataId.toString() === selectedExpenseContractId)))}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="form-group">
                         <label className="form-label">지출일 (결제일)</label>

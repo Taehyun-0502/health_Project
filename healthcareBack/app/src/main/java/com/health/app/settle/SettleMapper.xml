@@ -193,7 +193,6 @@
             OR 
             (d.receiver_id = #{username} AND d.contract = 1)
           )
-          AND d.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
           AND d.status = 'SIGNED'
           AND d.data_id NOT IN (
               SELECT data_id FROM "h_expense" WHERE data_id IS NOT NULL
