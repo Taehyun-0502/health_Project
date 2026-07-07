@@ -22,6 +22,7 @@
         <result property="signedAt" column="signed_at"/>
         <result property="managerId" column="manager_id"/>
         <result property="birthDate" column="birth_date"/>
+        <result property="avgWorkoutTime" column="avg_workout_time"/>
         <result property="gymName" column="j_gym_name"/>
         <!-- 계약 상대방(수신자) 회원 정보 -->
         <association property="member" javaType="com.health.app.member.MemberDTO">
@@ -42,7 +43,7 @@
     select d.data_id, d.contract, d.gym_id, d.sender_id, d.receiver_id,
            d.receiver_name, d.status,
            d.start_date, d.end_date, d.amount, d.contract_rate, d.quantity,
-           d.issue_date, d.signed_at, d.manager_id, d.birth_date,
+           d.issue_date, d.signed_at, d.manager_id, d.birth_date, d.avg_workout_time,
            m.username as m_username, m.name as m_name, m.email as m_email,
            m.role as m_role, m.gym_id as m_gym_id
     from "h_contract_data" d
@@ -77,7 +78,7 @@
     select d.data_id, d.contract, d.gym_id, d.sender_id, d.receiver_id,
            d.receiver_name, d.status,
            d.start_date, d.end_date, d.amount, d.contract_rate, d.quantity,
-           d.issue_date, d.signed_at, d.manager_id, d.birth_date,
+           d.issue_date, d.signed_at, d.manager_id, d.birth_date, d.avg_workout_time,
            g.gym_name as j_gym_name,
            m.username as m_username, m.name as m_name, m.email as m_email,
            m.role as m_role, m.gym_id as m_gym_id
@@ -100,7 +101,7 @@
     <insert id="contractInsert" parameterType="UserDTO">
     insert into "h_contract_data"
     (contract, gym_id, sender_id, receiver_id, receiver_name, status,
-     start_date, end_date, amount, contract_rate, quantity, manager_id, birth_date, issue_date)
+     start_date, end_date, amount, contract_rate, quantity, manager_id, birth_date, avg_workout_time, issue_date)
     values
     (#{contract},
      #{gymId, jdbcType=BIGINT},
@@ -115,6 +116,7 @@
      #{quantity, jdbcType=INTEGER},
      #{managerId, jdbcType=BIGINT},
      #{birthDate, jdbcType=DATE},
+     #{avgWorkoutTime, jdbcType=DATE},
      current_date)
     </insert>
 </mapper>

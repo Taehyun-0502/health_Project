@@ -35,6 +35,7 @@ public class UserDTO {
     private LocalDateTime signedAt; // 서명완료일시 (timestamp - 시각 포함)
     private Long managerId; // PT 담당자
     private LocalDate birthDate; // 수신자 생년월일 (date, 이용권(3)/PT(4) 계약용)
+    private LocalDate avgWorkoutTime; // 하루평균 운동 시간 (date, 이용권(3)/PT(4) 계약용)
  
 
     // h_gym 조인 컬럼 (상세 조회 - 계약서 문서 표시용)

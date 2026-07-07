@@ -22,6 +22,15 @@ public class UserService {
     @Autowired
     private MemberService memberService;
 
+    // 전화번호를 회원 아이디와 동일한 뒷 8자리 숫자로 변환하는 헬퍼 메서드 (MemberService 포맷 규칙과 일치)
+    private Long toEightDigits(Long phone) {
+        String phoneStr = String.valueOf(phone);
+        if (phoneStr.length() > 8) {
+            phoneStr = phoneStr.substring(phoneStr.length() - 8);
+        }
+        return Long.parseLong(phoneStr);
+    }
+
     // 로그인 권한별 계약 유저 리스트 조회 비즈니스 로직
     // ADMIN/OWNER/TRAINER만 접근 가능, MEMBER는 B2B 어드민 페이지 접근 불가
     public List<UserDTO> contractUserList(UserDTO userDTO) throws Exception {
@@ -72,15 +81,16 @@ public class UserService {
 
         // 수신자 번호를 회원 아이디와 동일한 뒷 8자리 포맷으로 정돈 (MemberService 포맷 규칙과 일치)
         if (userDTO.getReceiverId() != null) {
-            String phoneStr = String.valueOf(userDTO.getReceiverId());
-            if (phoneStr.length() > 8) {
-                phoneStr = phoneStr.substring(phoneStr.length() - 8);
-            }
-            userDTO.setReceiverId(Long.parseLong(phoneStr));
+            userDTO.setReceiverId(toEightDigits(userDTO.getReceiverId()));
 
             // 미가입 trainer/member 수신자 자동 회원가입 (MemberService 회원가입 로직 연결)
             // 이미 가입된 경우(0)와 자동가입 대상이 아닌 계약(-4)은 그대로 진행됨
             memberService.autoJoin(userDTO);
+        }
+
+        // 담당 트레이너 번호도 8자리 포맷으로 정돈 (h_member FK 제약과 일치)
+        if (userDTO.getManagerId() != null) {
+            userDTO.setManagerId(toEightDigits(userDTO.getManagerId()));
         }
 
         // 초기 상태는 발행됨(서명대기)
