@@ -7,6 +7,6 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface CheckInoutMapper {
 
-    public List<CheckInoutDTO> list() throws Exception;
+    public List<CheckInoutDTO> list(Long username) throws Exception;
 
 }

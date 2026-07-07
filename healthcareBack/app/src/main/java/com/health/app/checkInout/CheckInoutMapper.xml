@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.health.app.checkInout.CheckInoutMapper">
+
+<select id="list" parameterType="Long" resultType="com.health.app.checkInout.CheckInoutDTO">
+select * from "h_check_inout" where username=#{username} order by check_in desc
+</select>
+
+</mapper>

@@ -9,7 +9,7 @@ import B2cComplaint from './b2c_mypage/B2cComplaint.jsx';
 import Membership from './b2c_mypage/Membership.jsx';
 import B2cNotification from './b2c_mypage/B2cNotification.jsx'; // 알림 컴포넌트 임포트
 import B2cCoupon from './b2c_mypage/B2cCoupon.jsx';             // 쿠폰 컴포넌트 임포트
-import B2cAttendance from './b2c_mypage/B2cAttendance.jsx';     // 출석 컴포넌트 임포트
+import B2cCheckIn from './b2c_mypage/B2cCheckIn.jsx';     // 출석 컴포넌트 임포트
 import ContractNew from './user/ContractNew.jsx';
 import Itempage from './item/Itempage.jsx';
 import Userpage from './user/Userpage.jsx';
@@ -28,7 +28,7 @@ function App() {
         <Route path="membership" element={<Membership />} />
         <Route path="notification" element={<B2cNotification />} />
         <Route path="coupon" element={<B2cCoupon />} />
-        <Route path="attendance" element={<B2cAttendance />} />
+        <Route path="checkin" element={<B2cCheckIn />} />
         <Route path="b2ccomplaint" element={<B2cComplaint />} />
       </Route>
 

@@ -14,7 +14,6 @@ public class CheckInoutDTO {
     private Long id;
     private Long username;
     private LocalDateTime checkIn;
-    private LocalDateTime checkOut;
     private Long duration;
 
 }

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 
 @RestController
-@RequestMapping("/complaint/*")
+@RequestMapping("/complaint")
 public class ComplaintController {
 
     @Autowired
