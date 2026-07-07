@@ -22,7 +22,7 @@ const CREATE_BUTTONS = {
 
 // 로그인 권한별 계약 유저 리스트 확인용 테스트 페이지 (B2B 어드민, 디자인 제외 Plain 버전)
 // ADMIN: 제휴 계약 Owner / OWNER: 임금·이용권·PT 계약 상대 / TRAINER: 담당 PT 계약 Member / MEMBER: 접근 불가
-function Userpage() {
+function Contractpage() {
   const navigate = useNavigate();
   const [contract, setContract] = useState('');
   const [userList, setUserList] = useState([]);
@@ -31,7 +31,7 @@ function Userpage() {
   const loginUser = JSON.parse(localStorage.getItem('user') || 'null');
   const createButtons = CREATE_BUTTONS[loginUser?.role?.toLowerCase()] ?? [];
 
-  // 권한별 계약 유저 리스트 조회 (GET /user/list)
+  // 권한별 계약 유저 리스트 조회 (GET /contract/list)
   const handleList = async () => {
     setMessage('');
     setUserList([]);
@@ -129,4 +129,4 @@ function Userpage() {
   );
 }
 
-export default Userpage;
+export default Contractpage;

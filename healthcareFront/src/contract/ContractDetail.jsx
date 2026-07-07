@@ -76,7 +76,7 @@ function ContractBody({ d }) {
       <h3>제4조 (환불 규정)</h3>
       <p>중도 환불 시 기 사용 횟수 및 잔여 횟수를 기준으로 관계 법령 및 센터 규정에 따라 산정한다.</p>
       <h3>제5조 (하루평균 운동 시간)</h3>
-      <p>회원의 하루평균 운동 시간은 {d.avgWorkoutTime ?? '-'}으로 한다.</p>
+      <p>회원의 하루평균 운동 시간은 {d.avgWorkoutHour ?? 0}시간 {d.avgWorkoutMinute ?? 0}분으로 한다.</p>
     </div>
   );
 }
@@ -133,7 +133,7 @@ function ContractDetail() {
   const drawingRef = useRef(false);
   const lastRef = useRef(null);
 
-  // 계약서 상세 조회 (GET /user/contract/{dataId})
+  // 계약서 상세 조회 (GET /contract/detail/{dataId})
   const fetchDetail = async () => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
@@ -200,7 +200,7 @@ function ContractDetail() {
   const canSign =
     signerName.trim() !== '' && agreeTerms && agreeSign && (!needRefund || agreeRefund) && hasInk;
 
-  // 서명 제출 (PUT /user/contract/{dataId}/sign)
+  // 서명 제출 (PUT /contract/detail/{dataId}/sign)
   const handleSign = async () => {
     const token = localStorage.getItem('accessToken');
     try {
@@ -225,7 +225,7 @@ function ContractDetail() {
       <div>
         <h1>계약서 상세</h1>
         <p>{message || '불러오는 중...'}</p>
-        <button onClick={() => navigate('/fitb/userpage')}>리스트로 돌아가기</button>
+        <button onClick={() => navigate('/fitb/contractpage')}>리스트로 돌아가기</button>
       </div>
     );
   }
@@ -238,7 +238,7 @@ function ContractDetail() {
       <style>{'@media print { .no-print { display: none; } }'}</style>
 
       <div className="no-print">
-        <button onClick={() => navigate('/fitb/userpage')}>← 리스트로</button>
+        <button onClick={() => navigate('/fitb/contractpage')}>← 리스트로</button>
         <p>{message}</p>
 
         {/* 상태 흐름 표시 */}
