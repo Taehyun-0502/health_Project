@@ -1,5 +1,8 @@
 package com.health.app.user;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import com.health.app.member.MemberDTO;
 
 import lombok.Getter;
@@ -20,18 +23,18 @@ public class UserDTO {
     private String receiverName;
 
     private String status; // DRAFT/ISSUED/SIGNED/EXPIRED (varchar)
-    private String startDate; // 공통: 시작일 (date)
-    private String endDate; // 공통: 종료일 (date)
+    private LocalDate startDate; // 공통: 시작일 (date)
+    private LocalDate endDate; // 공통: 종료일 (date)
     private Long amount; // 공통: 금액 (int8)
 
     private Double contractRate; // 공통: 요율 수수료/인센티브 (numeric)
 
     private Integer quantity; // 고유: 총 PT횟수(PT) (int4)
 
-    private String issueDate; // 발행일 (date)
-    private String signedAt; // 서명완료일시 (timestamp)
+    private LocalDate issueDate; // 발행일 (date)
+    private LocalDateTime signedAt; // 서명완료일시 (timestamp - 시각 포함)
     private Long managerId; // PT 담당자
-    private String birthDate; // 수신자 생년월일 (date, 이용권(3)/PT(4) 계약용)
+    private LocalDate birthDate; // 수신자 생년월일 (date, 이용권(3)/PT(4) 계약용)
  
 
     // h_gym 조인 컬럼 (상세 조회 - 계약서 문서 표시용)
