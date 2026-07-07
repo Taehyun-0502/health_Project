@@ -24,7 +24,7 @@ function ContractBody({ d }) {
         <p>본 계약은 관리자(플랫폼)이 제공하는 헬스장 운영·관리 플랫폼을 {gym}(이하 "가맹점")이 이용함에 있어 상호의 권리·의무를 정함을 목적으로 한다.</p>
         <h3>제2조 (수수료 및 정산)</h3>
         <p>① 가맹점은 플랫폼을 통해 발생한 매출의 {d.contractRate ?? '-'}%를 제휴 수수료로 지급한다.</p>
-        <p>② 월 서비스 이용료는 {money(d.amount)}만원으로 하며, 정산은 매월 지정일에 진행한다.</p>
+        <p>② 정산은 매월 지정일에 진행한다.</p>
         <h3>제3조 (계약기간)</h3>
         <p>유효기간은 {d.startDate ?? '-'}부터 {d.endDate ?? '-'}까지로 한다.</p>
         <h3>제4조 (해지 및 분쟁)</h3>
@@ -60,6 +60,8 @@ function ContractBody({ d }) {
         <p>중도 해지 시 환불액은 「방문판매 등에 관한 법률」 및 센터 환불 규정에 따라 이용 개시일과 잔여 기간을 기준으로 산정한다.</p>
         <h3>제4조 (이용자 준수사항)</h3>
         <p>회원은 센터 이용 수칙 및 안전 수칙을 준수하며, 위반 시 이용이 제한될 수 있다.</p>
+        <h3>제5조 (하루평균 운동 시간)</h3>
+        <p>회원의 하루평균 운동 시간은 {d.avgWorkoutTime ?? '-'}으로 한다.</p>
       </div>
     );
 
@@ -73,6 +75,8 @@ function ContractBody({ d }) {
       <p>수업 예약·변경·취소는 센터 규정에 따르며, 사전 통지 없는 불참 시 1회가 차감될 수 있다.</p>
       <h3>제4조 (환불 규정)</h3>
       <p>중도 환불 시 기 사용 횟수 및 잔여 횟수를 기준으로 관계 법령 및 센터 규정에 따라 산정한다.</p>
+      <h3>제5조 (하루평균 운동 시간)</h3>
+      <p>회원의 하루평균 운동 시간은 {d.avgWorkoutTime ?? '-'}으로 한다.</p>
     </div>
   );
 }
@@ -230,21 +234,26 @@ function ContractDetail() {
 
   return (
     <div>
-      <button onClick={() => navigate('/fitb/userpage')}>← 리스트로</button>
-      <p>{message}</p>
+      {/* PDF 보관(인쇄) 시 계약서 본문만 출력되도록 나머지 영역 숨김 처리 */}
+      <style>{'@media print { .no-print { display: none; } }'}</style>
 
-      {/* 상태 흐름 표시 */}
-      <p>
-        상태: <b>{detail.status}</b>{' '}
-        (
-        {['DRAFT', 'ISSUED', 'SIGNED', 'EXPIRED'].map((s, i) => (
-          <span key={s}>
-            {i > 0 && ' › '}
-            {s === detail.status ? <b>[{s}]</b> : s}
-          </span>
-        ))}
-        )
-      </p>
+      <div className="no-print">
+        <button onClick={() => navigate('/fitb/userpage')}>← 리스트로</button>
+        <p>{message}</p>
+
+        {/* 상태 흐름 표시 */}
+        <p>
+          상태: <b>{detail.status}</b>{' '}
+          (
+          {['DRAFT', 'ISSUED', 'SIGNED', 'EXPIRED'].map((s, i) => (
+            <span key={s}>
+              {i > 0 && ' › '}
+              {s === detail.status ? <b>[{s}]</b> : s}
+            </span>
+          ))}
+          )
+        </p>
+      </div>
 
       {/* 계약서 본문 (읽기 전용) */}
       <hr />
@@ -280,11 +289,11 @@ function ContractDetail() {
           </tr>
         </tbody>
       </table>
-      <hr />
+      <hr className="no-print" />
 
       {/* status에 따른 서명 영역 분기 */}
       {detail.status === 'ISSUED' && (
-        <div>
+        <div className="no-print">
           <h2>수신자 서명</h2>
           <p>아래 동의 항목을 확인하고 서명하시면 계약이 체결됩니다. 모바일에서는 손가락으로 서명할 수 있습니다.</p>
 
@@ -342,15 +351,20 @@ function ContractDetail() {
       )}
 
       {detail.status === 'SIGNED' && (
-        <div>
+        <div className="no-print">
           <h2>계약 체결 완료</h2>
           <p>서명일시: {detail.signedAt?.replace('T', ' ') ?? '-'}</p>
           <Activation d={detail} />
+
+          {/* 서명 완료된 계약서 보관 - 브라우저 인쇄로 서명본을 PDF 파일로 저장 */}
+          <button type="button" onClick={() => window.print()}>
+            서명본 PDF로 보관 / 인쇄
+          </button>
         </div>
       )}
 
-      {detail.status === 'DRAFT' && <p>아직 발행되지 않은 초안(DRAFT) 상태로, 서명할 수 없습니다.</p>}
-      {detail.status === 'EXPIRED' && <p>만료(EXPIRED)된 계약서로, 서명할 수 없습니다.</p>}
+      {detail.status === 'DRAFT' && <p className="no-print">아직 발행되지 않은 초안(DRAFT) 상태로, 서명할 수 없습니다.</p>}
+      {detail.status === 'EXPIRED' && <p className="no-print">만료(EXPIRED)된 계약서로, 서명할 수 없습니다.</p>}
     </div>
   );
 }

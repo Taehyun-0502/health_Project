@@ -44,6 +44,7 @@ function ContractNew() {
       quantity: data.quantity ? parseInt(data.quantity, 10) : null,
       managerId: data.managerId ? parseInt(data.managerId, 10) : null,
       birthDate: data.birthDate || null,
+      avgWorkoutTime: data.avgWorkoutTime || null,
     };
 
     const token = localStorage.getItem('accessToken');
@@ -91,25 +92,25 @@ function ContractNew() {
           <input type="tel" name="receiverId" placeholder="예: 01012345678" />
         </div>
         {(contract === 3 || contract === 4) && (
-          <div>
-            <label>수신자 생년월일: </label>
-            <input type="date" name="birthDate" />
-          </div>
+          <>
+            <div>
+              <label>수신자 생년월일: </label>
+              <input type="date" name="birthDate" />
+            </div>
+            <div>
+              <label>하루평균 운동 시간: </label>
+              <input type="date" name="avgWorkoutTime" />
+            </div>
+          </>
         )}
 
         {/* 유형별 계약 조건 */}
         <h2>계약 조건</h2>
         {contract === 1 && (
-          <>
-            <div>
-              <label>수수료율(%): </label>
-              <input type="number" name="contractRate" min="0" step="0.1" required />
-            </div>
-            <div>
-              <label>월 이용료(만원): </label>
-              <input type="number" name="amount" min="0" />
-            </div>
-          </>
+          <div>
+            <label>수수료율(%): </label>
+            <input type="number" name="contractRate" min="0" step="0.1" required />
+          </div>
         )}
         {contract === 2 && (
           <>
