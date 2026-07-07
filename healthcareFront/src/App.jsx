@@ -16,6 +16,8 @@ import Itempage from './item/Itempage.jsx';
 
 import Contractpage from './contract/Contractpage.jsx';
 import Settlepage from './settle/settlepage.jsx'
+import B2bMain from './b2b_mypage/B2bMain.jsx';
+import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
 
 
 // 메인 애플리케이션 컴포넌트
@@ -42,9 +44,9 @@ function App() {
       <Route path="/fitb/contract/new" element={<ContractNew />} />
       <Route path="/fitb/contract/:dataId" element={<ContractDetail />} />
       <Route path="/fitb/itempage" element={<Itempage />} />
-
+      <Route path="/fitb/b2bmypage" element={<B2bMain/>}/>
       <Route path="/fitb/contractpage" element={<Contractpage />} />
-
+      <Route path="/fitb/b2bmypage/b2bcomplaint" element={<B2bComplaint/>}/>
       <Route path="/fitb/Settlepage" element={<Settlepage />} />
 
     </Routes>
