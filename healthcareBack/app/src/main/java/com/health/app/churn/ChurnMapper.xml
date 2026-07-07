@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.health.app.churn.ChurnMapper">
+
+       <!-- 모델 입력 데이터 저장 -->
+       <insert id="create" parameterType="ChurnDTO">
+       insert into "h_model_data"
+       (username, age, total_month, visit_per_week, aver_exercise,
+        pt_yn, group_yn, time_cong, last_days, contract_type)
+       values
+       (#{username}, #{age}, #{totalMonth}, #{visitPerWeek}, #{averExercise},
+        #{ptYn}, #{groupYn}, #{timeCong}, #{lastDays}, #{contractType})
+       </insert>
+
+    <!-- 회원 1명의 모델 입력 데이터 조회 -->
+    <select id="selectByUsername" parameterType="long" resultType="ChurnDTO">
+    select data_id, username, age, total_month, visit_per_week, aver_exercise,
+           pt_yn, group_yn, time_cong, last_days, contract_type
+       from "h_model_data"
+    where username = #{username}
+    </select>
+
+    <!-- 전체 회원 모델 입력 데이터 조회 (대시보드 집계용) -->
+    <select id="selectAll" resultType="ChurnDTO">
+    select data_id, username, age, total_month, visit_per_week, aver_exercise,
+           pt_yn, group_yn, time_cong, last_days, contract_type
+       from "h_model_data"
+    </select>
+</mapper>
