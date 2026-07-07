@@ -21,6 +21,7 @@
         <result property="issueDate" column="issue_date"/>
         <result property="signedAt" column="signed_at"/>
         <result property="managerId" column="manager_id"/>
+        <result property="birthDate" column="birth_date"/>
         <result property="gymName" column="j_gym_name"/>
         <!-- 계약 상대방(수신자) 회원 정보 -->
         <association property="member" javaType="com.health.app.member.MemberDTO">
@@ -29,7 +30,6 @@
             <result property="email" column="m_email"/>
             <result property="role" column="m_role"/>
             <result property="gymId" column="m_gym_id"/>
-            <result property="contract" column="m_contract"/>
         </association>
     </resultMap>
 
@@ -42,9 +42,9 @@
     select d.data_id, d.contract, d.gym_id, d.sender_id, d.receiver_id,
            d.receiver_name, d.status,
            d.start_date, d.end_date, d.amount, d.contract_rate, d.quantity,
-           d.issue_date, d.signed_at, d.manager_id,
+           d.issue_date, d.signed_at, d.manager_id, d.birth_date,
            m.username as m_username, m.name as m_name, m.email as m_email,
-           m.role as m_role, m.gym_id as m_gym_id, m.contract as m_contract
+           m.role as m_role, m.gym_id as m_gym_id
     from "h_contract_data" d
     left join "h_member" m on d.receiver_id = m.username
     <where>
@@ -77,10 +77,10 @@
     select d.data_id, d.contract, d.gym_id, d.sender_id, d.receiver_id,
            d.receiver_name, d.status,
            d.start_date, d.end_date, d.amount, d.contract_rate, d.quantity,
-           d.issue_date, d.signed_at, d.manager_id,
+           d.issue_date, d.signed_at, d.manager_id, d.birth_date,
            g.gym_name as j_gym_name,
            m.username as m_username, m.name as m_name, m.email as m_email,
-           m.role as m_role, m.gym_id as m_gym_id, m.contract as m_contract
+           m.role as m_role, m.gym_id as m_gym_id
     from "h_contract_data" d
     left join "h_gym" g on d.gym_id = g.gym_id
     left join "h_member" m on d.receiver_id = m.username
@@ -100,7 +100,7 @@
     <insert id="contractInsert" parameterType="UserDTO">
     insert into "h_contract_data"
     (contract, gym_id, sender_id, receiver_id, receiver_name, status,
-     start_date, end_date, amount, contract_rate, quantity, manager_id, issue_date)
+     start_date, end_date, amount, contract_rate, quantity, manager_id, birth_date, issue_date)
     values
     (#{contract},
      #{gymId, jdbcType=BIGINT},
@@ -108,12 +108,13 @@
      #{receiverId, jdbcType=BIGINT},
      #{receiverName},
      #{status},
-     #{startDate, jdbcType=VARCHAR}::date,
-     #{endDate, jdbcType=VARCHAR}::date,
+     #{startDate, jdbcType=DATE},
+     #{endDate, jdbcType=DATE},
      #{amount, jdbcType=BIGINT},
      #{contractRate, jdbcType=NUMERIC},
      #{quantity, jdbcType=INTEGER},
      #{managerId, jdbcType=BIGINT},
+     #{birthDate, jdbcType=DATE},
      current_date)
     </insert>
 </mapper>

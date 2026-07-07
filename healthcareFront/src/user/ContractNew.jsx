@@ -43,6 +43,7 @@ function ContractNew() {
       contractRate: data.contractRate ? parseFloat(data.contractRate) : null,
       quantity: data.quantity ? parseInt(data.quantity, 10) : null,
       managerId: data.managerId ? parseInt(data.managerId, 10) : null,
+      birthDate: data.birthDate || null,
     };
 
     const token = localStorage.getItem('accessToken');
@@ -86,9 +87,15 @@ function ContractNew() {
           <input name="receiverName" required />
         </div>
         <div>
-          <label>수신자 아이디(전화번호, 연락처로 사용 / 미가입 시 비움): </label>
+          <label>수신자 아이디(전화번호, 연락처로 사용 / 미가입자는 입력 시 자동 회원가입): </label>
           <input type="tel" name="receiverId" placeholder="예: 01012345678" />
         </div>
+        {(contract === 3 || contract === 4) && (
+          <div>
+            <label>수신자 생년월일: </label>
+            <input type="date" name="birthDate" />
+          </div>
+        )}
 
         {/* 유형별 계약 조건 */}
         <h2>계약 조건</h2>

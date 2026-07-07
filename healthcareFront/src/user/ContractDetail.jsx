@@ -53,7 +53,7 @@ function ContractBody({ d }) {
     return (
       <div>
         <h3>제1조 (이용권 내용)</h3>
-        <p>{gym}(이하 "센터")은 {rcv}(이하 "회원")에게 헬스장 이용권을 제공하며, 이용 기간은 {d.startDate ?? '-'}부터 {d.endDate ?? '-'}까지로 한다.</p>
+        <p>{gym}(이하 "센터")은 {rcv}(생년월일: {d.birthDate ?? '-'}, 이하 "회원")에게 헬스장 이용권을 제공하며, 이용 기간은 {d.startDate ?? '-'}부터 {d.endDate ?? '-'}까지로 한다.</p>
         <h3>제2조 (이용 요금)</h3>
         <p>이용 요금은 {money(d.amount)}만원으로 한다.</p>
         <h3>제3조 (환불 규정)</h3>
@@ -66,7 +66,7 @@ function ContractBody({ d }) {
   return (
     <div>
       <h3>제1조 (PT 이용 내용)</h3>
-      <p>{gym}(이하 "센터")은 {rcv}(이하 "회원")에게 개인 트레이닝(PT)을 제공한다. 총 {d.quantity ?? '-'}회, 총 이용금액 {money(d.amount)}만원으로 한다.</p>
+      <p>{gym}(이하 "센터")은 {rcv}(생년월일: {d.birthDate ?? '-'}, 이하 "회원")에게 개인 트레이닝(PT)을 제공한다. 총 {d.quantity ?? '-'}회, 총 이용금액 {money(d.amount)}만원으로 한다.</p>
       <h3>제2조 (유효기간)</h3>
       <p>유효기간은 {d.startDate ?? '-'}부터 {d.endDate ?? '-'}까지로 하며, 기간 경과 시 잔여 횟수는 소멸될 수 있다.</p>
       <h3>제3조 (예약 및 취소)</h3>
@@ -274,7 +274,7 @@ function ContractDetail() {
               {detail.receiverName ?? '-'} (인)
               <br />
               {detail.status === 'SIGNED' || detail.status === 'EXPIRED'
-                ? `전자서명 완료 · ${detail.signedAt ?? '-'}`
+                ? `전자서명 완료 · ${detail.signedAt?.replace('T', ' ') ?? '-'}`
                 : '서명 대기 중'}
             </td>
           </tr>
@@ -344,7 +344,7 @@ function ContractDetail() {
       {detail.status === 'SIGNED' && (
         <div>
           <h2>계약 체결 완료</h2>
-          <p>서명일시: {detail.signedAt ?? '-'}</p>
+          <p>서명일시: {detail.signedAt?.replace('T', ' ') ?? '-'}</p>
           <Activation d={detail} />
         </div>
       )}

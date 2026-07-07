@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.health.app.result.ResultMapper">
+
+    <!-- 분석 결과 저장 -->
+    <insert id="insert" parameterType="com.health.app.result.ResultDTO" useGeneratedKeys="true" keyProperty="resultId" keyColumn="result_id">
+        insert into "h_churn_result"
+        (data_id, churn_rate, top1_reason, top2_reason, top3_reason)
+        values
+        (#{dataId}, #{churnRate}, #{top1Reason}, #{top2Reason}, #{top3Reason})
+    </insert>
+
+    <!-- 분석 결과 수정 -->
+    <update id="update" parameterType="com.health.app.result.ResultDTO">
+        update "h_churn_result"
+        set churn_rate = #{churnRate},
+            top1_reason = #{top1Reason},
+            top2_reason = #{top2Reason},
+            top3_reason = #{top3Reason}
+        where data_id = #{dataId}
+    </update>
+
+    <!-- data_id로 분석 결과 조회 -->
+    <select id="selectByDataId" parameterType="long" resultType="com.health.app.result.ResultDTO">
+        select result_id, data_id, churn_rate, top1_reason, top2_reason, top3_reason
+        from "h_churn_result"
+        where data_id = #{dataId}
+    </select>
+
+    <!-- 전체 분석 결과 조회 (지점 필터링 지원) -->
+    <select id="selectAll" resultType="com.health.app.result.ResultDTO">
+        select r.result_id, r.data_id, r.churn_rate, r.top1_reason, r.top2_reason, r.top3_reason
+        from "h_churn_result" r
+        <if test="gymId != null">
+            join "h_model_data" m ON r.data_id = m.data_id
+            join "h_member" mem ON m.username = mem.username
+            where mem.gym_id = #{gymId}
+        </if>
+    </select>
+
+    <!-- data_id로 회원 username 조회 (FastAPI 호출에 필요) -->
+    <select id="selectUsernameByDataId" parameterType="long" resultType="long">
+        select username
+        from "h_model_data"
+        where data_id = #{dataId}
+    </select>
+
+    <!-- username으로 회원의 gym_id 조회 -->
+    <select id="selectGymIdByUsername" parameterType="long" resultType="java.lang.Long">
+        select gym_id
+        from "h_member"
+        where username = #{username}
+    </select>
+
+</mapper>

@@ -17,7 +17,7 @@ import com.health.app.config.JwtUtill;
 public class MemberController {
 
     @Autowired
-    private MemverService memverService;
+    private MemberService memberService;
     
     @Autowired
     private JwtUtill jwtUtill;
@@ -25,7 +25,7 @@ public class MemberController {
     // 회원가입 처리 메서드
     @PostMapping("/join")
     public ResponseEntity<String> join(@RequestBody MemberDTO memberDTO) throws Exception {
-        int result = memverService.join(memberDTO);
+        int result = memberService.join(memberDTO);
         
         if (result == -1) {
             return ResponseEntity.badRequest().body("비밀번호가 일치하지 않습니다.");
@@ -41,7 +41,7 @@ public class MemberController {
     // 아이디 중복체크 API 메서드
     @PostMapping("/idcheck")
     public ResponseEntity<String> idcheck(@RequestBody MemberDTO memberDTO) throws Exception {
-        MemberDTO check = memverService.idcheck(memberDTO);
+        MemberDTO check = memberService.idcheck(memberDTO);
         if (check != null) {
             return ResponseEntity.ok("Duplicate"); // 중복됨
         } else {
@@ -52,7 +52,7 @@ public class MemberController {
     // 로그인 처리 API 메서드
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody MemberDTO memberDTO) throws Exception {
-        MemberDTO loginMember = memverService.login(memberDTO);
+        MemberDTO loginMember = memberService.login(memberDTO);
         if (loginMember != null) {
             String token = jwtUtill.generateToken(String.valueOf(loginMember.getUsername()),
             loginMember.getRole()
