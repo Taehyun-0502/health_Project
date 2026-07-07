@@ -6,6 +6,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+/**
+ * 플랫폼 커미션(수수료) 정보를 담는 데이터 전송 객체 (DTO)
+ * h_settlement 테이블과 매핑됩니다.
+ */
 @Setter
 @Getter
 @ToString

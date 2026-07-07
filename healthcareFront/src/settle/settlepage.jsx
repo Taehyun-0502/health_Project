@@ -198,6 +198,8 @@ function Settlepage() {
   const [expenses, setExpenses] = useState([]);
   const [pays, setPays] = useState([]);
   const [unpaidContracts, setUnpaidContracts] = useState([]);
+  const [unpaidExpenses, setUnpaidExpenses] = useState([]);
+  const [selectedExpenseContractId, setSelectedExpenseContractId] = useState('');
   
   // UI 상태 관리
   const [loading, setLoading] = useState(false);
@@ -264,8 +266,8 @@ function Settlepage() {
           throw new Error('지출 내역 조회 실패');
         }
       } catch (err) {
-        console.warn('사장님 지출 API 조회 실패 - 목업 데이터 사용:', err.message);
-        setExpenses(mockExpenses);
+        console.warn('사장님 지출 API 조회 실패:', err.message);
+        setExpenses([]);
       }
 
       // 3. 사장님 권한용 매출 내역 조회
@@ -294,6 +296,20 @@ function Settlepage() {
       } catch (err) {
         console.warn('미결제 계약 API 조회 실패 - 목업 데이터 사용:', err.message);
         setUnpaidContracts(mockUnpaidContracts);
+      }
+
+      // 5. 사장님 권한용 미결제 지출 계약서 목록 조회 (임금, 커미션 등)
+      try {
+        const response = await fetch(`${backendUrl}/fitb/settle/unpaid-expenses`, { headers });
+        if (response.ok) {
+          const data = await response.json();
+          setUnpaidExpenses(data);
+        } else {
+          throw new Error('지출 계약 목록 조회 실패');
+        }
+      } catch (err) {
+        console.warn('지출 계약 API 조회 실패:', err.message);
+        setUnpaidExpenses([]);
       }
 
       setLoading(false);
@@ -349,7 +365,7 @@ function Settlepage() {
     const newExpenseObj = {
       expenseId: Date.now(), // 고유 ID 임시 생성
       gymId: parseInt(gymId, 10),
-      dateId: Date.now() + 10,
+      dataId: selectedExpenseContractId ? parseInt(selectedExpenseContractId, 10) : null,
       expenseName: newExpenseName,
       expenseDate: newExpenseDate,
       expensePrice: parseInt(newExpensePrice, 10),
@@ -359,11 +375,17 @@ function Settlepage() {
     // 로컬 상태 업데이트
     setExpenses(prev => [newExpenseObj, ...prev]);
 
+    // 계약서 연동 지출인 경우 해당 계약서를 unpaidExpenses에서 제거
+    if (selectedExpenseContractId) {
+      setUnpaidExpenses(prev => prev.filter(c => c.dataId !== parseInt(selectedExpenseContractId, 10)));
+    }
+
     // 입력 폼 리셋
     setNewExpenseName('');
     setNewExpensePrice('');
     setNewExpenseDate('');
     setNewExpenseRate('0');
+    setSelectedExpenseContractId('');
 
     // 백엔드 전송 시도
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -372,14 +394,40 @@ function Settlepage() {
       ...(token && { Authorization: `Bearer ${token}` }),
     };
     try {
-      await fetch(`${backendUrl}/fitb/settle/expense`, {
+      const response = await fetch(`${backendUrl}/fitb/settle/expense`, {
         method: 'POST',
         headers,
         body: JSON.stringify(newExpenseObj)
       });
+      if (response.ok) {
+        alert('지출이 성공적으로 등록되었습니다.');
+      } else {
+        throw new Error('서버 등록 실패');
+      }
     } catch (err) {
       console.warn('백엔드 지출 저장 실패 - 로컬 반영 완료:', err.message);
     }
+  };
+
+  // 사장님용 지출 대기 계약서 클릭 핸들러
+  const handleSelectExpenseContract = (contract) => {
+    setSelectedExpenseContractId(contract.dataId.toString());
+    const labelName = contract.contract === 2 ? '임금' : '제휴 수수료';
+    const otherParty = contract.contract === 2 ? `${contract.receiverName} 트레이너` : '플랫폼';
+    const name = `[계약 #${contract.dataId}] ${labelName} - ${otherParty}`;
+    setNewExpenseName(name);
+    setNewExpensePrice(contract.amount.toString());
+    setNewExpenseDate(new Date().toISOString().split('T')[0]);
+    
+    // contractRate 값 포맷 정리 (예: 0.1 -> 0.10, 0 -> 0)
+    let rateStr = '0';
+    if (contract.contractRate) {
+      const rateNum = parseFloat(contract.contractRate);
+      if (rateNum > 0) {
+        rateStr = rateNum.toFixed(2); // 0.1 -> "0.10"
+      }
+    }
+    setNewExpenseRate(rateStr);
   };
 
   // 지출 삭제 핸들러 (OWNER 기능)
@@ -974,64 +1022,141 @@ function Settlepage() {
                 </table>
               </div>
 
-              {/* 지출 등록 폼 */}
-              <div className="card-premium expense-form-card">
-                <h3>💸 신규 지출 항목 등록</h3>
-                <form onSubmit={handleAddExpense}>
-                  <div className="expense-form-grid">
-                    <div className="form-group">
-                      <label className="form-label">지출 항목명</label>
-                      <input 
-                        type="text" 
-                        className="form-input"
-                        placeholder="예: 월세, 광고 마케팅비, 기구 보수 등"
-                        required
-                        value={newExpenseName}
-                        onChange={(e) => setNewExpenseName(e.target.value)}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">지출 금액 (원)</label>
-                      <input 
-                        type="number" 
-                        className="form-input"
-                        placeholder="숫자만 입력"
-                        required
-                        value={newExpensePrice}
-                        onChange={(e) => setNewExpensePrice(e.target.value)}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">지출일 (결제일)</label>
-                      <input 
-                        type="date" 
-                        className="form-input"
-                        required
-                        value={newExpenseDate}
-                        onChange={(e) => setNewExpenseDate(e.target.value)}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">인센티브 비율 (선택)</label>
-                      <select 
-                        className="form-input"
-                        value={newExpenseRate}
-                        onChange={(e) => setNewExpenseRate(e.target.value)}
-                      >
-                        <option value="0">비율 없음 (0%)</option>
-                        <option value="0.05">5%</option>
-                        <option value="0.10">10%</option>
-                        <option value="0.15">15%</option>
-                        <option value="0.20">20%</option>
-                      </select>
-                    </div>
+              {/* 지출 등록 폼 (계약 연동 및 직접 등록 듀얼 레이아웃) */}
+              <div className="expense-dual-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '30px' }}>
+                
+                {/* 왼쪽: 지출 대기 계약서 목록 */}
+                <div className="card-premium expense-contract-list-card" style={{ padding: '24px' }}>
+                  <h3 style={{ marginBottom: '10px' }}>📋 지출 정산 대기 계약서</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
+                    서명 완료된 임금 계약서(강사) 및 제휴 수수료 계약서(플랫폼) 중 아직 지출 등록되지 않은 내역입니다. 클릭 시 우측 폼에 자동 입력됩니다.
+                  </p>
+                  
+                  <div className="expense-contract-scroll-list" style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                    {unpaidExpenses
+                      .filter(c => !expenses.some(e => e.dataId === c.dataId))
+                      .map(c => (
+                        <div 
+                          key={c.dataId}
+                          className={`expense-contract-item ${selectedExpenseContractId === c.dataId.toString() ? 'selected' : ''}`}
+                          style={{
+                            padding: '12px',
+                            border: '1px solid var(--border-color, #e2e8f0)',
+                            borderRadius: '8px',
+                            marginBottom: '10px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            backgroundColor: selectedExpenseContractId === c.dataId.toString() ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
+                            borderColor: selectedExpenseContractId === c.dataId.toString() ? 'var(--primary-accent, #2563eb)' : 'var(--border-color, #e2e8f0)'
+                          }}
+                          onClick={() => handleSelectExpenseContract(c)}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 'bold', color: c.contract === 2 ? '#ef4444' : '#f59e0b', background: c.contract === 2 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                              {c.contract === 2 ? '임금 계약' : '제휴 수수료'}
+                            </span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>#{c.dataId}</span>
+                          </div>
+                          <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                            {c.contract === 2 ? `지출 대상: ${c.receiverName} 트레이너` : `지출 대상: 플랫폼 제휴 수수료`}
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                            <span>금액: <strong>{formatWon(c.amount)}</strong></span>
+                            {c.contractRate !== null && c.contractRate !== undefined && <span>비율: {(c.contractRate * 100).toFixed(0)}%</span>}
+                          </div>
+                        </div>
+                      ))
+                    }
+                    {unpaidExpenses.filter(c => !expenses.some(e => e.dataId === c.dataId)).length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                        지출 대기 중인 계약서가 없습니다.
+                      </div>
+                    )}
                   </div>
-                  <div className="btn-submit-container">
-                    <button type="submit" className="btn-premium btn-submit-premium">
-                      지출 등록하기
-                    </button>
-                  </div>
-                </form>
+                </div>
+
+                {/* 오른쪽: 지출 등록 폼 */}
+                <div className="card-premium expense-form-card" style={{ padding: '24px' }}>
+                  <h3>💸 신규 지출 항목 직접 등록</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
+                    좌측의 계약서를 선택하여 자동 입력하거나, 직접 지출 항목을 입력하여 등록할 수 있습니다.
+                  </p>
+                  <form onSubmit={handleAddExpense}>
+                    <div className="expense-form-grid">
+                      <div className="form-group">
+                        <label className="form-label">지출 항목명</label>
+                        <input 
+                          type="text" 
+                          className="form-input"
+                          placeholder="예: 월세, 광고 마케팅비, 기구 보수 등"
+                          required
+                          value={newExpenseName}
+                          onChange={(e) => setNewExpenseName(e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">지출 금액 (원)</label>
+                        <input 
+                          type="number" 
+                          className="form-input"
+                          placeholder="숫자만 입력"
+                          required
+                          value={newExpensePrice}
+                          onChange={(e) => setNewExpensePrice(e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">지출일 (결제일)</label>
+                        <input 
+                          type="date" 
+                          className="form-input"
+                          required
+                          value={newExpenseDate}
+                          onChange={(e) => setNewExpenseDate(e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">인센티브 비율 (선택)</label>
+                        <select 
+                          className="form-input"
+                          value={newExpenseRate}
+                          onChange={(e) => setNewExpenseRate(e.target.value)}
+                        >
+                          <option value="0">비율 없음 (0%)</option>
+                          <option value="0.05">5%</option>
+                          <option value="0.10">10%</option>
+                          <option value="0.15">15%</option>
+                          <option value="0.20">20%</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {selectedExpenseContractId && (
+                      <div style={{ marginTop: '15px', padding: '10px', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '6px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>연동 계약서 ID: <strong>#{selectedExpenseContractId}</strong></span>
+                        <button 
+                          type="button" 
+                          className="tester-btn" 
+                          style={{ padding: '2px 6px', fontSize: '11px', background: 'transparent', border: '1px solid var(--border-color, #e2e8f0)', cursor: 'pointer' }}
+                          onClick={() => {
+                            setSelectedExpenseContractId('');
+                            setNewExpenseName('');
+                            setNewExpensePrice('');
+                            setNewExpenseRate('0');
+                          }}
+                        >
+                          선택 해제
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="btn-submit-container">
+                      <button type="submit" className="btn-premium btn-submit-premium">
+                        지출 등록하기
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           )}
