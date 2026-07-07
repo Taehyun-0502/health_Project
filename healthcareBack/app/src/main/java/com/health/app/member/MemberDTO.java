@@ -1,5 +1,7 @@
 package com.health.app.member;
 
+import java.time.LocalDate;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -18,5 +20,6 @@ public class MemberDTO {
     private String email;        // 이메일 (varchar)
     private String role;         // 역할 권한 (varchar)
     private Long gymId;          // 사업장 정보 번호 (int8)
+    private LocalDate birth;
    
 }

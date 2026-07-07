@@ -63,6 +63,7 @@ public class MemberService {
         newMember.setPasswordCheck(username.toString());
         newMember.setName(userDTO.getReceiverName());
         newMember.setGymId(userDTO.getGymId());
+        newMember.setBirth(userDTO.getBirthDate());
 
         // contract 번호 스펙에 따른 권한(Role) 분기 처리
         Long contractVal = userDTO.getContract();
