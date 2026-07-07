@@ -8,10 +8,15 @@ function B2cMain() {
     <div style={{ padding: '20px' }}>
       <h2>일반 회원 마이페이지 ({user.name}님)</h2>
       
-      {/* 마이페이지 전용 서브 링크 영역 (건의사항, 멤버십, 계정설정 보존) */}
+      {/* 마이페이지 전용 서브 링크 영역 (이관 탭 추가 및 정합) */}
       <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-        {/* 멤버십 링크 (클릭 시 /fitc/mypage/membership 으로 이동) */}
+        {/* 멤버십 링크 */}
         <Link to="membership" style={{ textDecoration: 'none', fontWeight: 'bold', color: 'blue' }}>멤버십</Link>
+
+        {/* 신규 이관 링크 삼대장 */}
+        <Link to="notification" style={{ textDecoration: 'none', fontWeight: 'bold' }}>알림</Link>
+        <Link to="coupon" style={{ textDecoration: 'none', fontWeight: 'bold' }}>내 쿠폰함</Link>
+        <Link to="attendance" style={{ textDecoration: 'none', fontWeight: 'bold' }}>출석기록</Link>
 
         {/* 건의사항 링크 */}
         <Link to="b2ccomplaint" style={{ textDecoration: 'none' }}>건의사항</Link>
