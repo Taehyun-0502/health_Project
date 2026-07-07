@@ -44,7 +44,7 @@ function ContractNew() {
       quantity: data.quantity ? parseInt(data.quantity, 10) : null,
       managerId: data.managerId ? parseInt(data.managerId, 10) : null,
       birthDate: data.birthDate || null,
-      avgWorkoutTime: data.avgWorkoutTime || null,
+      avgWorkoutTime: data.avgWorkoutTime ? parseInt(data.avgWorkoutTime, 10) : null,
     };
 
     const token = localStorage.getItem('accessToken');
@@ -98,8 +98,8 @@ function ContractNew() {
               <input type="date" name="birthDate" />
             </div>
             <div>
-              <label>하루평균 운동 시간: </label>
-              <input type="date" name="avgWorkoutTime" />
+              <label>하루평균 운동 시간(시간): </label>
+              <input type="number" name="avgWorkoutTime" min="0" />
             </div>
           </>
         )}

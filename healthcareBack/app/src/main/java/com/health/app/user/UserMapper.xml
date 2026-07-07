@@ -116,7 +116,7 @@
      #{quantity, jdbcType=INTEGER},
      #{managerId, jdbcType=BIGINT},
      #{birthDate, jdbcType=DATE},
-     #{avgWorkoutTime, jdbcType=DATE},
+     #{avgWorkoutTime, jdbcType=INTEGER},
      current_date)
     </insert>
 </mapper>
