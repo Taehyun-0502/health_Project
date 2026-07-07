@@ -61,7 +61,7 @@ function ContractBody({ d }) {
         <h3>제4조 (이용자 준수사항)</h3>
         <p>회원은 센터 이용 수칙 및 안전 수칙을 준수하며, 위반 시 이용이 제한될 수 있다.</p>
         <h3>제5조 (하루평균 운동 시간)</h3>
-        <p>회원의 하루평균 운동 시간은 {d.avgWorkoutTime ?? '-'}시간으로 한다.</p>
+        <p>회원의 하루평균 운동 시간은 {d.avgWorkoutHour ?? 0}시간 {d.avgWorkoutMinute ?? 0}분으로 한다.</p>
       </div>
     );
 

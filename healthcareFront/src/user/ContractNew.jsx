@@ -44,7 +44,8 @@ function ContractNew() {
       quantity: data.quantity ? parseInt(data.quantity, 10) : null,
       managerId: data.managerId ? parseInt(data.managerId, 10) : null,
       birthDate: data.birthDate || null,
-      avgWorkoutTime: data.avgWorkoutTime ? parseInt(data.avgWorkoutTime, 10) : null,
+      avgWorkoutHour: data.avgWorkoutHour ? parseInt(data.avgWorkoutHour, 10) : null,
+      avgWorkoutMinute: data.avgWorkoutMinute ? parseInt(data.avgWorkoutMinute, 10) : null,
     };
 
     const token = localStorage.getItem('accessToken');
@@ -98,8 +99,21 @@ function ContractNew() {
               <input type="date" name="birthDate" />
             </div>
             <div>
-              <label>하루평균 운동 시간(시간): </label>
-              <input type="number" name="avgWorkoutTime" min="0" />
+              <label>하루평균 운동 시간: </label>
+              <select name="avgWorkoutHour" defaultValue="">
+                <option value="">선택</option>
+                {Array.from({ length: 24 }, (_, h) => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+              <label> 시간 </label>
+              <select name="avgWorkoutMinute" defaultValue="">
+                <option value="">선택</option>
+                {[0, 10, 20, 30, 40, 50].map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+              <label> 분</label>
             </div>
           </>
         )}
