@@ -70,15 +70,19 @@ function Itempage() {
   // 검색어 상태 (서버 사이드 검색: 입력값이 바뀌면 keyword 파라미터로 서버에 재조회 요청)
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 백엔드로부터 물품 리스트를 "현재 페이지 + 검색어" 조건으로 페이징 조회하는 API 호출
+  // 정렬 옵션 상태 ('' = 기본(이름순), count_desc/count_asc/price_desc/price_asc)
+  const [sortOption, setSortOption] = useState('');
+
+  // 백엔드로부터 물품 리스트를 "현재 페이지 + 검색어 + 정렬" 조건으로 페이징 조회하는 API 호출
   // 응답 형태: { items: [...], pager: {...}, totalCount: n }
-  const fetchItems = async (targetPage, keyword) => {
+  const fetchItems = async (targetPage, keyword, sort) => {
     try {
       const query = new URLSearchParams({
         gymId,
         page: targetPage,
         pageSize,
-        keyword: keyword || ''
+        keyword: keyword || '',
+        sort: sort || ''
       });
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/list?${query.toString()}`);
       if (response.ok) {
@@ -103,19 +107,20 @@ function Itempage() {
     }
   };
 
-  // gymId가 바뀌면 1페이지/검색어 초기화 상태로 목록과 자동완성 목록을 다시 조회
+  // gymId가 바뀌면 1페이지/검색어 초기화 상태로 목록과 자동완성 목록을 다시 조회 (정렬 옵션은 유지)
   useEffect(() => {
     setPage(1);
     setSearchTerm('');
-    fetchItems(1, '');
+    fetchItems(1, '', sortOption);
     fetchItemNames();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gymId]);
 
   // 검색어가 바뀔 때마다 300ms 디바운스 후 1페이지부터 재조회 (매 입력마다 요청이 나가는 것을 방지)
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1);
-      fetchItems(1, searchTerm);
+      fetchItems(1, searchTerm, sortOption);
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -124,7 +129,15 @@ function Itempage() {
   // 페이지네이션 버튼 클릭 시 즉시(디바운스 없이) 해당 페이지를 조회
   const handlePageChange = (targetPage) => {
     setPage(targetPage);
-    fetchItems(targetPage, searchTerm);
+    fetchItems(targetPage, searchTerm, sortOption);
+  };
+
+  // 정렬 옵션 변경 시 1페이지로 이동해서 즉시 재조회 (state 갱신은 비동기라 새 값을 직접 넘겨줌)
+  const handleSortChange = (e) => {
+    const newSort = e.target.value;
+    setSortOption(newSort);
+    setPage(1);
+    fetchItems(1, searchTerm, newSort);
   };
 
   // CSV 필드값에 쉼표/줄바꿈/큰따옴표가 섞여 있어도 깨지지 않도록 이스케이프
@@ -207,6 +220,10 @@ function Itempage() {
       alert('물품명을 입력해주세요.');
       return;
     }
+    if (!editFormData.itemCategory.trim()) {
+      alert('분류를 입력해주세요.');
+      return;
+    }
     if (!editFormData.itemCount || parseInt(editFormData.itemCount, 10) <= 0) {
       alert('올바른 갯수를 입력해주세요.');
       return;
@@ -215,7 +232,7 @@ function Itempage() {
     const updatedItem = {
       itemId: editingItem.itemId !== undefined ? editingItem.itemId : editingItem.item_id,
       gymId: gymId,
-      itemCategory: editFormData.itemCategory,
+      itemCategory: editFormData.itemCategory.trim(),
       itemName: editFormData.itemName.trim(),
       itemDate: editFormData.itemDate || editFormData.itemBuy || '',
       itemPrice: editFormData.itemPrice ? parseInt(editFormData.itemPrice, 10) : 0,
@@ -233,7 +250,7 @@ function Itempage() {
 
       if (response.ok) {
         alert('물품 정보가 성공적으로 수정되었습니다.');
-        fetchItems(page, searchTerm); // 현재 보고 있던 페이지/검색어 조건 그대로 재조회
+        fetchItems(page, searchTerm, sortOption); // 현재 보고 있던 페이지/검색어/정렬 조건 그대로 재조회
         fetchItemNames(); // 물품명이 바뀌었을 수 있으므로 자동완성 목록도 갱신
         handleItemClick(updatedItem); // 수정한 데이터 이름 기준으로 목록 새로고침 및 갱신
         setEditingItem(null);
@@ -269,7 +286,7 @@ function Itempage() {
 
       if (response.ok) {
         alert('물품이 삭제되었습니다.');
-        fetchItems(page, searchTerm); // 현재 보고 있던 페이지/검색어 조건 그대로 재조회
+        fetchItems(page, searchTerm, sortOption); // 현재 보고 있던 페이지/검색어/정렬 조건 그대로 재조회
         fetchItemNames(); // 해당 물품명의 이력이 전부 삭제됐을 수 있으므로 자동완성 목록도 갱신
         const deletedId = item.itemId !== undefined ? item.itemId : item.item_id;
         setDetailList(prev => {
@@ -350,6 +367,13 @@ function Itempage() {
     return Array.from(new Set(names));
   }, [itemNames]);
 
+  // 카테고리 자동완성 후보: 기본 4종 + 이 사업장에서 실제 사용 중인 카테고리를 합침 (별도 관리 테이블 없이 물품 데이터에서 파생)
+  const existingCategories = useMemo(() => {
+    const base = ['기구', '소모품', '식품', '기타'];
+    const used = itemNames.map(item => item.itemCategory).filter(Boolean);
+    return Array.from(new Set([...base, ...used]));
+  }, [itemNames]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -373,9 +397,14 @@ function Itempage() {
     e.preventDefault();
 
     const finalItemName = formData.itemName.trim();
+    const finalItemCategory = formData.itemCategory.trim();
 
     if (!finalItemName) {
       alert('물품명을 입력하거나 선택해주세요.');
+      return;
+    }
+    if (!finalItemCategory) {
+      alert('분류를 입력하거나 선택해주세요.');
       return;
     }
     if (!formData.itemCount || parseInt(formData.itemCount, 10) <= 0) {
@@ -388,7 +417,7 @@ function Itempage() {
     const newItem = {
       itemId: 0,
       gymId: gymId,
-      itemCategory: formData.itemCategory,
+      itemCategory: finalItemCategory,
       itemName: finalItemName,
       itemDate: formData.itemDate,
       // 폐기인 경우 단가는 0원으로 자동 지정
@@ -410,7 +439,7 @@ function Itempage() {
       if (response.ok) {
         alert('물품이 성공적으로 등록되었습니다.');
         setPage(1);
-        fetchItems(1, searchTerm); // 새로 등록된 물품을 확인할 수 있도록 1페이지부터 재조회
+        fetchItems(1, searchTerm, sortOption); // 새로 등록된 물품을 확인할 수 있도록 1페이지부터 재조회
         fetchItemNames(); // 새 물품명이 자동완성 목록에 반영되도록 갱신
 
         // 폼 초기화 및 목록으로 돌아가기
@@ -435,6 +464,13 @@ function Itempage() {
   // gymId/검색어/페이지 조건은 이미 서버에서 반영되어 items에 현재 페이지 분량만 담겨 오므로 그대로 사용
   return (
     <div className="item-page-container">
+      {/* 카테고리 자동완성 후보 목록: 등록/수정 폼 둘 다 list="item-category-options"로 참조하므로 탭 전환과 무관하게 항상 렌더링되는 위치에 둠 */}
+      <datalist id="item-category-options">
+        {existingCategories.map((category) => (
+          <option key={category} value={category} />
+        ))}
+      </datalist>
+
       {/* 좌측 사이드바 탭 메뉴 영역 */}
       <aside className="item-sidebar">
         <div className="item-sidebar-title">물품 관리 시스템</div>
@@ -515,21 +551,19 @@ function Itempage() {
                       />
                     </div>
 
-                    {/* 카테고리 */}
+                    {/* 카테고리: 자동완성 후보(existingCategories)에서 고르거나, 목록에 없는 새 카테고리를 직접 입력해 추가 가능 */}
                     <div className="item-form-group">
                       <label htmlFor="editItemCategory">분류</label>
-                      <select
+                      <input
                         id="editItemCategory"
+                        type="text"
                         name="itemCategory"
-                        className="item-select"
+                        className="item-input"
+                        list="item-category-options"
+                        placeholder="분류 선택 또는 새로 입력"
                         value={editFormData.itemCategory}
                         onChange={(e) => setEditFormData(prev => ({ ...prev, itemCategory: e.target.value }))}
-                      >
-                        <option value="기구">기구</option>
-                        <option value="소모품">소모품</option>
-                        <option value="식품">식품</option>
-                        <option value="기타">기타</option>
-                      </select>
+                      />
                     </div>
 
                     {/* 등록일 */}
@@ -607,7 +641,7 @@ function Itempage() {
 
                 {/* 실제 운영 시에는 로그인 정보(gymId)에 따라 고정됩니다. */}
 
-                {/* 검색 바 + CSV 내보내기 버튼 */}
+                {/* 검색 바 + 정렬 옵션 + CSV 내보내기 버튼 */}
                 <div className="item-search-bar">
                   <input
                     type="text"
@@ -616,12 +650,19 @@ function Itempage() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
+                  <select className="item-sort-select" value={sortOption} onChange={handleSortChange}>
+                    <option value="">기본순 (이름순)</option>
+                    <option value="count_desc">수량 많은순</option>
+                    <option value="count_asc">수량 적은순</option>
+                    <option value="price_desc">가격 높은순</option>
+                    <option value="price_asc">가격 낮은순</option>
+                  </select>
                   <button type="button" className="item-export-btn" onClick={handleExportCsv}>
                     CSV 내보내기
                   </button>
                 </div>
 
-                {/* 테이블 목록 (분류, 물품 명, 갯수 항목만 출력) */}
+                {/* 테이블 목록 (분류, 물품명, 갯수, 최근 단가 출력) */}
                 <div className="item-table-wrapper">
                   <table className="item-table">
                     <thead>
@@ -630,6 +671,7 @@ function Itempage() {
                         <th>분류</th>
                         <th>물품명</th>
                         <th>갯수</th>
+                        <th>최근 단가</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -660,11 +702,14 @@ function Itempage() {
                                 {item.itemCount.toLocaleString()}
                               </span> 개
                             </td>
+                            <td>
+                              {item.itemPrice != null ? `${item.itemPrice.toLocaleString()} 원` : '-'}
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                          <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
                             검색 조건에 맞는 물품이 없거나 현재 사업장에 등록된 물품이 없습니다.
                           </td>
                         </tr>
@@ -979,21 +1024,19 @@ function Itempage() {
                     </select>
                   </div>
 
-                  {/* 카테고리 */}
+                  {/* 카테고리: 자동완성 후보(existingCategories)에서 고르거나, 목록에 없는 새 카테고리를 직접 입력해 추가 가능 */}
                   <div className="item-form-group">
                     <label htmlFor="itemCategory">분류</label>
-                    <select
+                    <input
                       id="itemCategory"
+                      type="text"
                       name="itemCategory"
-                      className="item-select"
+                      className="item-input"
+                      list="item-category-options"
+                      placeholder="분류 선택 또는 새로 입력"
                       value={formData.itemCategory}
                       onChange={handleInputChange}
-                    >
-                      <option value="기구">기구</option>
-                      <option value="소모품">소모품</option>
-                      <option value="식품">식품</option>
-                      <option value="기타">기타</option>
-                    </select>
+                    />
                   </div>
 
                   {/* 등록일 */}

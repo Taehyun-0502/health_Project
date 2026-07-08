@@ -28,20 +28,21 @@ public class ItemController {
         return itemService.itemAdd(newItem);
     }
 
-    // 아이템 리스트 페이징 조회 메서드: page/pageSize/keyword를 Pager로 묶어서 서비스에 전달, {items, pager} 형태로 응답
+    // 아이템 리스트 페이징 조회 메서드: page/pageSize/keyword를 Pager로 묶고, sort(count_desc/count_asc/price_desc/price_asc)로 정렬조건 전달, {items, pager} 형태로 응답
     @GetMapping("list")
     public ItemListResponse itemList(
             Long gymId,
             @RequestParam(required = false) Long page,
             @RequestParam(required = false) Long pageSize,
-            @RequestParam(required = false) String keyword) throws Exception {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String sort) throws Exception {
 
         Pager pager = new Pager();
         pager.setCurrentPage(page);
         pager.setPageSize(pageSize);
         pager.setSearchKeyword(keyword);
 
-        return itemService.itemList(gymId, pager);
+        return itemService.itemList(gymId, pager, sort);
     }
 
     // 물품 등록 폼 자동완성용 물품명 전체 조회 메서드 (페이징 없음)
