@@ -8,7 +8,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.health.app.pager.Pager;
 
 @CrossOrigin("*")
 @RestController
@@ -25,10 +28,26 @@ public class ItemController {
         return itemService.itemAdd(newItem);
     }
 
-    // 아이템 리스트 조회 메서드
+    // 아이템 리스트 페이징 조회 메서드: page/pageSize/keyword를 Pager로 묶어서 서비스에 전달, {items, pager} 형태로 응답
     @GetMapping("list")
-    public List<ItemDTO> itemList(Long gymId) throws Exception {
-        return itemService.itemList(gymId);
+    public ItemListResponse itemList(
+            Long gymId,
+            @RequestParam(required = false) Long page,
+            @RequestParam(required = false) Long pageSize,
+            @RequestParam(required = false) String keyword) throws Exception {
+
+        Pager pager = new Pager();
+        pager.setCurrentPage(page);
+        pager.setPageSize(pageSize);
+        pager.setSearchKeyword(keyword);
+
+        return itemService.itemList(gymId, pager);
+    }
+
+    // 물품 등록 폼 자동완성용 물품명 전체 조회 메서드 (페이징 없음)
+    @GetMapping("names")
+    public List<ItemDTO> itemNames(Long gymId) throws Exception {
+        return itemService.itemNames(gymId);
     }
 
     // 아이템 상세보기 메서드

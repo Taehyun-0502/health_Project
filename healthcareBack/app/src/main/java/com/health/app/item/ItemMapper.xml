@@ -10,15 +10,44 @@ values (default,#{gymId},#{itemCategory},#{itemCount},#{itemName},#{itemDate},#{
 
 </insert>
 
-<select id="itemList" parameterType="Long" resultType="ItemDTO">
-select 
+<!-- 아이템 목록 페이징 조회 쿼리: gymId + 검색어(keyword)로 필터링 후 group by 집계, LIMIT/OFFSET으로 페이지 단위만 잘라서 반환 -->
+<select id="itemList" resultType="ItemDTO">
+select
     gym_id as gymId,
     item_category as itemCategory,
     item_name as itemName,
     sum(item_count) as itemCount
 from "h_item"
 where gym_id=#{gymId}
+<if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+    and (item_name like concat('%', #{pager.searchKeyword}, '%') or item_category like concat('%', #{pager.searchKeyword}, '%'))
+</if>
 group by gym_id, item_category, item_name
+order by item_name
+limit #{pager.pageSize} offset #{pager.offset}
+</select>
+
+<!-- 아이템 목록 전체 건수(=검색조건을 적용한 물품 그룹 개수) 조회 쿼리: Pager의 총 페이지 수 계산(makeBlock)에 사용 -->
+<select id="itemListCount" resultType="long">
+select count(*) from (
+    select 1
+    from "h_item"
+    where gym_id=#{gymId}
+    <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+        and (item_name like concat('%', #{pager.searchKeyword}, '%') or item_category like concat('%', #{pager.searchKeyword}, '%'))
+    </if>
+    group by gym_id, item_category, item_name
+) t
+</select>
+
+<!-- 물품 등록 폼의 자동완성 추천용: 페이징 없이 해당 gym의 등록된 물품명/카테고리 전체를 중복없이 조회 -->
+<select id="itemNames" parameterType="Long" resultType="ItemDTO">
+select distinct
+    item_name as itemName,
+    item_category as itemCategory
+from "h_item"
+where gym_id=#{gymId}
+order by item_name
 </select>
 
 <select id="itemDetail" parameterType="ItemDTO" resultType="ItemDTO">

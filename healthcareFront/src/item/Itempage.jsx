@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import './Itempage.css';
 import { Link } from 'react-router-dom';
+import Pagination from './Pagination';
 // SVG 아이콘 컴포넌트 정의
 const ListIcon = () => (
   <svg viewBox="0 0 24 24">
@@ -35,14 +36,20 @@ function Itempage() {
     itemCount: ''
   });
 
-  // DB 테이블 스펙에 맞춘 물품 데이터 목록 상태 관리 (itemId, gymId, itemCategory, itemName, itemDate, itemPrice, itemCount)
-  const [items, setItems] = useState([
-    { itemId: 1, gymId: 1, itemCategory: '기구', itemName: '아령 (10kg)', itemDate: '2026-06-01', itemPrice: 25000, itemCount: 15 },
-    { itemId: 2, gymId: 1, itemCategory: '소모품', itemName: '요가매트 (두꺼움)', itemDate: '2026-06-15', itemPrice: 15000, itemCount: 30 },
-    { itemId: 3, gymId: 2, itemCategory: '기구', itemName: '런닝머신 A호기', itemDate: '2026-05-10', itemPrice: 1800000, itemCount: 1 },
-    { itemId: 4, gymId: 1, itemCategory: '식품', itemName: '단백질 쉐이크 (초코)', itemDate: '2026-06-28', itemPrice: 3500, itemCount: 50 },
-    { itemId: 5, gymId: 2, itemCategory: '소모품', itemName: '스트레칭 밴드', itemDate: '2026-06-20', itemPrice: 5000, itemCount: 20 },
-  ]);
+  // 현재 페이지에 표시할 물품 데이터 목록 (서버가 gymId+검색어+페이지 조건으로 이미 필터링/페이징해서 내려줌)
+  const [items, setItems] = useState([]);
+
+  // 서버에서 내려주는 페이징 정보 (currentPage, startPage, endPage, hasPrev, hasNext 등 - Pager.java와 동일 구조)
+  const [pager, setPager] = useState(null);
+
+  // 현재 조회 중인 페이지 번호 (1부터 시작)
+  const [page, setPage] = useState(1);
+
+  // 한 페이지당 표시 개수
+  const pageSize = 10;
+
+  // 물품 등록 폼 자동완성용 물품명 목록 (페이징과 무관하게 해당 gym의 전체 물품명을 별도 API로 조회)
+  const [itemNames, setItemNames] = useState([]);
 
   // 로그인된 유저의 사업장 id (localStorage에서 조회, 없을 시 기본값 1)
   const [gymId, setGymId] = useState(() => {
@@ -60,24 +67,65 @@ function Itempage() {
 
   const [loading, setLoading] = useState(false);
 
-  // 백엔드로부터 물품 리스트 조회 API 호출
-  const fetchItems = async () => {
+  // 검색어 상태 (서버 사이드 검색: 입력값이 바뀌면 keyword 파라미터로 서버에 재조회 요청)
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // 백엔드로부터 물품 리스트를 "현재 페이지 + 검색어" 조건으로 페이징 조회하는 API 호출
+  // 응답 형태: { items: [...], pager: {...}, totalCount: n }
+  const fetchItems = async (targetPage, keyword) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/list?gymId=${gymId}`);
+      const query = new URLSearchParams({
+        gymId,
+        page: targetPage,
+        pageSize,
+        keyword: keyword || ''
+      });
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/list?${query.toString()}`);
       if (response.ok) {
-        setItems(await response.json());
+        const data = await response.json();
+        setItems(data.items || []);
+        setPager(data.pager || null);
       }
     } catch (error) {
       console.error('Failed to fetch items:', error);
     }
   };
 
+  // 물품 등록 폼 자동완성용 물품명 전체 목록 조회 API 호출 (페이징 없이 gym 전체)
+  const fetchItemNames = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/names?gymId=${gymId}`);
+      if (response.ok) {
+        setItemNames(await response.json());
+      }
+    } catch (error) {
+      console.error('Failed to fetch item names:', error);
+    }
+  };
+
+  // gymId가 바뀌면 1페이지/검색어 초기화 상태로 목록과 자동완성 목록을 다시 조회
   useEffect(() => {
-    fetchItems();
+    setPage(1);
+    setSearchTerm('');
+    fetchItems(1, '');
+    fetchItemNames();
   }, [gymId]);
 
-  // 검색 상태
-  const [searchTerm, setSearchTerm] = useState('');
+  // 검색어가 바뀔 때마다 300ms 디바운스 후 1페이지부터 재조회 (매 입력마다 요청이 나가는 것을 방지)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      fetchItems(1, searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  // 페이지네이션 버튼 클릭 시 즉시(디바운스 없이) 해당 페이지를 조회
+  const handlePageChange = (targetPage) => {
+    setPage(targetPage);
+    fetchItems(targetPage, searchTerm);
+  };
 
   // 백엔드로부터 특정 물품의 상세 구매 이력 조회 API 호출
   const handleItemClick = async (item) => {
@@ -140,7 +188,8 @@ function Itempage() {
 
       if (response.ok) {
         alert('물품 정보가 성공적으로 수정되었습니다.');
-        fetchItems();
+        fetchItems(page, searchTerm); // 현재 보고 있던 페이지/검색어 조건 그대로 재조회
+        fetchItemNames(); // 물품명이 바뀌었을 수 있으므로 자동완성 목록도 갱신
         handleItemClick(updatedItem); // 수정한 데이터 이름 기준으로 목록 새로고침 및 갱신
         setEditingItem(null);
       } else {
@@ -175,7 +224,8 @@ function Itempage() {
 
       if (response.ok) {
         alert('물품이 삭제되었습니다.');
-        fetchItems();
+        fetchItems(page, searchTerm); // 현재 보고 있던 페이지/검색어 조건 그대로 재조회
+        fetchItemNames(); // 해당 물품명의 이력이 전부 삭제됐을 수 있으므로 자동완성 목록도 갱신
         const deletedId = item.itemId !== undefined ? item.itemId : item.item_id;
         setDetailList(prev => {
           const remaining = prev.filter(d => {
@@ -199,18 +249,11 @@ function Itempage() {
   const currentMonthKey = useMemo(() => new Date().toISOString().split('T')[0].substring(0, 7), []);
   const [selectedMonthFilter, setSelectedMonthFilter] = useState(currentMonthKey);
 
-  // 이력에 존재하는 고유 월 목록 추출 (항상 이번 달 포함)
+  // 조회 월 선택 옵션: 실제 이력 존재 여부와 무관하게 올해(현재 연도) 1월~12월을 항상 전부 제공
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
   const availableMonths = useMemo(() => {
-    const months = new Set();
-    months.add(currentMonthKey);
-    detailList.forEach((item) => {
-      const buyDate = item.itemDate || item.item_date || item.item_Date || item.itemBuy || item.item_buy;
-      if (buyDate) {
-        months.add(buyDate.substring(0, 7));
-      }
-    });
-    return Array.from(months).sort((a, b) => b.localeCompare(a));
-  }, [detailList, currentMonthKey]);
+    return Array.from({ length: 12 }, (_, i) => `${currentYear}-${String(i + 1).padStart(2, '0')}`);
+  }, [currentYear]);
 
   // 선택된 월 기준 필터링된 상세 내역
   const filteredDetails = useMemo(() => {
@@ -256,14 +299,11 @@ function Itempage() {
     itemStatus: '구매' // '구매' | '폐기' 추가 (DTO의 itemStatus 스펙 매칭)
   });
 
-  // 해당 사업장(gymId) 내 중복 제거된 물품명 리스트
+  // 해당 사업장(gymId) 내 중복 제거된 물품명 리스트 (페이징된 items가 아닌 /names 전용 API 결과인 itemNames 기준)
   const existingItemNames = useMemo(() => {
-    const names = items
-      .filter(item => item.gymId === gymId)
-      .map(item => item.itemName)
-      .filter(Boolean);
+    const names = itemNames.map(item => item.itemName).filter(Boolean);
     return Array.from(new Set(names));
-  }, [items, gymId]);
+  }, [itemNames]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -276,7 +316,7 @@ function Itempage() {
     setFormData(prev => {
       const updated = { ...prev, itemName: value };
       // 기존에 등록된 물품 중 명칭이 일치하는 것이 있다면 카테고리를 자동 선택
-      const matchedItem = items.find(item => item.itemName === value && item.gymId === gymId);
+      const matchedItem = itemNames.find(item => item.itemName === value);
       if (matchedItem) {
         updated.itemCategory = matchedItem.itemCategory;
       }
@@ -324,7 +364,9 @@ function Itempage() {
 
       if (response.ok) {
         alert('물품이 성공적으로 등록되었습니다.');
-        fetchItems();
+        setPage(1);
+        fetchItems(1, searchTerm); // 새로 등록된 물품을 확인할 수 있도록 1페이지부터 재조회
+        fetchItemNames(); // 새 물품명이 자동완성 목록에 반영되도록 갱신
 
         // 폼 초기화 및 목록으로 돌아가기
         setFormData({
@@ -345,15 +387,7 @@ function Itempage() {
     }
   };
 
-  // 검색어 및 gymId로 필터링된 아이템 리스트
-  const filteredItems = items.filter(item => {
-    const matchesGym = item.gymId === gymId;
-    const matchesSearch =
-      item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.itemCategory.includes(searchTerm);
-    return matchesGym && matchesSearch;
-  });
-
+  // gymId/검색어/페이지 조건은 이미 서버에서 반영되어 items에 현재 페이지 분량만 담겨 오므로 그대로 사용
   return (
     <div className="item-page-container">
       {/* 좌측 사이드바 탭 메뉴 영역 */}
@@ -551,14 +585,15 @@ function Itempage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredItems.length > 0 ? (
-                        filteredItems.map((item, index) => (
+                      {items.length > 0 ? (
+                        items.map((item, index) => (
                           <tr
                             key={item.itemId || index}
                             onClick={() => handleItemClick(item)}
                             style={{ cursor: 'pointer' }}
                           >
-                            <td>{filteredItems.length - index}</td>
+                            {/* 페이지가 바뀌어도 전체 목록 기준 연속된 번호가 보이도록 offset + index로 계산 */}
+                            <td>{(pager?.offset || 0) + index + 1}</td>
                             <td>
                               <span style={{
                                 padding: '0.25rem 0.55rem',
@@ -589,6 +624,9 @@ function Itempage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* 물품 목록 하단 페이지네이션 */}
+                <Pagination pager={pager} onPageChange={handlePageChange} />
               </div>
             ) : (
               <div className="item-card">
@@ -833,7 +871,7 @@ function Itempage() {
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                           {existingItemNames.map((name) => {
                             const isSelected = formData.itemName === name;
-                            const matchedItem = items.find(item => item.itemName === name && item.gymId === gymId);
+                            const matchedItem = itemNames.find(item => item.itemName === name);
 
                             return (
                               <button

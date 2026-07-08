@@ -186,6 +186,44 @@
   background-color: #f8fafc;
 }
 
+/* 페이지네이션 (아이템 목록 하단) */
+.item-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+}
+
+.item-page-btn {
+  min-width: 2.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.item-page-btn:hover:not(:disabled) {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.item-page-btn.active {
+  background: linear-gradient(90deg, #4f46e5, #6366f1);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.item-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;
