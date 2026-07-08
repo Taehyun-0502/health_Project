@@ -55,7 +55,7 @@ function B2cAccount() {
 
   return (
     <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
-      <h3>내 계정 설정 (B2B)</h3>
+      <h3>내 계정 설정 (B2C)</h3>
       <p style={{ fontSize: '13px', color: '#666' }}>회원님의 임시 비밀번호와 이메일을 수정할 수 있습니다.</p>
 
       {message && <div style={{ color: 'red', fontSize: '13px', marginBottom: '10px' }}>{message}</div>}
