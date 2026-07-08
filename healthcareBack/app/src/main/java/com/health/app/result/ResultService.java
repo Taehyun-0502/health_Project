@@ -52,11 +52,11 @@ public class ResultService {
                         continue;
                     }
                 }
-                analyzeAndSave(dto.getDataId());
+                analyzeAndSave(dto.getModelId());
                 successCount++;
             } catch (Exception e) {
                 // 에러 발생 시 로그를 남기고 다른 회원 처리를 계속 진행
-                System.err.println("Failed to analyze data_id: " + dto.getDataId() + ". Error: " + e.getMessage());
+                System.err.println("Failed to analyze data_id: " + dto.getModelId() + ". Error: " + e.getMessage());
             }
         }
         return successCount;
@@ -123,7 +123,7 @@ public class ResultService {
 
         // 4. ResultDTO 생성 및 DB 저장/갱신
         ResultDTO resultDTO = new ResultDTO();
-        resultDTO.setDataId(dataId);
+        resultDTO.setModelId(dataId);
         resultDTO.setChurnRate(churnRate);
         resultDTO.setTop1Reason(top1Reason);
         resultDTO.setTop2Reason(top2Reason);

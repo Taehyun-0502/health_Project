@@ -77,7 +77,7 @@ SURVEY_TABLE = os.getenv("SURVEY_TABLE", "h_survey")
 
 # h_model_data + h_survey 에서 읽어올 컬럼 (모델 피처 + 식별/세그먼트용)
 SELECT_COLS = (
-    "data_id, username, age, total_month, visit_per_week, aver_exercise, "
+    "model_id, username, age, total_month, visit_per_week, aver_exercise, "
     "pt_yn, group_yn, time_cong, last_days, contract_type, "
     "survey_id, cost_rate, employee_rate, service_rate, equip_rate, "
     "member_issue, injury_issue, injury_area"
@@ -140,17 +140,51 @@ def fetch_one(username: int):
     with get_conn() as conn, conn.cursor() as cur:
         query = f'''
             SELECT
-                m.data_id,
+                m.model_id,
                 m.username,
-                m.age,
-                m.total_month,
+                COALESCE(
+                    (
+                        SELECT EXTRACT(YEAR FROM AGE(CURRENT_DATE, birth_date))::INT
+                        FROM "h_contract_data"
+                        WHERE receiver_id = m.username
+                          AND birth_date IS NOT NULL
+                        ORDER BY data_id DESC
+                        LIMIT 1
+                    ),
+                    m.age
+                ) AS age,
+                COALESCE(
+                    (
+                        SELECT (EXTRACT(YEAR FROM AGE(CURRENT_DATE, MIN(start_date))) * 12 + EXTRACT(MONTH FROM AGE(CURRENT_DATE, MIN(start_date))))::INT
+                        FROM "h_contract_data"
+                        WHERE receiver_id = m.username
+                          AND start_date IS NOT NULL
+                    ),
+                    m.total_month
+                ) AS total_month,
                 m.visit_per_week,
                 m.aver_exercise,
-                m.pt_yn,
+                EXISTS (
+                    SELECT 1
+                    FROM "h_contract_data"
+                    WHERE receiver_id = m.username
+                      AND contract = 4
+                ) AS pt_yn,
                 m.group_yn,
                 m.time_cong,
                 m.last_days,
-                m.contract_type,
+                COALESCE(
+                    (
+                        SELECT CONCAT(ROUND((end_date - signed_at::date)::NUMERIC / 30.0)::INT, '개월')
+                        FROM "h_contract_data"
+                        WHERE receiver_id = m.username
+                          AND end_date IS NOT NULL
+                          AND signed_at IS NOT NULL
+                        ORDER BY data_id DESC
+                        LIMIT 1
+                    ),
+                    m.contract_type
+                ) AS contract_type,
                 s.survey_id,
                 s.cost_rate,
                 s.employee_rate,
@@ -182,17 +216,51 @@ def fetch_all():
     with get_conn() as conn, conn.cursor() as cur:
         query = f'''
             SELECT
-                m.data_id,
+                m.model_id,
                 m.username,
-                m.age,
-                m.total_month,
+                COALESCE(
+                    (
+                        SELECT EXTRACT(YEAR FROM AGE(CURRENT_DATE, birth_date))::INT
+                        FROM "h_contract_data"
+                        WHERE receiver_id = m.username
+                          AND birth_date IS NOT NULL
+                        ORDER BY data_id DESC
+                        LIMIT 1
+                    ),
+                    m.age
+                ) AS age,
+                COALESCE(
+                    (
+                        SELECT (EXTRACT(YEAR FROM AGE(CURRENT_DATE, MIN(start_date))) * 12 + EXTRACT(MONTH FROM AGE(CURRENT_DATE, MIN(start_date))))::INT
+                        FROM "h_contract_data"
+                        WHERE receiver_id = m.username
+                          AND start_date IS NOT NULL
+                    ),
+                    m.total_month
+                ) AS total_month,
                 m.visit_per_week,
                 m.aver_exercise,
-                m.pt_yn,
+                EXISTS (
+                    SELECT 1
+                    FROM "h_contract_data"
+                    WHERE receiver_id = m.username
+                      AND contract = 4
+                ) AS pt_yn,
                 m.group_yn,
                 m.time_cong,
                 m.last_days,
-                m.contract_type,
+                COALESCE(
+                    (
+                        SELECT CONCAT(ROUND((end_date - signed_at::date)::NUMERIC / 30.0)::INT, '개월')
+                        FROM "h_contract_data"
+                        WHERE receiver_id = m.username
+                          AND end_date IS NOT NULL
+                          AND signed_at IS NOT NULL
+                        ORDER BY data_id DESC
+                        LIMIT 1
+                    ),
+                    m.contract_type
+                ) AS contract_type,
                 s.survey_id,
                 s.cost_rate,
                 s.employee_rate,
@@ -214,6 +282,9 @@ def fetch_all():
                 ORDER BY survey_id DESC
                 LIMIT 1
             ) s ON TRUE
+            WHERE EXISTS (
+                SELECT 1 FROM "h_check_inout" c WHERE c.username = m.username
+            )
         '''
         cur.execute(query)
         return cur.fetchall()
@@ -277,27 +348,26 @@ def calculate_all_visit_per_week_pandas(inouts_list: list) -> dict:
 
 
 def calculate_aver_exercise_pandas(inouts_list: list, username: int) -> float:
-    """Pandas를 사용해 특정 회원의 최근 30일간 하루 평균 운동시간(분)을 계산 (duration 평균 * 60)"""
+    """Pandas를 사용해 특정 회원의 최근 30일간 하루 평균 운동시간(분)을 계산 (duration 평균, duration=분 단위)"""
     if not inouts_list:
         return 0.0
     df = pd.DataFrame(inouts_list)
     user_df = df[df['username'] == username]
     if user_df.empty:
         return 0.0
-    
+
     avg_duration = user_df['duration'].fillna(0).mean()
-    return float(avg_duration * 60)
+    return float(avg_duration)
 
 
 def calculate_all_aver_exercise_pandas(inouts_list: list) -> dict:
-    """Pandas를 사용해 전체 회원별 최근 30일간 하루 평균 운동시간(분)을 계산하여 dict로 반환 {username: aver_exercise}"""
+    """Pandas를 사용해 전체 회원별 최근 30일간 하루 평균 운동시간(분)을 계산하여 dict로 반환 {username: aver_exercise} (duration=분 단위)"""
     if not inouts_list:
         return {}
     df = pd.DataFrame(inouts_list)
     df['duration'] = df['duration'].fillna(0)
-    
-    grouped = df.groupby('username')['duration'].mean()
-    aver_exercise_series = grouped * 60
+
+    aver_exercise_series = df.groupby('username')['duration'].mean()
     return aver_exercise_series.to_dict()
 
 
@@ -344,6 +414,101 @@ def calculate_all_last_days() -> dict:
     return {username: (today - dt).days for username, dt in last_dates.items()}
 
 
+def update_time_congestion_statistics(days: int = 30):
+    """최근 days일 출석 데이터를 기반으로 헬스장별 시간대 방문 통계 및 혼잡도를 갱신.
+    연월 구분 없이 gym_id + hour 기준으로 최신 혼잡도를 덮어쓴다(carry-forward)."""
+    with get_conn() as conn, conn.cursor() as cur:
+        # 1. 헬스장별 총 회원 수 조회
+        cur.execute('SELECT gym_id, COUNT(*) AS member_count FROM "h_member" GROUP BY gym_id')
+        gym_members = {row['gym_id']: row['member_count'] for row in cur.fetchall()}
+
+        # 2. 최근 days일 헬스장별 시간대별 총 방문 수 및 방문 일수 조회
+        cur.execute('''
+            SELECT
+                gym_id,
+                EXTRACT(HOUR FROM check_in)::INT AS hour,
+                COUNT(*) AS total_visits,
+                COUNT(DISTINCT check_in::date) AS unique_days
+            FROM "h_check_inout"
+            WHERE check_in >= CURRENT_DATE - make_interval(days => %s)
+            GROUP BY gym_id, EXTRACT(HOUR FROM check_in)::INT
+        ''', (days,))
+        rows = cur.fetchall()
+        if not rows:
+            return
+
+        # 3. 최대 이용 가능 인원(10%) 대비 점유율 기준으로 혼잡도 분류 및 UPSERT
+        for row in rows:
+            gym_id = row['gym_id']
+            hour = row['hour']
+            total_visits = row['total_visits']
+            unique_days = row['unique_days'] or 1
+
+            # 일평균 방문 인원
+            daily_avg = total_visits / unique_days
+
+            # 헬스장 총 회원수 기반 최대 동시 이용 가능 인원 (10%)
+            total_members = gym_members.get(gym_id, 0)
+            max_capacity = total_members * 0.1
+            if max_capacity <= 0:
+                max_capacity = 1.0  # Zero Division 방지
+
+            # 점유율 계산 (일평균 / 최대인원 * 100)
+            occupancy_rate = (daily_avg / max_capacity) * 100.0
+
+            # 혼잡도 수준 구분
+            if occupancy_rate < 40.0:
+                level = '여유'
+            elif occupancy_rate < 70.0:
+                level = '보통'
+            elif occupancy_rate < 90.0:
+                level = '혼잡'
+            else:
+                level = '매우 혼잡'
+
+            # h_time_congestion 테이블에 UPSERT (gym_id + hour 기준, visit_count엔 일평균 방문인원 반올림)
+            cur.execute('''
+                INSERT INTO "h_time_congestion" (gym_id, hour, visit_count, congestion_level)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (gym_id, hour)
+                DO UPDATE SET
+                    visit_count = EXCLUDED.visit_count,
+                    congestion_level = EXCLUDED.congestion_level
+            ''', (gym_id, hour, int(round(daily_avg)), level))
+        conn.commit()
+
+
+def get_members_time_congestion(days: int = 30) -> dict:
+    """최근 days일 기준 회원별 주 방문 시간대 혼잡도를 {username: congestion_level}로 반환.
+    (연월 무관 — h_time_congestion을 gym_id + hour 로 조인)"""
+    result_map = {}
+    with get_conn() as conn, conn.cursor() as cur:
+        query = '''
+            WITH member_hour_visits AS (
+                SELECT
+                    username,
+                    gym_id,
+                    EXTRACT(HOUR FROM check_in)::INT AS visit_hour,
+                    COUNT(*) AS count,
+                    ROW_NUMBER() OVER (PARTITION BY username ORDER BY COUNT(*) DESC, EXTRACT(HOUR FROM check_in)::INT ASC) as rn
+                FROM "h_check_inout"
+                WHERE check_in >= CURRENT_DATE - make_interval(days => %s)
+                GROUP BY username, gym_id, EXTRACT(HOUR FROM check_in)::INT
+            )
+            SELECT
+                mh.username,
+                COALESCE(tc.congestion_level, '보통') AS congestion_level
+            FROM member_hour_visits mh
+            LEFT JOIN "h_time_congestion" tc ON mh.gym_id = tc.gym_id
+                                           AND mh.visit_hour = tc.hour
+            WHERE mh.rn = 1
+        '''
+        cur.execute(query, (days,))
+        for row in cur.fetchall():
+            result_map[row['username']] = row['congestion_level']
+    return result_map
+
+
 # ─────────────────────────── FastAPI ───────────────────────────
 app = FastAPI(title="Churn Prediction API", version="0.1.0")
 
@@ -370,6 +535,11 @@ def churn_member(username: int):
         raise HTTPException(status_code=404,
                             detail=f"member {username} not found in {TABLE}")
     
+    # 헬스장 혼잡도 통계 테이블 갱신 및 주 이용 시간대 혼잡도 도출
+    update_time_congestion_statistics()
+    congestion_map = get_members_time_congestion()
+    time_cong = congestion_map.get(username, "보통")
+    
     # 최근 30일 출결을 바탕으로 주당 방문 횟수 및 일평균 운동시간 계산
     inouts = fetch_recent_inouts(username)
     visit_per_week = calculate_visit_per_week_pandas(inouts, username)
@@ -380,13 +550,18 @@ def churn_member(username: int):
     member["이번달_주당방문횟수"] = visit_per_week
     member["최근한달_일평균_운동시간"] = aver_exercise
     member["마지막_방문_경과일"] = last_days
+    member["주_이용_시간대_혼잡도"] = time_cong
     
     return {
         "username": row["username"],
-        "contract_type": row.get("contract_type"),
+        "contract_type": row["contract_type"],
+        "age": int(row["age"]) if row["age"] is not None else None,
+        "total_month": int(row["total_month"]) if row["total_month"] is not None else None,
+        "pt_yn": 1 if row["pt_yn"] else 0,
         "visit_per_week": visit_per_week,  # 백엔드 기입용
         "aver_exercise": aver_exercise,    # 백엔드 기입용
         "last_days": last_days,            # 백엔드 기입용
+        "time_cong": time_cong,            # 백엔드 기입용
         "진단": predict(member),
         "시뮬레이션": simulate(member),
     }
@@ -398,6 +573,10 @@ def churn_gym():
     rows = fetch_all()
     if not rows:
         raise HTTPException(status_code=404, detail=f"no rows in {TABLE}")
+    
+    # 헬스장 혼잡도 통계 테이블 갱신 및 주 이용 시간대 혼잡도 도출
+    update_time_congestion_statistics()
+    congestion_map = get_members_time_congestion()
     
     # 최근 30일 출결을 바탕으로 전체 회원의 주당 방문 횟수 및 일평균 운동시간 계산
     inouts = fetch_recent_inouts()
@@ -411,9 +590,126 @@ def churn_gym():
         m["이번달_주당방문횟수"] = visits_map.get(r["username"], 0.0)
         m["최근한달_일평균_운동시간"] = exercise_map.get(r["username"], 0.0)
         m["마지막_방문_경과일"] = last_days_map.get(r["username"], 999)
+        m["주_이용_시간대_혼잡도"] = congestion_map.get(r["username"], "보통")
         members.append(m)
         
     return predict_gym(members)
+
+
+# ─────────────────────── 전체 회원 이탈 예측 배치 ───────────────────────
+def analyze_and_save_all(days: int = 30, chunk_size: int = 1000) -> dict:
+    """전체 회원 이탈 예측을 계산해 h_churn_result 에 일괄 UPSERT (하루 1회 배치용).
+
+    /churn 엔드포인트와 동일하게 회원별 피처를 구성 → predict() 로 진단 →
+    위험점수(churn_rate) 와 이탈요인 top3 를 추출 → model_id 기준으로 벌크 UPSERT.
+    대량일 때 메모리 보호를 위해 chunk_size 단위로 예측·기입한다.
+
+    ※ h_churn_result.model_id 에 UNIQUE 제약이 있어야 ON CONFLICT 가 동작한다.
+    """
+    # 0) 출석 기록이 있는데 h_model_data 에 아직 없는 회원을 신규 등록 (skeleton 행: username만)
+    #    → 나머지 피처(age/total_month/방문/혼잡도 등)는 아래 fetch_all·피처맵에서 계산됨
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute('''
+            INSERT INTO "h_model_data" (username)
+            SELECT DISTINCT c.username
+            FROM "h_check_inout" c
+            WHERE NOT EXISTS (
+                SELECT 1 FROM "h_model_data" m WHERE m.username = c.username
+            )
+        ''')
+        inserted = cur.rowcount
+        conn.commit()
+
+    rows = fetch_all()   # 출석 있는 회원만 반환 (fetch_all 에 EXISTS(h_check_inout) 필터 있음)
+    if not rows:
+        return {"신규등록": inserted, "처리": 0, "회원수": 0, "메시지": "예측 대상(출석 회원) 없음"}
+
+    # 1) 혼잡도 통계 갱신 + 배치 피처 맵 (전체 한 번씩만 계산)
+    update_time_congestion_statistics(days)
+    congestion_map = get_members_time_congestion(days)
+    inouts = fetch_recent_inouts()
+    visits_map = calculate_all_visit_per_week_pandas(inouts)
+    exercise_map = calculate_all_aver_exercise_pandas(inouts)
+    last_days_map = calculate_all_last_days()
+
+    upsert_sql = '''
+        INSERT INTO "h_churn_result"
+            (model_id, churn_rate, top1_reason, top2_reason, top3_reason)
+        VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT (model_id) DO UPDATE SET
+            churn_rate  = EXCLUDED.churn_rate,
+            top1_reason = EXCLUDED.top1_reason,
+            top2_reason = EXCLUDED.top2_reason,
+            top3_reason = EXCLUDED.top3_reason
+    '''
+
+    # h_model_data 피처 갱신용 — 예측에 쓰인 계산값을 되돌려 저장(skeleton 행의 NULL 채움)
+    feature_sql = '''
+        UPDATE "h_model_data" SET
+            age = %s, total_month = %s, visit_per_week = %s, aver_exercise = %s,
+            pt_yn = %s, time_cong = %s, last_days = %s, contract_type = %s
+        WHERE model_id = %s
+    '''
+
+    # 2) 청크 단위로 회원별 예측 → h_model_data 피처 갱신 + h_churn_result 벌크 UPSERT
+    total = 0
+    with get_conn() as conn, conn.cursor() as cur:
+        for start in range(0, len(rows), chunk_size):
+            result_records = []
+            feature_records = []
+            for r in rows[start:start + chunk_size]:
+                uname = r["username"]
+                vpw = visits_map.get(uname, 0.0)
+                avex = exercise_map.get(uname, 0.0)
+                ldays = last_days_map.get(uname, 999)
+                tcong = congestion_map.get(uname, "보통")
+
+                member = row_to_member(r)
+                member["이번달_주당방문횟수"] = vpw
+                member["최근한달_일평균_운동시간"] = avex
+                member["마지막_방문_경과일"] = ldays
+                member["주_이용_시간대_혼잡도"] = tcong
+
+                diag = predict(member)
+                score = diag.get("위험점수")
+                churn_rate = (float(score) / 100.0) if score is not None else None
+                risk = diag.get("위험요인_이탈↑") or []
+                tops = [risk[i].get("해석") if i < len(risk) and risk[i] else None
+                        for i in range(3)]
+
+                result_records.append((r["model_id"], churn_rate, tops[0], tops[1], tops[2]))
+                # age/total_month/pt_yn/contract_type 는 fetch_all 이 계약에서 계산한 값(r),
+                # visit_per_week/aver_exercise/last_days/time_cong 는 출석 기반 계산값
+                feature_records.append((r["age"], r["total_month"], vpw, avex,
+                                        r["pt_yn"], tcong, ldays, r["contract_type"],
+                                        r["model_id"]))
+
+            cur.executemany(feature_sql, feature_records)   # h_model_data 피처 되돌려 저장
+            cur.executemany(upsert_sql, result_records)     # h_churn_result 예측 결과
+            conn.commit()
+            total += len(result_records)
+
+    # 3) 출석이 없어 예측 대상이 아닌 회원의 낡은 결과 행 정리
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute('''
+            DELETE FROM "h_churn_result"
+            WHERE model_id IN (
+                SELECT m.model_id FROM "h_model_data" m
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM "h_check_inout" c WHERE c.username = m.username
+                )
+            )
+        ''')
+        deleted = cur.rowcount
+        conn.commit()
+
+    return {"신규등록": inserted, "처리": total, "회원수": len(rows), "정리삭제": deleted}
+
+
+@app.post("/churn/batch")
+def churn_batch():
+    """전체 회원 이탈 예측 결과를 h_churn_result 에 일괄 갱신 (스케줄러/수동 트리거용)."""
+    return analyze_and_save_all()
 
 
 if __name__ == "__main__":
