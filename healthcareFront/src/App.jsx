@@ -16,6 +16,7 @@ import Itempage from './item/Itempage.jsx';
 
 import Contractpage from './contract/Contractpage.jsx';
 import Settlepage from './settle/settlepage.jsx'
+import Dashboard from './dashboard/Dashboard.jsx';
 
 
 // 메인 애플리케이션 컴포넌트
@@ -46,6 +47,8 @@ function App() {
       <Route path="/fitb/contractpage" element={<Contractpage />} />
 
       <Route path="/fitb/Settlepage" element={<Settlepage />} />
+
+      <Route path="/fitb/dashboard" element={<Dashboard />} />
 
     </Routes>
   );
