@@ -16,7 +16,7 @@
   select * from "h_member" where username = #{username}
   </select>
 
-  <update>
+  <update id="update" parameterType="MemberDTO">
   update h_member 
   set 
   password = #{password},
