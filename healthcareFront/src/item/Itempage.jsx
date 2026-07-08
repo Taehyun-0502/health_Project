@@ -127,6 +127,51 @@ function Itempage() {
     fetchItems(targetPage, searchTerm);
   };
 
+  // CSV 필드값에 쉼표/줄바꿈/큰따옴표가 섞여 있어도 깨지지 않도록 이스케이프
+  const escapeCsvField = (value) => {
+    const str = String(value ?? '');
+    if (/[",\n]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  // CSV 내보내기: 현재 검색어 조건을 반영한 전체 목록을 서버에서 받아와 CSV 파일로 다운로드 (페이징 무시, 전체 건수)
+  const handleExportCsv = async () => {
+    try {
+      const query = new URLSearchParams({ gymId, keyword: searchTerm || '' });
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/export?${query.toString()}`);
+      if (!response.ok) {
+        alert('내보내기에 실패했습니다.');
+        return;
+      }
+
+      const allItems = await response.json();
+      if (allItems.length === 0) {
+        alert('내보낼 물품이 없습니다.');
+        return;
+      }
+
+      const header = ['번호', '분류', '물품명', '갯수'];
+      const rows = allItems.map((item, index) => [index + 1, item.itemCategory, item.itemName, item.itemCount]);
+      const csvContent = [header, ...rows].map((row) => row.map(escapeCsvField).join(',')).join('\r\n');
+
+      // 엑셀에서 한글이 깨지지 않도록 UTF-8 BOM을 파일 맨 앞에 붙임
+      const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `물품목록_${gymId}_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export CSV:', error);
+      alert('내보내기 중 오류가 발생했습니다.');
+    }
+  };
+
   // 백엔드로부터 특정 물품의 상세 구매 이력 조회 API 호출
   const handleItemClick = async (item) => {
     setSelectedItem(item);
@@ -562,7 +607,7 @@ function Itempage() {
 
                 {/* 실제 운영 시에는 로그인 정보(gymId)에 따라 고정됩니다. */}
 
-                {/* 검색 바 */}
+                {/* 검색 바 + CSV 내보내기 버튼 */}
                 <div className="item-search-bar">
                   <input
                     type="text"
@@ -571,6 +616,9 @@ function Itempage() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
+                  <button type="button" className="item-export-btn" onClick={handleExportCsv}>
+                    CSV 내보내기
+                  </button>
                 </div>
 
                 {/* 테이블 목록 (분류, 물품 명, 갯수 항목만 출력) */}

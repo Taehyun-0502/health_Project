@@ -51,6 +51,22 @@ where gym_id=#{gymId}
 order by item_name
 </select>
 
+<!-- CSV 내보내기용: itemList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환 -->
+<select id="itemListAll" resultType="ItemDTO">
+select
+    gym_id as gymId,
+    item_category as itemCategory,
+    item_name as itemName,
+    sum(item_count) as itemCount
+from "h_item"
+where gym_id=#{gymId}
+<if test="keyword != null and keyword != ''">
+    and (item_name like concat('%', #{keyword}, '%') or item_category like concat('%', #{keyword}, '%'))
+</if>
+group by gym_id, item_category, item_name
+order by item_name
+</select>
+
 <select id="itemDetail" parameterType="ItemDTO" resultType="ItemDTO">
 select * from "h_item"
 where gym_id = #{gymId} and item_name = #{itemName}

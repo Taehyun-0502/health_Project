@@ -50,6 +50,14 @@ public class ItemController {
         return itemService.itemNames(gymId);
     }
 
+    // CSV 내보내기용 전체 목록 조회 메서드: 현재 화면의 검색조건(keyword)은 반영하되 페이징은 없이 전체 반환 (CSV 변환은 프론트에서 처리)
+    @GetMapping("export")
+    public List<ItemDTO> itemListAll(
+            Long gymId,
+            @RequestParam(required = false) String keyword) throws Exception {
+        return itemService.itemListAll(gymId, keyword);
+    }
+
     // 아이템 상세보기 메서드
     @GetMapping("detail")
     public List<ItemDTO> itemDetail(ItemDTO itemDTO) throws Exception {

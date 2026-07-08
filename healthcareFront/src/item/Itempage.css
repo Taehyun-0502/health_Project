@@ -146,6 +146,24 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
+.item-export-btn {
+  padding: 0.75rem 1.1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.item-export-btn:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
 .item-table-wrapper {
   overflow-x: auto;
   border-radius: 10px;

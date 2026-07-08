@@ -61,6 +61,12 @@ public class ItemService {
         return itemMapper.itemNames(gymId);
     }
 
+    // CSV 내보내기용 전체 목록(현재 검색조건 반영, 페이징 없음) 맵퍼 호출
+    public List<ItemDTO> itemListAll(Long gymId, String keyword) throws Exception {
+
+        return itemMapper.itemListAll(gymId, keyword);
+    }
+
     // 아이템 디테일 맵퍼 호출
     public List<ItemDTO> itemDetail(ItemDTO itemDTO) throws Exception {
 
