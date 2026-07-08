@@ -2,7 +2,9 @@ package com.health.app.settle;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import com.health.app.contract.ContractDTO;
+import com.health.app.pager.Pager;
 
 /**
  * 정산(Settle), 매출(Payment), 지출(Expense) 및 커미션(Settlement) 처리를 담당하는 MyBatis 매퍼 인터페이스
@@ -13,23 +15,73 @@ public interface SettleMapper {
     // 신규 매출(결제) 내역 추가 등록
     public int payAdd(PayDTO payDTO) throws Exception;
 
-    // 등록된 전체 매출 내역 목록 조회
-    public List<PayDTO> payList(Long username) throws Exception;
+    // 매출 내역 페이징 조회 (username + Pager(페이지/검색어/조회월) + 정렬조건(sort: price_desc/price_asc/date_desc/date_asc, 기본은 최신순))
+    public List<PayDTO> payList(@Param("username") Long username, @Param("pager") Pager pager, @Param("sort") String sort) throws Exception;
+
+    // 매출 내역 전체 건수 조회 (Pager의 총 페이지/블록 계산용)
+    public long payListCount(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
+
+    // 매출 내역 전체 합계 금액 조회
+    public long payListSum(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
+
+    // CSV 내보내기용 매출 전체 목록 조회 (username + Pager(검색어/조회월) 조건, 페이징 없음)
+    public List<PayDTO> payListAll(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
 
     // 미결제 상태이며 서명이 완료된 계약 정보 목록 조회 (UserDTO -> ContractDTO 정정)
     public List<ContractDTO> unpaidContractList(Long username) throws Exception;
 
-    // 플랫폼 가맹점의 전체 커미션(정산) 내역 목록 조회 (ADMIN 기능)
-    public List<CommissionDTO> commissionList() throws Exception;
+    // 매출(결제) 단건 조회 (삭제 전 gymId/payDate 확인용 - 커미션 재계산에 필요)
+    public PayDTO getPayById(Long payId) throws Exception;
+
+    // 매출(결제) 내역 삭제
+    public int payDelete(Long payId) throws Exception;
+
+    // 플랫폼 가맹점의 전체 커미션(정산) 내역 페이징 조회 (ADMIN 기능, Pager(페이지/상태/조회월) + 정렬조건(sort: amount_desc/amount_asc/month_desc/month_asc, 기본은 최신순))
+    public List<CommissionDTO> commissionList(@Param("pager") Pager pager, @Param("sort") String sort) throws Exception;
+
+    // 커미션 내역 전체 건수 조회 (Pager 총 페이지 계산용)
+    public long commissionListCount(@Param("pager") Pager pager) throws Exception;
+
+    // CSV 내보내기용 커미션 전체 목록 조회 (Pager(상태/조회월) 조건, 페이징 없음)
+    public List<CommissionDTO> commissionListAll(@Param("pager") Pager pager) throws Exception;
+
+    // 커미션 대시보드 요약 통계 조회 (필터/페이지와 무관한 전체 가맹점 기준 집계, ADMIN 기능)
+    public CommissionStatsDTO commissionStats() throws Exception;
 
     // 커미션 정산 ID 기준 개별 단건 조회 (상태 변경 처리에 활용)
     public CommissionDTO getCommissionById(Long settlementId) throws Exception;
 
+    // 가맹점+정산월 기준 커미션 단건 조회 (매출 삭제 후 재계산 대상 확인용)
+    public CommissionDTO getCommissionByGymAndMonth(
+            @Param("gymId") Long gymId,
+            @Param("month") java.time.LocalDate month) throws Exception;
+
     // 가맹점 수수료 지급 상태("지급", "미지급") 및 지급 일자 변경 저장
     public int updateCommissionStatus(CommissionDTO commissionDTO) throws Exception;
 
-    // 사장님 계정의 소속 지점(gym_id) 기준 지출비 목록 조회
-    public List<ExpenseDTO> expenseList(Long username) throws Exception;
+    // 특정 가맹점의 특정 기간 매출 합계 * 커미션율로 재계산된 정산 금액 조회 (매출 삭제 후 재계산용)
+    public long sumGymSalesForMonth(
+            @Param("gymId") Long gymId,
+            @Param("startDate") java.time.LocalDate startDate,
+            @Param("endDate") java.time.LocalDate endDate,
+            @Param("rate") double rate) throws Exception;
+
+    // 커미션 정산 금액만 갱신 (매출 삭제 후 재계산 결과 반영용)
+    public int updateCommissionAmount(
+            @Param("settlementId") Long settlementId,
+            @Param("commission") long commission) throws Exception;
+
+    // 사장님 계정의 소속 지점(gym_id) 기준 지출비 목록 페이징 조회 (username + Pager(페이지/검색어/조회월) + 정렬조건(sort: price_desc/price_asc/date_desc/date_asc, 기본은 최신순))
+    public List<ExpenseDTO> expenseList(@Param("username") Long username, @Param("pager") Pager pager, @Param("sort") String sort) throws Exception;
+
+    // 지출비 목록 전체 건수 조회 (Pager의 총 페이지/블록 계산용)
+    public long expenseListCount(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
+
+    // 지출비 목록 전체 합계 금액 조회
+    public long expenseListSum(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
+
+    // CSV 내보내기용 지출 전체 목록 조회 (username + Pager(검색어/조회월) 조건, 페이징 없음)
+    public List<ExpenseDTO> expenseListAll(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
 
     // 지점 운영 지출 항목 신규 등록
     public int expenseAdd(ExpenseDTO expenseDTO) throws Exception;
@@ -50,12 +102,15 @@ public interface SettleMapper {
     // 신규 플랫폼 정산 커미션 등록
     public int insertCommission(CommissionDTO commissionDTO) throws Exception;
 
-    // 사장님용: 지출 처리해야 할 임금/제휴 계약서 목록 조회 (UserDTO -> ContractDTO 정정)
-    public List<ContractDTO> unpaidExpenseContractList(Long username) throws Exception;
+    // 사장님용: 지출 처리해야 할 임금/제휴 계약서 목록 페이징 조회 (UserDTO -> ContractDTO 정정)
+    public List<ContractDTO> unpaidExpenseContractList(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
+
+    // 지출 처리 대기 계약서 전체 건수 조회 (Pager의 총 페이지/블록 계산용)
+    public long unpaidExpenseContractListCount(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
 
     // 사장님의 지출 등록 시 연동된 제휴 계약에 대한 플랫폼 정산 상태를 자동으로 '지급 완료'로 변경
     public int updateSettlementStatusByContract(
-            @org.apache.ibatis.annotations.Param("dataId") Long dataId, 
+            @org.apache.ibatis.annotations.Param("dataId") Long dataId,
             @org.apache.ibatis.annotations.Param("expenseId") Long expenseId) throws Exception;
 
 }

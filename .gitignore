@@ -4,7 +4,7 @@ env/
 .venv/
 healthModel/model/
 healthModel/healthModel/
-
+.claude
 # 파이썬 캐시
 __pycache__/
 *.pyc

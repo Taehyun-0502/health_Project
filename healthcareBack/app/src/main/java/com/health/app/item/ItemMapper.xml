@@ -4,21 +4,78 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.health.app.item.ItemMapper">
 
-<insert id="itemAdd" parameterType="ItemDTO">
+<!-- useGeneratedKeys: insert 후 DB가 채번한 item_id를 itemDTO.itemId에 다시 채워줌 (settle 지출 연동 시 origin_item_id로 사용) -->
+<insert id="itemAdd" parameterType="ItemDTO" useGeneratedKeys="true" keyProperty="itemId" keyColumn="item_id">
 insert into "h_item" (item_id,gym_id,item_category,item_count,item_name,item_date,item_price)
 values (default,#{gymId},#{itemCategory},#{itemCount},#{itemName},#{itemDate},#{itemPrice})
 
 </insert>
 
-<select id="itemList" parameterType="Long" resultType="ItemDTO">
-select 
+<!-- 아이템 목록 페이징 조회 쿼리: gymId + 검색어(keyword)로 필터링 후 group by 집계, LIMIT/OFFSET으로 페이지 단위만 잘라서 반환
+     itemPrice는 단일 값이 아니라 "가장 최근에 등록된 구매 건의 단가"를 서브쿼리로 가져와 정렬/표시용으로 사용 -->
+<select id="itemList" resultType="ItemDTO">
+select
+    h.gym_id as gymId,
+    h.item_category as itemCategory,
+    h.item_name as itemName,
+    sum(h.item_count) as itemCount,
+    (select h2.item_price from "h_item" h2
+     where h2.gym_id = h.gym_id and h2.item_category = h.item_category and h2.item_name = h.item_name
+       and h2.item_count > 0
+     order by h2.item_date desc, h2.item_id desc limit 1) as itemPrice
+from "h_item" h
+where h.gym_id=#{gymId}
+<if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+    and (h.item_name like concat('%', #{pager.searchKeyword}, '%') or h.item_category like concat('%', #{pager.searchKeyword}, '%'))
+</if>
+group by h.gym_id, h.item_category, h.item_name
+<choose>
+    <when test="sort == 'count_desc'">order by itemCount desc</when>
+    <when test="sort == 'count_asc'">order by itemCount asc</when>
+    <when test="sort == 'price_desc'">order by itemPrice desc nulls last</when>
+    <when test="sort == 'price_asc'">order by itemPrice asc nulls last</when>
+    <otherwise>order by h.item_name</otherwise>
+</choose>
+limit #{pager.pageSize} offset #{pager.offset}
+</select>
+
+<!-- 아이템 목록 전체 건수(=검색조건을 적용한 물품 그룹 개수) 조회 쿼리: Pager의 총 페이지 수 계산(makeBlock)에 사용 -->
+<select id="itemListCount" resultType="long">
+select count(*) from (
+    select 1
+    from "h_item"
+    where gym_id=#{gymId}
+    <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+        and (item_name like concat('%', #{pager.searchKeyword}, '%') or item_category like concat('%', #{pager.searchKeyword}, '%'))
+    </if>
+    group by gym_id, item_category, item_name
+) t
+</select>
+
+<!-- 물품 등록 폼의 자동완성 추천용: 페이징 없이 해당 gym의 등록된 물품명/카테고리 전체를 중복없이 조회 -->
+<select id="itemNames" parameterType="Long" resultType="ItemDTO">
+select distinct
+    item_name as itemName,
+    item_category as itemCategory
+from "h_item"
+where gym_id=#{gymId}
+order by item_name
+</select>
+
+<!-- CSV 내보내기용: itemList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환 -->
+<select id="itemListAll" resultType="ItemDTO">
+select
     gym_id as gymId,
     item_category as itemCategory,
     item_name as itemName,
     sum(item_count) as itemCount
 from "h_item"
 where gym_id=#{gymId}
+<if test="keyword != null and keyword != ''">
+    and (item_name like concat('%', #{keyword}, '%') or item_category like concat('%', #{keyword}, '%'))
+</if>
 group by gym_id, item_category, item_name
+order by item_name
 </select>
 
 <select id="itemDetail" parameterType="ItemDTO" resultType="ItemDTO">
