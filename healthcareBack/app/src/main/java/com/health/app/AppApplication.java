@@ -6,7 +6,9 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
+@EnableScheduling
 @SpringBootApplication
 public class AppApplication {
 
@@ -14,13 +16,13 @@ public class AppApplication {
 		try {
 			// 다양한 실행 디렉토리 기준 상대 경로 후보군 설정
 			String[] envPaths = {
-				".env",
-				"../.env",
-				"../../.env",
-				"healthcareBack/.env",
-				"../healthcareBack/.env"
+					".env",
+					"../.env",
+					"../../.env",
+					"healthcareBack/.env",
+					"../healthcareBack/.env"
 			};
-			
+
 			File envFile = null;
 			for (String path : envPaths) {
 				File f = new File(path);
@@ -29,7 +31,7 @@ public class AppApplication {
 					break;
 				}
 			}
-			
+
 			if (envFile != null && envFile.exists()) {
 				System.out.println("=========================================");
 				System.out.println("ℹ️ .env 파일 로드 성공: " + envFile.getAbsolutePath());
