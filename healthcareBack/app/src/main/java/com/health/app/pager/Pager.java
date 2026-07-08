@@ -29,7 +29,10 @@ public class Pager {
     
     // 검색 기준 컬럼
     private String searchType;
-    
+
+    // 조회월 필터 (YYYY-MM 형식, 선택)
+    private String month;
+
     // 페이징 블록의 시작 페이지 번호 (예: 1, 6, 11)
     private Long startPage;
     

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './settlepage.css';
+import Pagination from './Pagination';
 
 // 사업장 ID와 지점 이름 매핑
 const GYM_NAMES = {
@@ -200,7 +201,24 @@ function Settlepage() {
   const [unpaidContracts, setUnpaidContracts] = useState([]);
   const [unpaidExpenses, setUnpaidExpenses] = useState([]);
   const [selectedExpenseContractId, setSelectedExpenseContractId] = useState('');
-  
+
+  // 페이징 상태 관리 (결재/매출 내역, 지출 내역, 지출 정산 대기 계약서)
+  const [payPager, setPayPager] = useState(null);
+  const [payTotalCount, setPayTotalCount] = useState(0);
+  const [payTotalAmount, setPayTotalAmount] = useState(0);
+
+  const [expensePage, setExpensePage] = useState(1);
+  const [expensePager, setExpensePager] = useState(null);
+  const [expenseTotalCount, setExpenseTotalCount] = useState(0);
+  const [expenseTotalAmount, setExpenseTotalAmount] = useState(0);
+
+  const [contractPage, setContractPage] = useState(1);
+  const [contractPager, setContractPager] = useState(null);
+
+  const [commissionPager, setCommissionPager] = useState(null);
+  const [commissionTotalCount, setCommissionTotalCount] = useState(0);
+  const [commissionStats, setCommissionStats] = useState({ totalPaidAmount: 0, unpaidCount: 0, avgCommissionRate: 0 });
+
   // UI 상태 관리
   const [loading, setLoading] = useState(false);
   const [errorInfo, setErrorInfo] = useState('');
@@ -242,90 +260,208 @@ function Settlepage() {
     ? `[계약 #${selectedContract.dataId}] ${selectedContract.contract === 3 ? '이용권' : 'PT'} - ${selectedContract.receiverName}`
     : '';
 
-  // 백엔드 연동 데이터 조회
+  // 관리자 권한용 커미션 내역을 "페이지 + 지급상태 + 조회월" 조건으로 페이징 조회 (실패 시 목업 데이터로 폴백)
+  const fetchCommissions = async (targetPage, status, month) => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    try {
+      const query = new URLSearchParams({ page: targetPage, pageSize: 10 });
+      if (status && status !== 'ALL') query.set('status', status);
+      if (month && month !== 'ALL') query.set('month', month);
+      const response = await fetch(`${backendUrl}/fitb/settle/commission?${query.toString()}`, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        setCommissions(data.items || []);
+        setCommissionPager(data.pager || null);
+        setCommissionTotalCount(data.totalCount || 0);
+      } else {
+        throw new Error('커미션 조회 실패');
+      }
+    } catch (err) {
+      console.warn('관리자 커미션 API 조회 실패 - 목업 데이터 사용:', err.message);
+      setCommissions(mockCommissions);
+      setCommissionPager(null);
+      setCommissionTotalCount(mockCommissions.length);
+    }
+  };
+
+  // 관리자 권한용 커미션 대시보드 요약 통계 조회 (필터/페이지와 무관한 전체 집계)
+  const fetchCommissionStats = async () => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    try {
+      const response = await fetch(`${backendUrl}/fitb/settle/commission/stats`, { headers });
+      if (response.ok) {
+        setCommissionStats(await response.json());
+      } else {
+        throw new Error('커미션 통계 조회 실패');
+      }
+    } catch (err) {
+      console.warn('관리자 커미션 통계 API 조회 실패 - 목업 데이터 기준으로 계산:', err.message);
+      setCommissionStats({
+        totalPaidAmount: mockCommissions.reduce((acc, cur) => acc + (cur.status === '지급' ? cur.commission : 0), 0),
+        unpaidCount: mockCommissions.filter(c => c.status === '미지급').length,
+        avgCommissionRate: mockCommissions.reduce((acc, cur) => acc + cur.commissionRate, 0) / (mockCommissions.length || 1),
+      });
+    }
+  };
+
+  // 커미션 내역 페이지네이션 클릭 핸들러
+  const handleCommissionPageChange = (targetPage) => {
+    fetchCommissions(targetPage, adminStatusFilter, adminMonthFilter);
+  };
+
+  // 사장님 권한용 매출(결제) 내역을 "페이지 + 검색어 + 조회월" 조건으로 페이징 조회 (실패 시 목업 데이터로 폴백)
+  const fetchPays = async (targetPage, keyword, month) => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    try {
+      const query = new URLSearchParams({ page: targetPage, pageSize: 10, keyword: keyword || '' });
+      if (month && month !== 'ALL') query.set('month', month);
+      const response = await fetch(`${backendUrl}/fitb/settle/paylist?${query.toString()}`, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        setPays(data.items || []);
+        setPayPager(data.pager || null);
+        setPayTotalCount(data.totalCount || 0);
+        setPayTotalAmount(data.totalAmount || 0);
+      } else {
+        throw new Error('매출 내역 조회 실패');
+      }
+    } catch (err) {
+      console.warn('사장님 매출 API 조회 실패 - 목업 데이터 사용:', err.message);
+      setPays(mockPays);
+      setPayPager(null);
+      setPayTotalCount(mockPays.length);
+      setPayTotalAmount(mockPays.reduce((acc, cur) => acc + cur.payPrice, 0));
+    }
+  };
+
+  // 사장님 권한용 지출 내역을 "페이지 + 검색어 + 조회월" 조건으로 페이징 조회
+  const fetchExpenses = async (targetPage, keyword, month) => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    try {
+      const query = new URLSearchParams({ page: targetPage, pageSize: 10, keyword: keyword || '' });
+      if (month && month !== 'ALL') query.set('month', month);
+      const response = await fetch(`${backendUrl}/fitb/settle/expense?${query.toString()}`, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        setExpenses(data.items || []);
+        setExpensePager(data.pager || null);
+        setExpenseTotalCount(data.totalCount || 0);
+        setExpenseTotalAmount(data.totalAmount || 0);
+      } else {
+        throw new Error('지출 내역 조회 실패');
+      }
+    } catch (err) {
+      console.warn('사장님 지출 API 조회 실패:', err.message);
+      setExpenses([]);
+      setExpensePager(null);
+      setExpenseTotalCount(0);
+      setExpenseTotalAmount(0);
+    }
+  };
+
+  // 사장님 권한용 미결제 계약서 목록 조회 (매출 등록 폼 드롭다운용, 페이징 없음)
+  const fetchUnpaidContracts = async () => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    try {
+      const response = await fetch(`${backendUrl}/fitb/settle/unpaid-contracts`, { headers });
+      if (response.ok) {
+        setUnpaidContracts(await response.json());
+      } else {
+        throw new Error('미결제 계약 목록 조회 실패');
+      }
+    } catch (err) {
+      console.warn('미결제 계약 API 조회 실패 - 목업 데이터 사용:', err.message);
+      setUnpaidContracts(mockUnpaidContracts);
+    }
+  };
+
+  // 사장님 권한용 미결제 지출 계약서(임금/제휴 수수료) 목록을 페이지 조건으로 페이징 조회
+  const fetchUnpaidExpenses = async (targetPage) => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    try {
+      const query = new URLSearchParams({ page: targetPage, pageSize: 5 });
+      const response = await fetch(`${backendUrl}/fitb/settle/unpaid-expenses?${query.toString()}`, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        setUnpaidExpenses(data.items || []);
+        setContractPager(data.pager || null);
+      } else {
+        throw new Error('지출 계약 목록 조회 실패');
+      }
+    } catch (err) {
+      console.warn('지출 계약 API 조회 실패:', err.message);
+      setUnpaidExpenses([]);
+      setContractPager(null);
+    }
+  };
+
+  // 결재(매출) 내역 페이지네이션 클릭 핸들러
+  const handlePayPageChange = (targetPage) => {
+    fetchPays(targetPage, ownerSearchQuery, ownerMonthFilter);
+  };
+
+  // 지출 내역 페이지네이션 클릭 핸들러
+  const handleExpensePageChange = (targetPage) => {
+    setExpensePage(targetPage);
+    fetchExpenses(targetPage, ownerSearchQuery, ownerMonthFilter);
+  };
+
+  // 지출 정산 대기 계약서 페이지네이션 클릭 핸들러
+  const handleContractPageChange = (targetPage) => {
+    setContractPage(targetPage);
+    fetchUnpaidExpenses(targetPage);
+  };
+
+  // 백엔드 연동 데이터 최초 조회
   useEffect(() => {
-    const fetchData = async () => {
+    const loadAll = async () => {
       setLoading(true);
       setErrorInfo('');
 
-      const backendUrl = import.meta.env.VITE_BACKEND_URL;
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-      // 1. 관리자 권한용 커미션 내역 조회
-      try {
-        const response = await fetch(`${backendUrl}/fitb/settle/commission`, { headers });
-        if (response.ok) {
-          const data = await response.json();
-          setCommissions(data);
-        } else {
-          throw new Error('커미션 조회 실패');
-        }
-      } catch (err) {
-        console.warn('관리자 커미션 API 조회 실패 - 목업 데이터 사용:', err.message);
-        setCommissions(mockCommissions);
-      }
-
-      // 2. 사장님 권한용 지출 내역 조회
-      try {
-        const response = await fetch(`${backendUrl}/fitb/settle/expense`, { headers });
-        if (response.ok) {
-          const data = await response.json();
-          setExpenses(data);
-        } else {
-          throw new Error('지출 내역 조회 실패');
-        }
-      } catch (err) {
-        console.warn('사장님 지출 API 조회 실패:', err.message);
-        setExpenses([]);
-      }
-
-      // 3. 사장님 권한용 매출 내역 조회
-      try {
-        const response = await fetch(`${backendUrl}/fitb/settle/paylist`, { headers });
-        if (response.ok) {
-          const data = await response.json();
-          setPays(data);
-        } else {
-          throw new Error('매출 내역 조회 실패');
-        }
-      } catch (err) {
-        console.warn('사장님 매출 API 조회 실패 - 목업 데이터 사용:', err.message);
-        setPays(mockPays);
-      }
-
-      // 4. 사장님 권한용 미결제 계약서 목록 조회
-      try {
-        const response = await fetch(`${backendUrl}/fitb/settle/unpaid-contracts`, { headers });
-        if (response.ok) {
-          const data = await response.json();
-          setUnpaidContracts(data);
-        } else {
-          throw new Error('미결제 계약 목록 조회 실패');
-        }
-      } catch (err) {
-        console.warn('미결제 계약 API 조회 실패 - 목업 데이터 사용:', err.message);
-        setUnpaidContracts(mockUnpaidContracts);
-      }
-
-      // 5. 사장님 권한용 미결제 지출 계약서 목록 조회 (임금, 커미션 등)
-      try {
-        const response = await fetch(`${backendUrl}/fitb/settle/unpaid-expenses`, { headers });
-        if (response.ok) {
-          const data = await response.json();
-          setUnpaidExpenses(data);
-        } else {
-          throw new Error('지출 계약 목록 조회 실패');
-        }
-      } catch (err) {
-        console.warn('지출 계약 API 조회 실패:', err.message);
-        setUnpaidExpenses([]);
-      }
+      await Promise.all([
+        fetchCommissions(1, 'ALL', 'ALL'),
+        fetchCommissionStats(),
+        fetchPays(1, '', 'ALL'),
+        fetchExpenses(1, '', 'ALL'),
+        fetchUnpaidContracts(),
+        fetchUnpaidExpenses(1),
+      ]);
 
       setLoading(false);
     };
 
-    fetchData();
+    loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  // 검색어/조회월/탭이 바뀔 때마다 300ms 디바운스 후 현재 활성 탭의 1페이지부터 재조회
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (ownerTab === 'sales') {
+        fetchPays(1, ownerSearchQuery, ownerMonthFilter);
+      } else if (ownerTab === 'expenses') {
+        setExpensePage(1);
+        fetchExpenses(1, ownerSearchQuery, ownerMonthFilter);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownerSearchQuery, ownerMonthFilter, ownerTab]);
+
+  // 커미션 지급상태/조회월 필터가 바뀔 때마다 300ms 디바운스 후 1페이지부터 재조회
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchCommissions(1, adminStatusFilter, adminMonthFilter);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminStatusFilter, adminMonthFilter]);
 
   // 커미션 지급 상태 토글 (ADMIN 기능)
   const handleToggleCommissionStatus = async (settlementId) => {
@@ -335,31 +471,24 @@ function Settlepage() {
       ...(token && { Authorization: `Bearer ${token}` }),
     };
 
-    // 로컬 상태 변경 우선 수행 (인터랙티브 UX 제공)
-    setCommissions(prev =>
-      prev.map(c => {
-        if (c.settlementId === settlementId) {
-          const isPaid = c.status === '지급';
-          return {
-            ...c,
-            status: isPaid ? '미지급' : '지급',
-            settledAt: isPaid ? null : new Date().toISOString().split('T')[0],
-          };
-        }
-        return c;
-      })
-    );
-
-    // 백엔드로 상태 저장 요청 시도
     try {
-      await fetch(`${backendUrl}/fitb/settle/commission/status`, {
+      const response = await fetch(`${backendUrl}/fitb/settle/commission/status`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ settlementId })
       });
+      if (!response.ok) {
+        throw new Error('상태 변경 실패');
+      }
     } catch (err) {
-      console.warn('백엔드 업데이트 실패 - 로컬에서 상태 적용 완료:', err.message);
+      console.warn('백엔드 커미션 상태 변경 실패:', err.message);
+      alert('상태 변경에 실패했습니다.');
+      return;
     }
+
+    // 상태 변경(필터 적용 시 목록에서 사라질 수도 있음)과 요약 통계를 함께 재조회
+    fetchCommissions(commissionPager?.currentPage || 1, adminStatusFilter, adminMonthFilter);
+    fetchCommissionStats();
   };
 
   // 지출 등록 핸들러 (OWNER 기능)
@@ -380,14 +509,6 @@ function Settlepage() {
       expensePrice: parseInt(newExpensePrice, 10),
       expenseRate: parseFloat(newExpenseRate) || 0.0,
     };
-
-    // 로컬 상태 업데이트
-    setExpenses(prev => [newExpenseObj, ...prev]);
-
-    // 계약서 연동 지출인 경우 해당 계약서를 unpaidExpenses에서 제거
-    if (selectedExpenseContractId) {
-      setUnpaidExpenses(prev => prev.filter(c => c.dataId !== parseInt(selectedExpenseContractId, 10)));
-    }
 
     // 입력 폼 리셋
     setNewExpenseName('');
@@ -414,8 +535,14 @@ function Settlepage() {
         throw new Error('서버 등록 실패');
       }
     } catch (err) {
-      console.warn('백엔드 지출 저장 실패 - 로컬 반영 완료:', err.message);
+      console.warn('백엔드 지출 저장 실패:', err.message);
     }
+
+    // 새로 등록된 지출을 확인할 수 있도록 지출/지출 대기 계약서 목록을 1페이지부터 재조회
+    setExpensePage(1);
+    setContractPage(1);
+    fetchExpenses(1, ownerSearchQuery, ownerMonthFilter);
+    fetchUnpaidExpenses(1);
   };
 
   // 직원(트레이너) 인센티브 추가금 계산 헬퍼 함수
@@ -461,8 +588,6 @@ function Settlepage() {
   const handleDeleteExpense = async (expenseId) => {
     if (!window.confirm('해당 지출 내역을 삭제하시겠습니까?')) return;
 
-    setExpenses(prev => prev.filter(exp => exp.expenseId !== expenseId));
-
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     try {
@@ -471,8 +596,12 @@ function Settlepage() {
         headers,
       });
     } catch (err) {
-      console.warn('백엔드 지출 삭제 실패 - 로컬 반영 완료:', err.message);
+      console.warn('백엔드 지출 삭제 실패:', err.message);
     }
+
+    // 삭제 후 현재 보고 있던 지출 페이지와 지출 대기 계약서 목록을 재조회
+    fetchExpenses(expensePage, ownerSearchQuery, ownerMonthFilter);
+    fetchUnpaidExpenses(contractPage);
   };
 
   // 매출 등록 핸들러 (OWNER 기능 - 계약 연동)
@@ -493,9 +622,6 @@ function Settlepage() {
       payName: autoPayName,
       dataId: selectedContract.dataId
     };
-
-    // 로컬 상태 업데이트
-    setPays(prev => [newPayObj, ...prev]);
 
     // 입력 폼 리셋
     setSelectedContractId('');
@@ -521,9 +647,12 @@ function Settlepage() {
         throw new Error('서버 등록 실패');
       }
     } catch (err) {
-      console.warn('백엔드 매출 등록 실패 - 로컬 반영 완료:', err.message);
-      alert('로컬에 매출이 등록되었습니다.');
+      console.warn('백엔드 매출 등록 실패:', err.message);
     }
+
+    // 새로 등록된 매출을 확인할 수 있도록 매출 목록을 1페이지부터 재조회하고, 계약서 드롭다운도 갱신
+    fetchPays(1, ownerSearchQuery, ownerMonthFilter);
+    fetchUnpaidContracts();
   };
 
   // 금액 포맷 함수
@@ -631,21 +760,21 @@ function Settlepage() {
             <div className="card-premium stat-card">
               <div className="stat-card-title">누적 수수료 수익</div>
               <div className="stat-card-value" style={{ color: 'var(--primary-accent)' }}>
-                {formatWon(commissions.reduce((acc, curr) => acc + (curr.status === '지급' ? curr.commission : 0), 0))}
+                {formatWon(commissionStats.totalPaidAmount)}
               </div>
               <div className="stat-card-desc">지급 완료 기준 총 정산 금액</div>
             </div>
             <div className="card-premium stat-card">
               <div className="stat-card-title">미지급 정산 대기</div>
               <div className="stat-card-value" style={{ color: '#f59e0b' }}>
-                {commissions.filter(c => c.status === '미지급').length} 건
+                {commissionStats.unpaidCount} 건
               </div>
               <div className="stat-card-desc">신속한 확인 및 지급 처리가 필요합니다.</div>
             </div>
             <div className="card-premium stat-card">
               <div className="stat-card-title">평균 커미션 수수료율</div>
               <div className="stat-card-value">
-                {(commissions.reduce((acc, curr) => acc + curr.commissionRate, 0) / (commissions.length || 1) * 100).toFixed(1)}%
+                {(commissionStats.avgCommissionRate * 100).toFixed(1)}%
               </div>
               <div className="stat-card-desc">등록된 전체 사업장 기준 평균</div>
             </div>
@@ -677,12 +806,7 @@ function Settlepage() {
             </div>
             <div className="filter-right">
               <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                총 <strong>{
-                  commissions.filter(c => 
-                    (adminStatusFilter === 'ALL' || c.status === adminStatusFilter) &&
-                    (adminMonthFilter === 'ALL' || getYearMonth(c.settleMonth) === adminMonthFilter)
-                  ).length
-                }</strong>건 검색됨
+                총 <strong>{commissionTotalCount}</strong>건 검색됨
               </span>
             </div>
           </div>
@@ -703,12 +827,7 @@ function Settlepage() {
                 </tr>
               </thead>
               <tbody>
-                {commissions
-                  .filter(c => 
-                    (adminStatusFilter === 'ALL' || c.status === adminStatusFilter) &&
-                    (adminMonthFilter === 'ALL' || getYearMonth(c.settleMonth) === adminMonthFilter)
-                  )
-                  .map(c => (
+                {commissions.map(c => (
                     <tr key={c.settlementId}>
                       <td>#{c.settlementId}</td>
                       <td>
@@ -734,10 +853,7 @@ function Settlepage() {
                       </td>
                     </tr>
                   ))}
-                {commissions.filter(c => 
-                  (adminStatusFilter === 'ALL' || c.status === adminStatusFilter) &&
-                  (adminMonthFilter === 'ALL' || getYearMonth(c.settleMonth) === adminMonthFilter)
-                ).length === 0 && (
+                {commissions.length === 0 && (
                   <tr>
                     <td colSpan="8" className="no-data-row">조건에 해당하는 정산 내역이 없습니다.</td>
                   </tr>
@@ -745,6 +861,7 @@ function Settlepage() {
               </tbody>
             </table>
           </div>
+          <Pagination pager={commissionPager} onPageChange={handleCommissionPageChange} />
         </div>
       )}
 
@@ -802,26 +919,14 @@ function Settlepage() {
                 <div className="card-premium stat-card">
                   <div className="stat-card-title">총 매출 합계</div>
                   <div className="stat-card-value" style={{ color: 'var(--primary-accent)' }}>
-                    {formatWon(
-                      pays
-                        .filter(p => 
-                          (ownerMonthFilter === 'ALL' || getYearMonth(p.payDate) === ownerMonthFilter) &&
-                          (p.payName.includes(ownerSearchQuery) || p.username.toString().includes(ownerSearchQuery))
-                        )
-                        .reduce((acc, curr) => acc + curr.payPrice, 0)
-                    )}
+                    {formatWon(payTotalAmount)}
                   </div>
                   <div className="stat-card-desc">검색 필터 기준 전체 매출 금액</div>
                 </div>
                 <div className="card-premium stat-card">
                   <div className="stat-card-title">결제 승인 건수</div>
                   <div className="stat-card-value">
-                    {
-                      pays.filter(p => 
-                        (ownerMonthFilter === 'ALL' || getYearMonth(p.payDate) === ownerMonthFilter) &&
-                        (p.payName.includes(ownerSearchQuery) || p.username.toString().includes(ownerSearchQuery))
-                      ).length
-                    } 건
+                    {payTotalCount} 건
                   </div>
                   <div className="stat-card-desc">정상 결제 승인 완료 기준 건수</div>
                 </div>
@@ -841,25 +946,17 @@ function Settlepage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {pays
-                      .filter(p => 
-                        (ownerMonthFilter === 'ALL' || getYearMonth(p.payDate) === ownerMonthFilter) &&
-                        (p.payName.includes(ownerSearchQuery) || p.username.toString().includes(ownerSearchQuery))
-                      )
-                      .map((p, index) => (
-                        <tr key={p.payId || p.dataId || index}>
-                          <td>{p.payId ? `#${p.payId}` : `임시 (계약 #${p.dataId})`}</td>
-                          <td>{p.username ? (p.username.toString().startsWith('0') ? p.username : '0' + p.username) : '-'}</td>
-                          <td><strong>{p.payName}</strong></td>
-                          <td style={{ fontWeight: '600' }}>{formatWon(p.payPrice)}</td>
-                          <td>{p.installment === 0 ? '일시불' : `${p.installment}개월 할부`}</td>
-                          <td>{p.payDate}</td>
-                        </tr>
-                      ))}
-                    {pays.filter(p => 
-                      (ownerMonthFilter === 'ALL' || getYearMonth(p.payDate) === ownerMonthFilter) &&
-                      (p.payName.includes(ownerSearchQuery) || p.username.toString().includes(ownerSearchQuery))
-                    ).length === 0 && (
+                    {pays.map((p, index) => (
+                      <tr key={p.payId || p.dataId || index}>
+                        <td>{p.payId ? `#${p.payId}` : `임시 (계약 #${p.dataId})`}</td>
+                        <td>{p.username ? (p.username.toString().startsWith('0') ? p.username : '0' + p.username) : '-'}</td>
+                        <td><strong>{p.payName}</strong></td>
+                        <td style={{ fontWeight: '600' }}>{formatWon(p.payPrice)}</td>
+                        <td>{p.installment === 0 ? '일시불' : `${p.installment}개월 할부`}</td>
+                        <td>{p.payDate}</td>
+                      </tr>
+                    ))}
+                    {pays.length === 0 && (
                       <tr>
                         <td colSpan="6" className="no-data-row">조건에 해당하는 매출 내역이 없습니다.</td>
                       </tr>
@@ -867,6 +964,7 @@ function Settlepage() {
                   </tbody>
                 </table>
               </div>
+              <Pagination pager={payPager} onPageChange={handlePayPageChange} />
 
               {/* 매출 등록 폼 (계약 연동) */}
               <div className="card-premium expense-form-card">
@@ -885,14 +983,11 @@ function Settlepage() {
                         onChange={(e) => setSelectedContractId(e.target.value)}
                       >
                         <option value="">-- 계약서를 선택해 주세요 --</option>
-                        {unpaidContracts
-                          .filter(c => !pays.some(p => p.dataId === c.dataId))
-                          .map(c => (
-                            <option key={c.dataId} value={c.dataId}>
-                              [{c.contract === 3 ? '이용권' : 'PT'}] {c.receiverName} (₩{c.amount?.toLocaleString()}) - #{c.dataId}
-                            </option>
-                          ))
-                        }
+                        {unpaidContracts.map(c => (
+                          <option key={c.dataId} value={c.dataId}>
+                            [{c.contract === 3 ? '이용권' : 'PT'}] {c.receiverName} (₩{c.amount?.toLocaleString()}) - #{c.dataId}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -971,26 +1066,14 @@ function Settlepage() {
                 <div className="card-premium stat-card">
                   <div className="stat-card-title">지출 총액</div>
                   <div className="stat-card-value" style={{ color: '#f43f5e' }}>
-                    {formatWon(
-                      expenses
-                        .filter(e => 
-                          (ownerMonthFilter === 'ALL' || getYearMonth(e.expenseDate) === ownerMonthFilter) &&
-                          e.expenseName.includes(ownerSearchQuery)
-                        )
-                        .reduce((acc, curr) => acc + curr.expensePrice, 0)
-                    )}
+                    {formatWon(expenseTotalAmount)}
                   </div>
                   <div className="stat-card-desc">검색 필터 기준 사업장 총 운영 지출비</div>
                 </div>
                 <div className="card-premium stat-card">
                   <div className="stat-card-title">등록된 지출 건수</div>
                   <div className="stat-card-value">
-                    {
-                      expenses.filter(e => 
-                        (ownerMonthFilter === 'ALL' || getYearMonth(e.expenseDate) === ownerMonthFilter) &&
-                        e.expenseName.includes(ownerSearchQuery)
-                      ).length
-                    } 건
+                    {expenseTotalCount} 건
                   </div>
                   <div className="stat-card-desc">자체 관리 지출 내역 합산</div>
                 </div>
@@ -1010,12 +1093,7 @@ function Settlepage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {expenses
-                      .filter(e => 
-                        (ownerMonthFilter === 'ALL' || getYearMonth(e.expenseDate) === ownerMonthFilter) &&
-                        e.expenseName.includes(ownerSearchQuery)
-                      )
-                      .map(e => (
+                    {expenses.map(e => (
                         <tr key={e.expenseId}>
                           <td>#{e.expenseId}</td>
                           <td><strong>{e.expenseName}</strong></td>
@@ -1052,10 +1130,7 @@ function Settlepage() {
                           </td>
                         </tr>
                       ))}
-                    {expenses.filter(e => 
-                      (ownerMonthFilter === 'ALL' || getYearMonth(e.expenseDate) === ownerMonthFilter) &&
-                      e.expenseName.includes(ownerSearchQuery)
-                    ).length === 0 && (
+                    {expenses.length === 0 && (
                       <tr>
                         <td colSpan="6" className="no-data-row">등록된 지출 비용 데이터가 없습니다.</td>
                       </tr>
@@ -1063,6 +1138,7 @@ function Settlepage() {
                   </tbody>
                 </table>
               </div>
+              <Pagination pager={expensePager} onPageChange={handleExpensePageChange} />
 
               {/* 지출 등록 폼 (계약 연동 및 직접 등록 듀얼 레이아웃) */}
               <div className="expense-dual-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '30px' }}>
@@ -1075,10 +1151,8 @@ function Settlepage() {
                   </p>
                   
                   <div className="expense-contract-scroll-list" style={{ maxHeight: '320px', overflowY: 'auto' }}>
-                    {unpaidExpenses
-                      .filter(c => !expenses.some(e => e.dataId === c.dataId))
-                      .map(c => (
-                        <div 
+                    {unpaidExpenses.map(c => (
+                        <div
                           key={c.dataId}
                           className={`expense-contract-item ${selectedExpenseContractId === c.dataId.toString() ? 'selected' : ''}`}
                           style={{
@@ -1118,14 +1192,14 @@ function Settlepage() {
                             )}
                           </div>
                         </div>
-                      ))
-                    }
-                    {unpaidExpenses.filter(c => !expenses.some(e => e.dataId === c.dataId)).length === 0 && (
+                      ))}
+                    {unpaidExpenses.length === 0 && (
                       <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
                         지출 대기 중인 계약서가 없습니다.
                       </div>
                     )}
                   </div>
+                  <Pagination pager={contractPager} onPageChange={handleContractPageChange} />
                 </div>
 
                 {/* 오른쪽: 지출 등록 폼 */}

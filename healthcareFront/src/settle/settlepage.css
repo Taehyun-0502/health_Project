@@ -472,6 +472,44 @@
   }
 }
 
+/* Pagination (정산 리스트 하단 페이지네이션) */
+.settle-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 20px;
+}
+
+.settle-page-btn {
+  min-width: 2.25rem;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settle-page-btn:hover:not(:disabled) {
+  background-color: rgba(99, 102, 241, 0.08);
+  color: var(--text-primary);
+}
+
+.settle-page-btn.active {
+  background: var(--primary-gradient);
+  border-color: transparent;
+  color: #fff;
+}
+
+.settle-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* Access Denied/Unauthorized Layout */
 .unauth-card {
   max-width: 500px;
