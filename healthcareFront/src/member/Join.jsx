@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 // 회원가입 페이지 컴포넌트 (디자인 제외 Plain 버전 - 관리자 전용 회원추가 개편)
@@ -6,6 +6,10 @@ function Join() {
   const formRef = useRef(null);
   const checkedIdRef = useRef('');
   const navigate = useNavigate();
+
+  const [role , setRole] = useState('owner')
+  const [gymList , setGymList] = useState([])
+  const [name , setName] = useState('')
 
   // [보안 인증 장치] 마운트 시 로그인 세션 권한을 판별하여 admin이 아닐 경우 즉각 튕겨냄
   useEffect(() => {
@@ -20,6 +24,22 @@ function Join() {
       }
     }
   }, [navigate]);
+
+    // 마운트 시 백엔드에서 전체 체육관 목록을 불러와 저장하는 훅
+  useEffect(() => {
+    const fetchGymList = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/gym/selectid`);
+        if (response.ok) {
+          const data = await response.json();
+          setGymList(data);
+        }
+      } catch (error) {
+        console.error('체육관 목록 조회 실패:', error);
+      }
+    };
+    fetchGymList();
+  }, []);
 
   // 아이디(전화번호) 중복 확인 핸들러
   const handleIdCheck = async () => {
@@ -85,9 +105,9 @@ function Join() {
       username: parseInt(username, 10),
       password: data.password,
       passwordCheck: data.passwordCheck,
-      name: data.name,
+      name: name,
       email: data.email || null,
-      role: data.role,
+      role: role,
       gymId: parseInt(data.gymId, 10),
     };
 
@@ -132,7 +152,14 @@ function Join() {
         </div>
         <div>
           <label>이름: </label>
-          <input type="text" name="name" required />
+          <input 
+            type="text" 
+            name="name" 
+            required 
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={role === 'owner'} 
+          />
         </div>
         <div>
           <label>이메일 (선택): </label>
@@ -140,14 +167,61 @@ function Join() {
         </div>
         <div>
           <label>등록할 권한 유형: </label>
-          <select name="role" required>
+          <select 
+            name="role" 
+            required 
+            value={role} 
+            onChange={(e) => {
+              const selectedRole = e.target.value;
+              setRole(selectedRole);
+              if (selectedRole === 'admin') {
+                setName(''); // admin으로 선택 시 강제 이름 초기화하여 자유 기입 유도
+              }
+            }}
+          >
             <option value="owner">체육관 사장 (owner)</option>
             <option value="admin">총괄 관리자 (admin)</option>
           </select>
         </div>
         <div>
-          <label>소속 사업장 번호 (Gym ID): </label>
-          <input type="number" name="gymId" required />
+          <label>소속 사업장: </label>
+          {role === 'owner' ? (
+            <select 
+              name="gymId" 
+              required 
+              onChange={(e) => {
+                const selectedOption = e.target.options[e.target.selectedIndex];
+                // 1. 옵션 태그에 숨겨둔 data-gymname 속성에서 한글 이름을 가져옵니다.
+                const gymName = selectedOption.getAttribute('data-gymname');
+                if (e.target.value && gymName) {
+                  setName(gymName + " 사장님"); // 2. 이름에는 한글 체육관명이 적용됩니다.
+                } else {
+                  setName('');
+                }
+              }}
+            >
+              <option value="">-- 선택 --</option>
+              {gymList.map((gym) => (
+                // 3. value와 표시 글자는 gymId(숫자)로 지정하고, 한글 이름은 data-gymname에 보관합니다.
+                <option key={gym.gymId} value={gym.gymId} data-gymname={gym.gymName}>
+                  {gym.gymId}
+                </option>
+              ))}
+            </select>
+          ) : (
+            // admin 권한은 사업장 지정이 불필요하므로 기본값(0) 또는 단순 텍스트 입력창 처리
+            <input 
+              type="number" 
+              name="gymId" 
+              value={0} 
+              readOnly 
+              style={{ 
+                backgroundColor: '#e5e7eb', // 회색 배경 처리
+                cursor: 'not-allowed',       // 금지 마우스 커서 표시
+                color: '#6b7280'             // 글자색 톤다운
+              }} 
+            />
+          )}
         </div>
         <button type="submit">등록하기</button>
       </form>

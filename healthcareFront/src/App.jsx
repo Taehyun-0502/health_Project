@@ -9,7 +9,7 @@ import B2cComplaint from './b2c_mypage/B2cComplaint.jsx';
 import Membership from './b2c_mypage/Membership.jsx';
 import B2cNotification from './b2c_mypage/B2cNotification.jsx'; // 알림 컴포넌트 임포트
 import B2cCoupon from './b2c_mypage/B2cCoupon.jsx';             // 쿠폰 컴포넌트 임포트
-import B2cCheckIn from './b2c_mypage/B2cCheckIn.jsx';     // 출석 컴포넌트 임포트
+import B2cCheckIn from './b2c_mypage/B2cCheckIn.jsx';
 import ContractNew from './contract/ContractNew.jsx';
 import ContractDetail from './contract/ContractDetail.jsx';
 import Itempage from './item/Itempage.jsx';
@@ -18,6 +18,7 @@ import Contractpage from './contract/Contractpage.jsx';
 import Settlepage from './settle/settlepage.jsx'
 import B2bMain from './b2b_mypage/B2bMain.jsx';
 import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
+
 
 // 메인 애플리케이션 컴포넌트
 function App() {
@@ -43,9 +44,9 @@ function App() {
       <Route path="/fitb/contract/new" element={<ContractNew />} />
       <Route path="/fitb/contract/:dataId" element={<ContractDetail />} />
       <Route path="/fitb/itempage" element={<Itempage />} />
-      <Route path='/fitb/b2bmypage' element={<B2bMain />} />
+      <Route path="/fitb/b2bmypage" element={<B2bMain/>}/>
       <Route path="/fitb/contractpage" element={<Contractpage />} />
-      <Route path='/fitb/b2bmypage/b2bcomplaint' element={<B2bComplaint />} />
+      <Route path="/fitb/b2bmypage/b2bcomplaint" element={<B2bComplaint/>}/>
       <Route path="/fitb/Settlepage" element={<Settlepage />} />
 
     </Routes>
