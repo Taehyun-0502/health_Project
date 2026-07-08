@@ -18,34 +18,7 @@
   }
 }
 
-/* Developer Tester Bar */
-.tester-bar {
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px dashed rgba(99, 102, 241, 0.4);
-  border-radius: 12px;
-  padding: 12px 20px;
-  margin-bottom: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.tester-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--primary-accent);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.tester-actions {
-  display: flex;
-  gap: 8px;
-}
-
+/* 소규모 보조 버튼(지출 폼의 "선택 해제" 등)에 재사용되는 아웃라인 버튼 스타일 */
 .tester-btn {
   padding: 6px 12px;
   font-size: 12px;
@@ -63,10 +36,36 @@
   color: var(--primary-accent);
 }
 
-.tester-btn.active {
-  background: var(--primary-accent);
-  color: #fff;
-  border-color: var(--primary-accent);
+/* API 조회 실패 시 노출되는 에러 배너 */
+.settle-error-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.settle-error-banner button {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: transparent;
+  color: #ef4444;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.settle-error-banner button:hover {
+  background: rgba(239, 68, 68, 0.15);
 }
 
 /* Header Area */
@@ -251,6 +250,30 @@
 .input-search-premium:focus {
   border-color: var(--primary-accent);
   width: 240px;
+}
+
+/* 커미션 수동 집계 생성 카드 */
+.generate-commission-card {
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+/* CSV 내보내기 버튼 (매출/지출/커미션 목록 필터 영역) */
+.btn-export-premium {
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid var(--primary-accent);
+  background: transparent;
+  color: var(--primary-accent);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-export-premium:hover {
+  background: rgba(99, 102, 241, 0.1);
 }
 
 /* Table Design */

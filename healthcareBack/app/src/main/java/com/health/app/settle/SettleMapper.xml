@@ -29,7 +29,12 @@
         <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
             AND (pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
         </if>
-        ORDER BY pay_id DESC
+        <choose>
+            <when test="sort == 'price_desc'">ORDER BY pay_price DESC</when>
+            <when test="sort == 'price_asc'">ORDER BY pay_price ASC</when>
+            <when test="sort == 'date_asc'">ORDER BY pay_date ASC, pay_id ASC</when>
+            <otherwise>ORDER BY pay_date DESC, pay_id DESC</otherwise>
+        </choose>
         LIMIT #{pager.pageSize} OFFSET #{pager.offset}
     </select>
 
@@ -56,6 +61,48 @@
             AND (pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
         </if>
     </select>
+
+    <!-- CSV 내보내기용: payList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환 -->
+    <select id="payListAll" resultType="com.health.app.settle.PayDTO">
+        SELECT
+            pay_id as payId,
+            username,
+            gym_id as gymId,
+            installment,
+            pay_price as payPrice,
+            pay_date as payDate,
+            pay_name as payName,
+            data_id as dataId
+        FROM "h_payment"
+        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+        <if test="pager.month != null and pager.month != ''">
+            AND TO_CHAR(pay_date, 'YYYY-MM') = #{pager.month}
+        </if>
+        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+            AND (pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
+        </if>
+        ORDER BY pay_date DESC, pay_id DESC
+    </select>
+
+    <!-- 매출(결제) 단건 조회 (삭제 전 gymId/payDate 확인용) -->
+    <select id="getPayById" parameterType="Long" resultType="com.health.app.settle.PayDTO">
+        SELECT
+            pay_id as payId,
+            username,
+            gym_id as gymId,
+            installment,
+            pay_price as payPrice,
+            pay_date as payDate,
+            pay_name as payName,
+            data_id as dataId
+        FROM "h_payment"
+        WHERE pay_id = #{payId}
+    </select>
+
+    <!-- 매출(결제) 내역 삭제 -->
+    <delete id="payDelete" parameterType="Long">
+        DELETE FROM "h_payment" WHERE pay_id = #{payId}
+    </delete>
 
     <!-- 사장님용: 미결제된 서명 완료 계약서 목록 조회 (매출 등록 연동 후보) -->
     <select id="unpaidContractList" parameterType="Long" resultType="com.health.app.contract.ContractDTO">
@@ -106,7 +153,12 @@
                 AND TO_CHAR(s.settle_month, 'YYYY-MM') = #{pager.month}
             </if>
         </where>
-        ORDER BY s.settlement_id DESC
+        <choose>
+            <when test="sort == 'amount_desc'">ORDER BY s.commission DESC</when>
+            <when test="sort == 'amount_asc'">ORDER BY s.commission ASC</when>
+            <when test="sort == 'month_asc'">ORDER BY s.settle_month ASC, s.settlement_id ASC</when>
+            <otherwise>ORDER BY s.settle_month DESC, s.settlement_id DESC</otherwise>
+        </choose>
         LIMIT #{pager.pageSize} OFFSET #{pager.offset}
     </select>
 
@@ -122,6 +174,31 @@
                 AND TO_CHAR(s.settle_month, 'YYYY-MM') = #{pager.month}
             </if>
         </where>
+    </select>
+
+    <!-- CSV 내보내기용: commissionList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환 -->
+    <select id="commissionListAll" resultType="com.health.app.settle.CommissionDTO">
+        SELECT
+            s.settlement_id as settlementId,
+            s.gym_id as gymId,
+            g.gym_name as gymName,
+            s.commission,
+            s.settled_at as settledAt,
+            s.commission_rate as commissionRate,
+            s.settle_month as settleMonth,
+            s.status,
+            s.expense_id as expenseId
+        FROM "h_settlement" s
+        LEFT JOIN "h_gym" g ON s.gym_id = g.gym_id
+        <where>
+            <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+                AND s.status = #{pager.searchKeyword}
+            </if>
+            <if test="pager.month != null and pager.month != ''">
+                AND TO_CHAR(s.settle_month, 'YYYY-MM') = #{pager.month}
+            </if>
+        </where>
+        ORDER BY s.settle_month DESC, s.settlement_id DESC
     </select>
 
     <!-- 관리자용: 커미션 대시보드 요약 통계 조회 (필터/페이지와 무관한 전체 가맹점 기준 집계) -->
@@ -150,12 +227,41 @@
         WHERE s.settlement_id = #{settlementId}
     </select>
 
+    <!-- 가맹점+정산월 기준 커미션 단건 조회 (매출 삭제 후 재계산 대상 확인용) -->
+    <select id="getCommissionByGymAndMonth" resultType="com.health.app.settle.CommissionDTO">
+        SELECT
+            s.settlement_id as settlementId,
+            s.gym_id as gymId,
+            g.gym_name as gymName,
+            s.commission,
+            s.settled_at as settledAt,
+            s.commission_rate as commissionRate,
+            s.settle_month as settleMonth,
+            s.status,
+            s.expense_id as expenseId
+        FROM "h_settlement" s
+        LEFT JOIN "h_gym" g ON s.gym_id = g.gym_id
+        WHERE s.gym_id = #{gymId} AND s.settle_month = #{month}
+    </select>
+
     <!-- 관리자용: 커미션 정산 지급 상태 업데이트 -->
     <update id="updateCommissionStatus" parameterType="com.health.app.settle.CommissionDTO">
         UPDATE "h_settlement"
         SET status = #{status},
             settled_at = #{settledAt}
         WHERE settlement_id = #{settlementId}
+    </update>
+
+    <!-- 특정 가맹점의 특정 기간 매출 합계 * 커미션율로 재계산된 정산 금액 조회 (매출 삭제 후 재계산용) -->
+    <select id="sumGymSalesForMonth" resultType="long">
+        SELECT CAST(COALESCE(SUM(pay_price), 0) * #{rate} AS int8)
+        FROM "h_payment"
+        WHERE gym_id = #{gymId} AND pay_date &gt;= #{startDate} AND pay_date &lt;= #{endDate}
+    </select>
+
+    <!-- 커미션 정산 금액만 갱신 (매출 삭제 후 재계산 결과 반영용) -->
+    <update id="updateCommissionAmount">
+        UPDATE "h_settlement" SET commission = #{commission} WHERE settlement_id = #{settlementId}
     </update>
 
     <!-- 사장님용: 해당 지점(gym_id)의 운영 비용 지출 목록 페이징 조회 -->
@@ -176,7 +282,12 @@
         <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
             AND expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
         </if>
-        ORDER BY expense_date DESC, expense_id DESC
+        <choose>
+            <when test="sort == 'price_desc'">ORDER BY expense_price DESC</when>
+            <when test="sort == 'price_asc'">ORDER BY expense_price ASC</when>
+            <when test="sort == 'date_asc'">ORDER BY expense_date ASC, expense_id ASC</when>
+            <otherwise>ORDER BY expense_date DESC, expense_id DESC</otherwise>
+        </choose>
         LIMIT #{pager.pageSize} OFFSET #{pager.offset}
     </select>
 
@@ -204,10 +315,32 @@
         </if>
     </select>
 
+    <!-- CSV 내보내기용: expenseList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환 -->
+    <select id="expenseListAll" resultType="com.health.app.settle.ExpenseDTO">
+        SELECT
+            expense_id as expenseId,
+            gym_id as gymId,
+            data_id as dataId,
+            expense_name as expenseName,
+            expense_date as expenseDate,
+            expense_price as expensePrice,
+            expense_rate as expenseRate
+        FROM "h_expense"
+        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+        <if test="pager.month != null and pager.month != ''">
+            AND TO_CHAR(expense_date, 'YYYY-MM') = #{pager.month}
+        </if>
+        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+            AND expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
+        </if>
+        ORDER BY expense_date DESC, expense_id DESC
+    </select>
+
     <!-- 사장님용: 신규 지출 항목 등록. origin_item_id는 item 등록에서 자동 생성된 지출일 때만 채워지고, settle에서 직접 입력한 지출은 null(해당 없음) -->
-    <insert id="expenseAdd" parameterType="com.health.app.settle.ExpenseDTO">
+    <!-- useGeneratedKeys: insert 후 DB가 채번한 expense_id를 expenseDTO.expenseId에 다시 채워줌 (settlement 자동 지급 처리 시 사용) -->
+    <insert id="expenseAdd" parameterType="com.health.app.settle.ExpenseDTO" useGeneratedKeys="true" keyProperty="expenseId" keyColumn="expense_id">
         INSERT INTO "h_expense" (expense_id, gym_id, data_id, expense_name, expense_date, expense_price, expense_rate, origin_item_id)
-        VALUES (#{expenseId}, #{gymId}, #{dataId}, #{expenseName}, #{expenseDate}, #{expensePrice}, #{expenseRate}, #{originItemId})
+        VALUES (default, #{gymId}, #{dataId}, #{expenseName}, #{expenseDate}, #{expensePrice}, #{expenseRate}, #{originItemId})
     </insert>
 
     <!-- 사장님용: 지출 비용 항목 삭제 -->

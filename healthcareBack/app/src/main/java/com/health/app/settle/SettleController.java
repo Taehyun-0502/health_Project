@@ -74,7 +74,8 @@ public class SettleController {
             @RequestParam(required = false) Long page,
             @RequestParam(required = false) Long pageSize,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String month) throws Exception {
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String sort) throws Exception {
 
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
@@ -95,7 +96,58 @@ public class SettleController {
         pager.setSearchKeyword(keyword);
         pager.setMonth(month);
 
-        return ResponseEntity.ok(settleService.payList(ownerPhone, pager));
+        return ResponseEntity.ok(settleService.payList(ownerPhone, pager, sort));
+    }
+
+    // CSV 내보내기용 매출 전체 목록 조회 API (OWNER용, 현재 검색어/조회월 조건 반영, 페이징 없음)
+    @GetMapping("/paylist/export")
+    public ResponseEntity<?> payListAll(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String month) throws Exception {
+
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        Claims claims;
+        try {
+            claims = jwtUtill.extractAllClaims(authorization.substring(7));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        }
+
+        Long ownerPhone = Long.parseLong(claims.getSubject());
+
+        Pager pager = new Pager();
+        pager.setSearchKeyword(keyword);
+        pager.setMonth(month);
+
+        return ResponseEntity.ok(settleService.payListAll(ownerPhone, pager));
+    }
+
+    // 매출(결제) 내역 삭제 API (OWNER용) - 해당 월 커미션이 미지급 상태면 자동 재계산, 지급 완료 상태면 경고만 반환
+    @DeleteMapping("/pay/{payId}")
+    public ResponseEntity<?> payDelete(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("payId") Long payId) throws Exception {
+
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        try {
+            jwtUtill.extractAllClaims(authorization.substring(7));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        }
+
+        PayDeleteResult result = settleService.payDelete(payId);
+        if (!result.isDeleted()) {
+            return ResponseEntity.badRequest().body("Fail");
+        }
+
+        return ResponseEntity.ok(result);
     }
 
     // 미결제 완료 회원 계약서 목록 조회 API (OWNER용, UserDTO -> ContractDTO 정정)
@@ -126,7 +178,8 @@ public class SettleController {
             @RequestParam(required = false) Long page,
             @RequestParam(required = false) Long pageSize,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String month) throws Exception {
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String sort) throws Exception {
 
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
@@ -144,7 +197,31 @@ public class SettleController {
         pager.setSearchKeyword(status);
         pager.setMonth(month);
 
-        return ResponseEntity.ok(settleService.commissionList(pager));
+        return ResponseEntity.ok(settleService.commissionList(pager, sort));
+    }
+
+    // CSV 내보내기용 커미션 전체 목록 조회 API (ADMIN용, 현재 상태/조회월 조건 반영, 페이징 없음)
+    @GetMapping("/commission/export")
+    public ResponseEntity<?> commissionListAll(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String month) throws Exception {
+
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        try {
+            jwtUtill.extractAllClaims(authorization.substring(7));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        }
+
+        Pager pager = new Pager();
+        pager.setSearchKeyword(status);
+        pager.setMonth(month);
+
+        return ResponseEntity.ok(settleService.commissionListAll(pager));
     }
 
     // 커미션 대시보드 요약 통계 조회 API (ADMIN용, 필터/페이지와 무관한 전체 집계)
@@ -200,7 +277,8 @@ public class SettleController {
             @RequestParam(required = false) Long page,
             @RequestParam(required = false) Long pageSize,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String month) throws Exception {
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String sort) throws Exception {
 
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
@@ -221,7 +299,34 @@ public class SettleController {
         pager.setSearchKeyword(keyword);
         pager.setMonth(month);
 
-        return ResponseEntity.ok(settleService.expenseList(username, pager));
+        return ResponseEntity.ok(settleService.expenseList(username, pager, sort));
+    }
+
+    // CSV 내보내기용 지출 전체 목록 조회 API (OWNER용, 현재 검색어/조회월 조건 반영, 페이징 없음)
+    @GetMapping("/expense/export")
+    public ResponseEntity<?> expenseListAll(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String month) throws Exception {
+
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        Claims claims;
+        try {
+            claims = jwtUtill.extractAllClaims(authorization.substring(7));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        }
+
+        Long username = Long.parseLong(claims.getSubject());
+
+        Pager pager = new Pager();
+        pager.setSearchKeyword(keyword);
+        pager.setMonth(month);
+
+        return ResponseEntity.ok(settleService.expenseListAll(username, pager));
     }
 
     // 신규 지출 내역 등록 API (OWNER용)

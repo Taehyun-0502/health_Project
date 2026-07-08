@@ -28,7 +28,6 @@ public class ItemService {
         // itemCount가 양수인 경우만 "구매"로 간주해 지출 연동 (음수=폐기는 지출이 아니므로 제외)
         if (result > 0 && itemDTO.getItemCount() != null && itemDTO.getItemCount() > 0) {
             ExpenseDTO expenseDTO = new ExpenseDTO();
-            expenseDTO.setExpenseId(System.currentTimeMillis()); // settle 페이지의 Date.now() 임시 채번 관례를 그대로 따름
             expenseDTO.setGymId(itemDTO.getGymId());
             expenseDTO.setDataId(null); // 계약 연동 지출이 아니므로 null
             expenseDTO.setExpenseName(itemDTO.getItemName() + " 구매");
