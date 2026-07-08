@@ -3,8 +3,10 @@ package com.health.app.contract;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.health.app.member.MemberDTO;
 import com.health.app.member.MemberMapper;
+import com.health.app.member.MemberService;
 
 @Service
 public class ContractService {
@@ -14,6 +16,18 @@ public class ContractService {
 
     @Autowired
     private MemberMapper memberMapper;
+
+    @Autowired
+    private MemberService memberService;
+
+    // 전화번호를 회원 아이디와 동일한 뒷 8자리 숫자로 변환하는 헬퍼 메서드 (MemberService 포맷 규칙과 일치)
+    private Long toEightDigits(Long phone) {
+        String phoneStr = String.valueOf(phone);
+        if (phoneStr.length() > 8) {
+            phoneStr = phoneStr.substring(phoneStr.length() - 8);
+        }
+        return Long.parseLong(phoneStr);
+    }
 
     // 로그인 권한별 계약 유저 리스트 조회 비즈니스 로직
     public List<ContractDTO> contractUserList(ContractDTO contractDTO) throws Exception {
@@ -29,6 +43,9 @@ public class ContractService {
     }
 
     // 계약서 발행 비즈니스 로직
+    // 미가입 수신자는 발행과 동시에 자동 회원가입(3,4번 계약 -> member, 2번 계약 -> trainer)
+    // 발행과 가입이 하나의 트랜잭션으로 묶여 실패 시 함께 롤백
+    @Transactional
     public int contractInsert(ContractDTO contractDTO) throws Exception {
         String role = contractDTO.getRole() == null ? null : contractDTO.getRole().toUpperCase();
         Long contract = contractDTO.getContract();
@@ -55,6 +72,21 @@ public class ContractService {
             if (gymOwner != null) {
                 contractDTO.setGymId(gymOwner.getGymId());
             }
+        }
+
+        // 수신자 번호를 회원 아이디와 동일한 뒷 8자리 포맷으로 정돈 (MemberService 포맷 규칙과 일치)
+        if (contractDTO.getReceiverId() != null) {
+            contractDTO.setReceiverId(toEightDigits(contractDTO.getReceiverId()));
+
+            // 미가입 수신자 자동 회원가입 (MemberService.autoJoin 연결)
+            // 3,4번 계약 -> role 'member', 2번 계약 -> role 'trainer'로 가입되고
+            // 이미 가입된 경우(0)와 자동가입 대상이 아닌 계약(-4)은 그대로 발행 진행됨
+            memberService.autoJoin(contractDTO);
+        }
+
+        // 담당 트레이너 번호도 8자리 포맷으로 정돈 (h_member FK 제약과 일치)
+        if (contractDTO.getManagerId() != null) {
+            contractDTO.setManagerId(toEightDigits(contractDTO.getManagerId()));
         }
 
         // 초기 상태는 발행됨(서명대기)

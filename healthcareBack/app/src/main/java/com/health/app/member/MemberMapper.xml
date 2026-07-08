@@ -5,14 +5,23 @@
 <mapper namespace="com.health.app.member.MemberMapper">
 
     <!-- 회원 가입 SQL -->
- <insert id="join" parameterType="MemberDTO">
+  <insert id="join" parameterType="MemberDTO">
     insert into "h_member" (username, password, name, email, role, gym_id, birth)
     values(#{username}, #{password}, #{name}, #{email, jdbcType=VARCHAR}, #{role}, #{gymId}, #{birth})
     </insert>  
 
 
-    <!-- 아이디(전화번호) 중복확인 SQL -->
-    <select id="idcheck" parameterType="MemberDTO" resultType="MemberDTO">
-    select * from "h_member" where username = #{username}
-    </select>
+  <!-- 아이디(전화번호) 중복확인 SQL -->
+  <select id="idcheck" parameterType="MemberDTO" resultType="MemberDTO">
+  select * from "h_member" where username = #{username}
+  </select>
+
+  <update>
+  update h_member 
+  set 
+  password = #{password},
+  email = #{email}
+  where username = #{username}
+  </update>
+
 </mapper>
