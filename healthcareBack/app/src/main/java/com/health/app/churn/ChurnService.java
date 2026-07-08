@@ -41,29 +41,53 @@ public class ChurnService {
         return churnMapper.selectAll();
     }
 
-    // 회원 1명의 주당 방문횟수, 일평균 운동시간, 마지막 방문 경과일 UPSERT
+    // 회원 1명의 모든 피처 데이터 UPSERT
     @Transactional
-    public int upsertChurnFeatures(Long username, Double visitPerWeek, Double averExercise, Long lastDays) throws Exception {
-        return churnMapper.upsertChurnFeatures(username, visitPerWeek, averExercise, lastDays);
+    public int upsertChurnFeatures(ChurnDTO dto) throws Exception {
+        return churnMapper.upsertChurnFeatures(dto);
     }
 
-    // FastAPI 응답 바디에서 visit_per_week, aver_exercise, last_days를 추출하여 DB에 UPSERT
+    // FastAPI 응답 바디에서 모든 계산된 피처들을 추출하여 DB에 UPSERT
     @Transactional
     public void upsertChurnFeaturesFromResponse(Map<String, Object> body, Long username) throws Exception {
         if (body != null) {
-            Double visitPerWeek = null;
-            Double averExercise = null;
-            Long lastDays = null;
+            ChurnDTO dto = new ChurnDTO();
+            dto.setUsername(username);
+
+            // 신규 추가된 피처 매핑
+            if (body.get("age") != null) {
+                dto.setAge(((Number) body.get("age")).longValue());
+            }
+            if (body.get("total_month") != null) {
+                dto.setTotalMonth(((Number) body.get("total_month")).longValue());
+            }
+            if (body.get("pt_yn") != null) {
+                Object ptObj = body.get("pt_yn");
+                if (ptObj instanceof Boolean) {
+                    dto.setPtYn((Boolean) ptObj);
+                } else {
+                    dto.setPtYn(((Number) ptObj).intValue() == 1);
+                }
+            }
+            if (body.get("contract_type") != null) {
+                dto.setContractType((String) body.get("contract_type"));
+            }
+
+            // 기존 피처 매핑
             if (body.get("visit_per_week") != null) {
-                visitPerWeek = ((Number) body.get("visit_per_week")).doubleValue();
+                dto.setVisitPerWeek(((Number) body.get("visit_per_week")).doubleValue());
             }
             if (body.get("aver_exercise") != null) {
-                averExercise = ((Number) body.get("aver_exercise")).doubleValue();
+                dto.setAverExercise(((Number) body.get("aver_exercise")).doubleValue());
             }
             if (body.get("last_days") != null) {
-                lastDays = ((Number) body.get("last_days")).longValue();
+                dto.setLastDays(((Number) body.get("last_days")).longValue());
             }
-            churnMapper.upsertChurnFeatures(username, visitPerWeek, averExercise, lastDays);
+            if (body.get("time_cong") != null) {
+                dto.setTimeCong((String) body.get("time_cong"));
+            }
+
+            churnMapper.upsertChurnFeatures(dto);
         }
     }
 

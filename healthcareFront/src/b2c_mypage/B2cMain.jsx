@@ -14,7 +14,6 @@ function B2cMain() {
         <Link to="membership" style={{ textDecoration: 'none', fontWeight: 'bold', color: 'blue' }}>멤버십</Link>
 
         {/* 신규 이관 링크 삼대장 */}
-        <Link to="notification" style={{ textDecoration: 'none', fontWeight: 'bold' }}>알림</Link>
         <Link to="coupon" style={{ textDecoration: 'none', fontWeight: 'bold' }}>내 쿠폰함</Link>
         <Link to="checkin" style={{ textDecoration: 'none', fontWeight: 'bold' }}>출석기록</Link>
 

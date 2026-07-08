@@ -10,7 +10,7 @@ import lombok.ToString;
 public class SurveyDTO {
 
     private Long surveyId;       // 기본키 (int8)
-    private Long username;       // 회원 전화번호 (h_member.username, int8)
+    private Long username;       // 아이디 (h_member.username, int8)
     private Long costRate;       // 가격 만족도 (int8)
     private Long employeeRate;   // 직원 만족도 (int8)
     private Long serviceRate;    // 서비스 만족도 (int8)
