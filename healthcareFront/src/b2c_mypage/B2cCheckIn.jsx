@@ -6,14 +6,24 @@ function B2cCheckIn() {
   const [currentDate, setCurrentDate] = useState(new Date()); // 현재 달력의 조회 기준일 상태
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // 본인 출석 기록 전체 조회 (최근 1달 쿼리 연동)
+  // 본인 출석 기록 전체 조회 (캘린더 연동)
   const fetchCheckIn = async () => {
-    if (!user.username) return;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/checkin/list?username=${user.username}`);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/checkin/list`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setCheckInList(data);
+      } else {
+        const errorText = await response.text();
+        console.error('출석 기록 로드 실패:', errorText);
       }
     } catch (error) {
       console.error('출석 기록 조회 실패:', error);

@@ -27,16 +27,32 @@ function B2cAvatar() {
   // 백엔드 실제 출석 테이블 데이터 개수(List Size)를 가져와 days에 세팅
   useEffect(() => {
     const fetchCheckinData = async () => {
-      if (!user.username) {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
         setIsLoading(false);
         return;
       }
       try {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/checkin/list?username=${user.username}`);
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/checkin/list`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         if (response.ok) {
           const data = await response.json();
-          // 출석 기록 목록의 개수를 출석 일수(days)로 바인딩
-          setDays(data.length);
+          
+          // 아바타 성장은 오직 최근 30일 이내의 출석 기록만 집계
+          const today = new Date();
+          const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+          
+          const recentCheckins = data.filter(item => {
+            if (!item.checkIn) return false;
+            const checkinDate = new Date(item.checkIn);
+            return checkinDate >= thirtyDaysAgo && checkinDate <= today;
+          });
+
+          setDays(recentCheckins.length);
         }
       } catch (error) {
         console.error("출석 데이터 로딩 실패", error);
