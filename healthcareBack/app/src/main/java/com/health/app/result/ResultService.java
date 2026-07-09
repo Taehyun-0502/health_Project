@@ -38,6 +38,16 @@ public class ResultService {
         return resultMapper.selectAll(gymId);
     }
 
+    // 이탈 통계: 기간(일별/월별) 목록
+    public List<ChurnStatPeriodDTO> selectStatPeriods(Long gymId, String mode) throws Exception {
+        return resultMapper.selectStatPeriods(gymId, mode);
+    }
+
+    // 이탈 통계: 특정 기간 요인/불만 항목별 비율
+    public List<ChurnStatItemDTO> selectStatBreakdown(Long gymId, String mode, String period) throws Exception {
+        return resultMapper.selectStatBreakdown(gymId, mode, period);
+    }
+
     // 전체 또는 특정 지점에 대해 일괄 분석 및 저장 수행
     @Transactional
     public int analyzeAndSaveAll(Long gymId) throws Exception {
