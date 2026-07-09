@@ -46,3 +46,9 @@ healthModel/healthModel/python*
 healthModel/healthModel/*.pdb
 healthModel/healthModel/.nonadmin
 healthModel/healthModel/LICENSE_PYTHON.txt
+
+# Claude 하네스 (개인용 - 팀 공유 안 함)
+# 참고: 위 **/*.md 규칙으로 CLAUDE.md 류는 이미 제외되지만, .claude 디렉토리 전체를 명시적으로 제외
+.claude/
+CLAUDE.md
+**/CLAUDE.md
