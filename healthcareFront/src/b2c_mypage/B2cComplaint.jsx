@@ -10,12 +10,22 @@ function B2cComplaint() {
 
   // 내 건의사항 목록 조회 함수
   const fetchMySuggestions = async () => {
-    if (!user.username) return;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/complaint/memberlist?username=${user.username}`);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/complaint/memberlist`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setSuggestions(data);
+      } else {
+        const errorText = await response.text();
+        console.error('건의 내역 로드 실패:', errorText);
       }
     } catch (error) {
       console.error('건의 내역 조회 실패:', error);
