@@ -20,7 +20,6 @@ import Settlepage from './settle/settlepage.jsx'
 import B2bMain from './b2b_mypage/B2bMain.jsx';
 import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
 import B2bNotification from './b2b_mypage/B2bNotification.jsx';
-import Dashboard from './dashboard/dashboard.jsx';
 //import B2cSurvey from './b2c_mypage/B2cSurvey.jsx'; 
 
 
@@ -56,7 +55,6 @@ function App() {
       <Route path="/fitb/b2bmypage/b2bcomplaint" element={<B2bComplaint/>}/>
       <Route path="/fitb/b2bmypage/notification" element={<B2bNotification/>}/>
       <Route path="/fitb/Settlepage" element={<Settlepage />} />
-      <Route path="/fitb/dashboard" element={<Dashboard />} />
 
     </Routes>
   );
