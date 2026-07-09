@@ -25,4 +25,14 @@ public interface ResultMapper {
     // username으로 회원의 gym_id 조회
     Long selectGymIdByUsername(@Param("username") Long username) throws Exception;
 
+    // ── 헬스장 이탈 통계(일별/월별) ──
+    // 기간 목록 + 기간별 이탈율/회원수 (mode: 'daily' | 'monthly')
+    List<ChurnStatPeriodDTO> selectStatPeriods(@Param("gymId") Long gymId,
+                                               @Param("mode") String mode) throws Exception;
+
+    // 특정 기간의 요인/불만 항목별 비율 (mode: 'daily' | 'monthly', period: 'YYYY-MM-DD' | 'YYYY-MM')
+    List<ChurnStatItemDTO> selectStatBreakdown(@Param("gymId") Long gymId,
+                                               @Param("mode") String mode,
+                                               @Param("period") String period) throws Exception;
+
 }
