@@ -11,6 +11,7 @@ const WIDGET_LABEL = {
   memberCount: '계약 회원 수',
   expiringContract: '다가오는 계약 만료',
   bodyComposition: '체성분 변화 추이',
+  gymChurn: '헬스장 이탈율',
   managedMemberCount: '담당 회원 수',
   lowSessionMembers: '세션 소진 임박',
   monthlySession: '월별 세션 수행',
@@ -138,7 +139,7 @@ function Dashboard() {
       case 'monthlyRevenue':
       case 'monthlyExpense':
       case 'monthlySession': {
-        const max = Math.max(...value.map((row) => Number(row.total)));
+        const max = Math.max(...value.map((row) => Number(row.total))) || 1;
         return (
           <div className="dash-chart">
             {value.map((row) => (
@@ -177,6 +178,7 @@ function Dashboard() {
           </div>
         );
       case 'memberChurn':
+      case 'gymChurn':
         return (
           <div>
             <p className="dash-kpi">{value.highRiskCount}<span> 명 고위험</span></p>
@@ -194,7 +196,7 @@ function Dashboard() {
     <div className="dash-page">
       <div className="dash-header">
         <h1>
-          {ROLE_LABEL[loginUser?.role] ?? loginUser?.role} 대시보드
+          {ROLE_LABEL[loginUser?.role?.toUpperCase()] ?? loginUser?.role} 대시보드
           <span className="dash-user">{loginUser ? ` ${loginUser.name}` : ''}</span>
         </h1>
         <button onClick={() => setEditOpen(!editOpen)}>위젯 편집</button>

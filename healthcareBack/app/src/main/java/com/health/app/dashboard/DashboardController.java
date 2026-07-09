@@ -39,6 +39,13 @@ public class DashboardController {
         }
     }
 
+    // 토큰의 role claim 대문자 정규화 메서드
+    // (DB에는 소문자(owner 등)로 저장되어 토큰에도 소문자로 실리므로, 역할 비교·지점 격리 판정 전에 반드시 통일)
+    private String extractRole(Claims claims) {
+        String role = claims.get("role", String.class);
+        return role == null ? null : role.toUpperCase();
+    }
+
     // 역할별 위젯 설정 목록 조회 API 메서드 (잠금 위젯 포함, 최초 조회 시 기본 세트 생성)
     @GetMapping("/widgets")
     public ResponseEntity<?> widgetList(
@@ -50,7 +57,7 @@ public class DashboardController {
         }
 
         Long username = Long.parseLong(claims.getSubject());
-        String role = claims.get("role", String.class);
+        String role = extractRole(claims);
 
         List<DashboardDTO> widgets = dashboardService.widgetList(username, role, dashboardService.memberGymId(username));
         return ResponseEntity.ok(widgets);
@@ -114,7 +121,7 @@ public class DashboardController {
         }
 
         Long username = Long.parseLong(claims.getSubject());
-        String role = claims.get("role", String.class);
+        String role = extractRole(claims);
 
         Map<String, Object> data = dashboardService.widgetData(username, role, dashboardService.memberGymId(username));
         return ResponseEntity.ok(data);

@@ -10,9 +10,6 @@ public interface DashboardMapper {
 
     // ===== 위젯 설정 (h_dashboard_widget) =====
 
-    // 로그인 사용자의 위젯 설정 개수 조회 쿼리 호출 (최초 초기화 판단용)
-    public int widgetCount(Long username) throws Exception;
-
     // 로그인 사용자의 위젯 설정 목록 조회 쿼리 호출
     public List<DashboardDTO> widgetList(Long username) throws Exception;
 
@@ -25,7 +22,7 @@ public interface DashboardMapper {
     // 위젯 표시 순서 변경 쿼리 호출
     public int widgetOrderUpdate(DashboardDTO dashboardDTO) throws Exception;
 
-    // 위젯 데이터 적재 여부 갱신 쿼리 호출 (데이터가 쌓이면 자동 활성화)
+    // 위젯 데이터 적재 여부/표시 여부 갱신 쿼리 호출 (최초 진입 시 데이터 있으면 기본 켜짐, 사라지면 자동 잠금)
     public int widgetHasDataUpdate(DashboardDTO dashboardDTO) throws Exception;
 
     // 로그인 사용자의 소속 지점 번호 조회 쿼리 호출
@@ -56,6 +53,9 @@ public interface DashboardMapper {
 
     // 사장님: 회원 운동 데이터(체성분/이용 패턴) 집계 쿼리 호출
     public Map<String, Object> ownerModelSummary(Long gymId) throws Exception;
+
+    // 사장님: 지점 회원 이탈 예측(헬스장 이탈율) 집계 쿼리 호출
+    public Map<String, Object> ownerChurnSummary(Long gymId) throws Exception;
 
     // 트레이너: 담당 회원 수 집계 쿼리 호출
     public Map<String, Object> trainerMemberCount(Long username) throws Exception;
