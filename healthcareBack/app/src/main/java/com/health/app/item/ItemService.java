@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.health.app.alarm.AlarmService;
+import com.health.app.member.MemberDTO;
+import com.health.app.member.MemberService;
 import com.health.app.pager.Pager;
 import com.health.app.settle.ExpenseDTO;
 import com.health.app.settle.SettleService;
@@ -18,6 +21,12 @@ public class ItemService {
 
     @Autowired
     private SettleService settleService;
+
+    @Autowired
+    private AlarmService alarmService;
+
+    @Autowired
+    private MemberService memberService;
 
     // 아이템 등록 맵퍼 호출. item insert + (구매인 경우) 연동 지출 insert를 하나의 트랜잭션으로 묶어 실패 시 함께 롤백
     @Transactional(rollbackFor = Exception.class)
@@ -82,6 +91,32 @@ public class ItemService {
     // 등록 아이템 삭제 맵퍼 호출
     public int itemDelete(ItemDTO itemDTO) throws Exception {
         return itemMapper.itemDelete(itemDTO);
+    }
+
+    // 유효기간 임박(D-3) 알림 배치 비즈니스 로직: 대상 조회 후 gym별 사장님에게 알림 발송
+    // 알림 발송/조회 실패는 개별 건만 건너뛰고 나머지 건 처리를 막지 않도록 각 건마다 격리
+    public int checkExpiringItems() throws Exception {
+        List<ItemDTO> expiring = itemMapper.findExpiringItems();
+
+        int sentCount = 0;
+        for (ItemDTO item : expiring) {
+            try {
+                // h_gym.gym_ownernum은 사업자 등록번호라 회원 식별에 쓸 수 없음 - h_member에서 gym_id+role=OWNER로 직접 조회
+                MemberDTO owner = memberService.findOwnerByGymId(item.getGymId());
+                if (owner == null || owner.getUsername() == null) {
+                    continue;
+                }
+
+                String message = String.format("[%s] %s의 유효기간이 3일 후(%s) 만료됩니다.",
+                        item.getItemCategory(), item.getItemName(), item.getItemExpiryDate());
+
+                alarmService.sendAlarm(owner.getUsername(), null, message, "/fitb/itempage", "ITEM_EXPIRY");
+                sentCount++;
+            } catch (Exception e) {
+                System.err.println("유효기간 임박 알림 발송 실패 (itemId=" + item.getItemId() + "): " + e.getMessage());
+            }
+        }
+        return sentCount;
     }
 
 }

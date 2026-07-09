@@ -89,6 +89,9 @@ public interface SettleMapper {
     // 지점 운영 지출 항목 삭제
     public int expenseDelete(Long expenseId) throws Exception;
 
+    // 지출이 이미 정산(h_settlement)에 연결되어 있는지 확인 (연결된 지출은 FK 제약으로 삭제 불가하므로 사전 차단용)
+    public int checkExpenseLinkedToSettlement(Long expenseId) throws Exception;
+
     // 특정 기간 내 가맹점별 총 매출액 및 제휴 수수료율 기반의 정산 커미션 목록 집계 조회
     public List<CommissionDTO> calculateMonthlyGymSales(
             @org.apache.ibatis.annotations.Param("startDate") java.time.LocalDate startDate, 
@@ -112,5 +115,8 @@ public interface SettleMapper {
     public int updateSettlementStatusByContract(
             @org.apache.ibatis.annotations.Param("dataId") Long dataId,
             @org.apache.ibatis.annotations.Param("expenseId") Long expenseId) throws Exception;
+
+    // 알림 배치용: 최근 24시간 내 서명 완료되었고 아직 지출 미등록인 임금/제휴 계약(contract=2) 목록 조회
+    public List<ContractDTO> newlySignedExpenseContracts() throws Exception;
 
 }

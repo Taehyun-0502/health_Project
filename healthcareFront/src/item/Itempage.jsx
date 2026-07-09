@@ -33,7 +33,8 @@ function Itempage() {
     itemName: '',
     itemDate: '',
     itemPrice: '',
-    itemCount: ''
+    itemCount: '',
+    itemExpiryDate: ''
   });
 
   // 현재 페이지에 표시할 물품 데이터 목록 (서버가 gymId+검색어+페이지 조건으로 이미 필터링/페이징해서 내려줌)
@@ -208,7 +209,8 @@ function Itempage() {
       itemName: item.itemName || item.item_name || '',
       itemDate: item.itemDate || item.item_date || item.itemBuy || item.item_buy || '',
       itemPrice: (item.itemPrice !== undefined ? item.itemPrice : item.item_price) || 0,
-      itemCount: (item.itemCount !== undefined ? item.itemCount : item.item_count) || 0
+      itemCount: (item.itemCount !== undefined ? item.itemCount : item.item_count) || 0,
+      itemExpiryDate: item.itemExpiryDate || item.item_expiry_date || ''
     });
   };
 
@@ -236,7 +238,8 @@ function Itempage() {
       itemName: editFormData.itemName.trim(),
       itemDate: editFormData.itemDate || editFormData.itemBuy || '',
       itemPrice: editFormData.itemPrice ? parseInt(editFormData.itemPrice, 10) : 0,
-      itemCount: parseInt(editFormData.itemCount, 10)
+      itemCount: parseInt(editFormData.itemCount, 10),
+      itemExpiryDate: editFormData.itemExpiryDate || null
     };
 
     try {
@@ -358,7 +361,8 @@ function Itempage() {
     itemDate: new Date().toISOString().split('T')[0],
     itemPrice: '',
     itemCount: '',
-    itemStatus: '구매' // '구매' | '폐기' 추가 (DTO의 itemStatus 스펙 매칭)
+    itemStatus: '구매', // '구매' | '폐기' 추가 (DTO의 itemStatus 스펙 매칭)
+    itemExpiryDate: '' // 유효기간 (선택 입력, 임박 시 알림 배치 대상)
   });
 
   // 해당 사업장(gymId) 내 중복 제거된 물품명 리스트 (페이징된 items가 아닌 /names 전용 API 결과인 itemNames 기준)
@@ -424,7 +428,8 @@ function Itempage() {
       itemPrice: isDisposal ? 0 : (formData.itemPrice ? parseInt(formData.itemPrice, 10) : 0),
       // 폐기인 경우 DB 수량을 마이너스로 차감 저장
       itemCount: isDisposal ? -finalCount : finalCount,
-      itemStatus: formData.itemStatus // DTO의 itemStatus로 필드명 변경 전송
+      itemStatus: formData.itemStatus, // DTO의 itemStatus로 필드명 변경 전송
+      itemExpiryDate: formData.itemExpiryDate || null
     };
 
     try {
@@ -449,7 +454,8 @@ function Itempage() {
           itemDate: new Date().toISOString().split('T')[0],
           itemPrice: '',
           itemCount: '',
-          itemStatus: '구매'
+          itemStatus: '구매',
+          itemExpiryDate: ''
         });
         setActiveTab('list');
       } else {
@@ -606,6 +612,19 @@ function Itempage() {
                         onChange={(e) => setEditFormData(prev => ({ ...prev, itemCount: e.target.value }))}
                         min="1"
                         required
+                      />
+                    </div>
+
+                    {/* 유효기간 */}
+                    <div className="item-form-group">
+                      <label htmlFor="editItemExpiryDate">유효기간 (선택)</label>
+                      <input
+                        id="editItemExpiryDate"
+                        type="date"
+                        name="itemExpiryDate"
+                        className="item-input"
+                        value={editFormData.itemExpiryDate || ''}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, itemExpiryDate: e.target.value }))}
                       />
                     </div>
                   </div>
@@ -1081,6 +1100,19 @@ function Itempage() {
                       onChange={handleInputChange}
                       min="1"
                       required
+                    />
+                  </div>
+
+                  {/* 유효기간: 선택 입력, 만료 3일 전 사장님에게 알림 발송 */}
+                  <div className="item-form-group">
+                    <label htmlFor="itemExpiryDate">유효기간 (선택)</label>
+                    <input
+                      id="itemExpiryDate"
+                      type="date"
+                      name="itemExpiryDate"
+                      className="item-input"
+                      value={formData.itemExpiryDate}
+                      onChange={handleInputChange}
                     />
                   </div>
 

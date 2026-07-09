@@ -1,5 +1,7 @@
 package com.health.app.member;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.health.app.contract.ContractDTO;
@@ -9,6 +11,16 @@ public class MemberService {
 
     @Autowired
     private MemberMapper memberMapper;
+
+    // 권한(role) 기준 회원 목록 조회 메서드
+    public List<MemberDTO> findByRole(String role) throws Exception {
+        return memberMapper.findByRole(role);
+    }
+
+    // gym_id 기준 사장님(OWNER) 계정 단건 조회 메서드
+    public MemberDTO findOwnerByGymId(Long gymId) throws Exception {
+        return memberMapper.findOwnerByGymId(gymId);
+    }
 
     public int update(MemberDTO memberDTO) throws Exception {
         // 1. 공백 및 필수값 검증

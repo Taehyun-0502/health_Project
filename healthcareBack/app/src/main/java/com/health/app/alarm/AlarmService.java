@@ -12,6 +12,9 @@ public class AlarmService {
     @Autowired
     private AlarmRepository alarmRepository;
 
+    @Autowired
+    private AlarmMapper alarmMapper;
+
     // SSE 기본 연결 만료 시간 설정 (30분)
     private static final Long DEFAULT_TIMEOUT = 1000L * 60 * 30;
 
@@ -38,11 +41,14 @@ public class AlarmService {
         return emitter;
     }
 
-    // 2. 특정 회원에게 메시지를 쏘아 보내는 전송 메서드
-    public void sendAlarm(String username, String message) throws Exception{
+    // 2. 특정 회원에게 메시지를 쏘아 보내는 전송 메서드 (SSE 실시간 발송 + h_alarm 영속화)
+    // sender는 시스템(배치/이벤트 트리거) 발송인 경우 null
+    public void sendAlarm(Long receiver, Long sender, String message, String link, String category) throws Exception {
+        String username = String.valueOf(receiver);
+
         // 저장소에서 해당 회원의 연결망 획득
         SseEmitter emitter = alarmRepository.get(username);
-        
+
         if (emitter != null) {
             try {
                 // event().name("alarm") 형식으로 데이터를 캡슐화해 쏩니다.
@@ -52,5 +58,29 @@ public class AlarmService {
                 alarmRepository.remove(username);
             }
         }
+
+        // 실시간 수신 여부와 무관하게 이력은 항상 h_alarm에 남긴다
+        AlarmDTO alarmDTO = new AlarmDTO();
+        alarmDTO.setReceiver(receiver);
+        alarmDTO.setSender(sender);
+        alarmDTO.setMessage(message);
+        alarmDTO.setLink(link);
+        alarmDTO.setCategory(category);
+        alarmMapper.alarmAdd(alarmDTO);
+    }
+
+    // 3. 수신자 기준 알림 이력 목록 조회
+    public java.util.List<AlarmDTO> alarmList(Long receiver) throws Exception {
+        return alarmMapper.alarmList(receiver);
+    }
+
+    // 4. 알림 읽음 처리
+    public int alarmRead(Long alarmId) throws Exception {
+        return alarmMapper.alarmRead(alarmId);
+    }
+
+    // 5. 보관 기간(1개월) 경과 알림 이력 삭제
+    public int deleteOldAlarms() throws Exception {
+        return alarmMapper.deleteOld(java.time.LocalDate.now().minusMonths(1));
     }
 }

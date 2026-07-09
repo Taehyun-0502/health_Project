@@ -372,6 +372,8 @@ public class SettleController {
         int result = settleService.expenseDelete(expenseId);
         if (result > 0) {
             return ResponseEntity.ok("Success");
+        } else if (result == -2) {
+            return ResponseEntity.badRequest().body("이미 정산에 반영된 지출은 삭제할 수 없습니다.");
         } else {
             return ResponseEntity.badRequest().body("Fail");
         }
