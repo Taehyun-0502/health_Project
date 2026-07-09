@@ -69,6 +69,8 @@ function B2cCoupon() {
               <tr style={{ backgroundColor: '#0b0b0be5', borderBottom: '2px solid #e5e7eb' }}>
                 <th style={{ padding: '10px', textAlign: 'left' }}>보낸사람</th>
                 <th style={{ padding: '10px', textAlign: 'left' }}>쿠폰 이름</th>
+                <th style={{ padding: '10px', textAlign: 'left' }}>종류</th>
+                <th style={{ padding: '10px', textAlign: 'left' }}>할인률(%)</th>
                 <th style={{ padding: '10px', textAlign: 'center' }}>만료일</th>
                 <th style={{ padding: '10px', textAlign: 'center' }}>상태</th>
               </tr>
@@ -78,6 +80,8 @@ function B2cCoupon() {
                 <tr key={coupon.couponId} style={{ borderBottom: '1px solid #e5e7eb' }}>
                   <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.fromName}</td>
                   <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.couponName}</td>
+                  <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.category}</td>
+                  <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.percent}</td>
                   <td style={{ padding: '10px', textAlign: 'center', color: '#666' }}>{coupon.date}</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <span style={{
