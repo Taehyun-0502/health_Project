@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.health.app.coupon.CouponMapper">
+
+    <select id="toList" parameterType="Long" resultType="CouponDTO">
+           SELECT 
+            c.*,
+            m.name as from_name
+        FROM "h_coupon" c
+        LEFT JOIN "h_member" m ON c.from_id = m.username
+        WHERE c.to_id = #{username} 
+        ORDER BY c.date ASC
+    </select>
+    
+</mapper>
