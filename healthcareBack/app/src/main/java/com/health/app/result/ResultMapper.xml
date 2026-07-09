@@ -54,4 +54,58 @@
         where username = #{username}
     </select>
 
+    <!-- 이탈 통계: 기간(일별/월별) 목록 + 기간별 이탈율/회원수 -->
+    <select id="selectStatPeriods" resultType="com.health.app.result.ChurnStatPeriodDTO">
+        <choose>
+            <when test="mode == 'monthly'">
+                select to_char(stat_date, 'YYYY-MM')            as period,
+                       cast(round(avg(total_members)) as int)   as totalMembers,
+                       avg(avg_churn_rate)                      as avgChurnRate
+                from "h_churn_gym_daily"
+                where gym_id = #{gymId}
+                group by to_char(stat_date, 'YYYY-MM')
+                order by period desc
+            </when>
+            <otherwise>
+                select to_char(stat_date, 'YYYY-MM-DD') as period,
+                       total_members                    as totalMembers,
+                       avg_churn_rate                   as avgChurnRate
+                from "h_churn_gym_daily"
+                where gym_id = #{gymId}
+                order by stat_date desc
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 이탈 통계: 특정 기간의 요인/불만 항목별 비율 (%는 조회 시 계산) -->
+    <select id="selectStatBreakdown" resultType="com.health.app.result.ChurnStatItemDTO">
+        <choose>
+            <when test="mode == 'monthly'">
+                select s.stat_type                                          as statType,
+                       s.stat_key                                           as statKey,
+                       cast(sum(s.member_count) as int)                     as memberCount,
+                       round(avg(s.member_count * 100.0 / g.total_members), 1) as pct
+                from "h_churn_stat_daily" s
+                join "h_churn_gym_daily" g
+                     on s.gym_id = g.gym_id and s.stat_date = g.stat_date
+                where g.gym_id = #{gymId}
+                  and to_char(g.stat_date, 'YYYY-MM') = #{period}
+                group by s.stat_type, s.stat_key
+                order by s.stat_type, pct desc
+            </when>
+            <otherwise>
+                select s.stat_type                                      as statType,
+                       s.stat_key                                       as statKey,
+                       s.member_count                                   as memberCount,
+                       round(s.member_count * 100.0 / g.total_members, 1) as pct
+                from "h_churn_stat_daily" s
+                join "h_churn_gym_daily" g
+                     on s.gym_id = g.gym_id and s.stat_date = g.stat_date
+                where g.gym_id = #{gymId}
+                  and g.stat_date = cast(#{period} as date)
+                order by s.stat_type, pct desc
+            </otherwise>
+        </choose>
+    </select>
+
 </mapper>

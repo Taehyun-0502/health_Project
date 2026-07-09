@@ -5,6 +5,8 @@ import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
@@ -31,14 +33,25 @@ public class ChurnBatchScheduler {
     // 매일 새벽 3시(한국시간) 전체 회원 이탈 예측 갱신
     @Scheduled(cron = "0 0 3 * * *", zone = "Asia/Seoul")
     public void runDailyChurnBatch() {
+        triggerBatch("일일 스케줄");
+    }
+
+    // 앱 시작 시 1회 실행 (배포/재시작 직후 최신화). 스케줄 대체가 아니라 보완.
+    @EventListener(ApplicationReadyEvent.class)
+    public void runOnStartup() {
+        triggerBatch("앱 시작");
+    }
+
+    // FastAPI /churn/batch 호출 (analyze_and_save_all 실행). 실패해도 앱에 영향 없이 로그만 남김.
+    private void triggerBatch(String trigger) {
         String url = churnFastapiUrl + "/churn/batch";
-        log.info("[ChurnBatch] 일일 이탈 예측 배치 시작 → {}", url);
+        log.info("[ChurnBatch] {} — 이탈 예측 배치 시작 → {}", trigger, url);
         try {
             RequestEntity<Void> request = RequestEntity.method(HttpMethod.POST, URI.create(url)).build();
             ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-            log.info("[ChurnBatch] 완료: status={}, body={}", response.getStatusCode(), response.getBody());
+            log.info("[ChurnBatch] {} 완료: status={}, body={}", trigger, response.getStatusCode(), response.getBody());
         } catch (Exception e) {
-            log.error("[ChurnBatch] 실패: {}", e.getMessage(), e);
+            log.error("[ChurnBatch] {} 실패: {}", trigger, e.getMessage(), e);
         }
     }
 }
