@@ -14,12 +14,13 @@ import B2cAccount from './b2c_mypage/B2cAccount.jsx';           // 계정수정 
 import ContractNew from './contract/ContractNew.jsx';
 import ContractDetail from './contract/ContractDetail.jsx';
 import Itempage from './item/Itempage.jsx';
-import B2bAccount from './b2b_mypage/B2bAccount.jsx'; 
+import B2bAccount from './b2b_mypage/B2bAccount.jsx';
 import Contractpage from './contract/Contractpage.jsx';
 import Settlepage from './settle/settlepage.jsx'
 import B2bMain from './b2b_mypage/B2bMain.jsx';
 import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
 import B2bNotification from './b2b_mypage/B2bNotification.jsx';
+import Dashboard from './dashboard/dashboard.jsx';
 //import B2cSurvey from './b2c_mypage/B2cSurvey.jsx'; 
 
 
@@ -36,7 +37,7 @@ function App() {
       {/* 일반 회원 마이페이지 하위 중첩 탭 전체 매핑 */}
       <Route path="/fitc/mypage" element={<B2cMain />}>
         <Route path="membership" element={<Membership />} />
-        
+
         <Route path="coupon" element={<B2cCoupon />} />
         <Route path="checkin" element={<B2cCheckIn />} />
         <Route path="b2ccomplaint" element={<B2cComplaint />} />
@@ -50,11 +51,12 @@ function App() {
       <Route path="/fitb/contract/new" element={<ContractNew />} />
       <Route path="/fitb/contract/:dataId" element={<ContractDetail />} />
       <Route path="/fitb/itempage" element={<Itempage />} />
-      <Route path="/fitb/b2bmypage" element={<B2bMain/>}/>
+      <Route path="/fitb/b2bmypage" element={<B2bMain />} />
       <Route path="/fitb/contractpage" element={<Contractpage />} />
-      <Route path="/fitb/b2bmypage/b2bcomplaint" element={<B2bComplaint/>}/>
-      <Route path="/fitb/b2bmypage/notification" element={<B2bNotification/>}/>
+      <Route path="/fitb/b2bmypage/b2bcomplaint" element={<B2bComplaint />} />
+      <Route path="/fitb/b2bmypage/notification" element={<B2bNotification />} />
       <Route path="/fitb/Settlepage" element={<Settlepage />} />
+      <Route path="/fitb/dashboard" element={<Dashboard />} />
 
     </Routes>
   );
