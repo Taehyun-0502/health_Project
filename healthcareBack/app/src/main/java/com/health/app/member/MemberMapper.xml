@@ -16,12 +16,6 @@
   select * from "h_member" where username = #{username}
   </select>
 
-  <update id="update" parameterType="MemberDTO">
-  update h_member 
-  set 
-  password = #{password},
-  email = #{email}
-  where username = #{username}
-  </update>
+ 
 
 </mapper>
