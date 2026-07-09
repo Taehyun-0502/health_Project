@@ -16,6 +16,22 @@
   select * from "h_member" where username = #{username}
   </select>
 
- 
+  <update id="update" parameterType="MemberDTO">
+  update h_member
+  set
+  password = #{password},
+  email = #{email}
+  where username = #{username}
+  </update>
+
+  <!-- 권한(role) 기준 회원 목록 조회 SQL (대소문자 무관 비교) -->
+  <select id="findByRole" parameterType="String" resultType="MemberDTO">
+  select * from "h_member" where upper(role) = upper(#{role})
+  </select>
+
+  <!-- gym_id 기준 사장님(OWNER) 계정 단건 조회 SQL - 알림 발송 대상(username) 식별용 -->
+  <select id="findOwnerByGymId" parameterType="Long" resultType="MemberDTO">
+  select * from "h_member" where gym_id = #{gymId} and upper(role) = 'OWNER' limit 1
+  </select>
 
 </mapper>

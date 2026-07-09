@@ -4,8 +4,8 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.health.app.gym.GymMapper">
 
-    <!-- 아이디(전화번호) 중복확인 SQL -->
     <select id="selectId" resultType="GymDTO">
     select * from "h_gym" order by gym_id asc
     </select>
+    
 </mapper>

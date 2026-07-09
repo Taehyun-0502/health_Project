@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import './Itempage.css';
 import { Link } from 'react-router-dom';
+import Pagination from './Pagination';
 // SVG 아이콘 컴포넌트 정의
 const ListIcon = () => (
   <svg viewBox="0 0 24 24">
@@ -32,17 +33,24 @@ function Itempage() {
     itemName: '',
     itemDate: '',
     itemPrice: '',
-    itemCount: ''
+    itemCount: '',
+    itemExpiryDate: ''
   });
 
-  // DB 테이블 스펙에 맞춘 물품 데이터 목록 상태 관리 (itemId, gymId, itemCategory, itemName, itemDate, itemPrice, itemCount)
-  const [items, setItems] = useState([
-    { itemId: 1, gymId: 1, itemCategory: '기구', itemName: '아령 (10kg)', itemDate: '2026-06-01', itemPrice: 25000, itemCount: 15 },
-    { itemId: 2, gymId: 1, itemCategory: '소모품', itemName: '요가매트 (두꺼움)', itemDate: '2026-06-15', itemPrice: 15000, itemCount: 30 },
-    { itemId: 3, gymId: 2, itemCategory: '기구', itemName: '런닝머신 A호기', itemDate: '2026-05-10', itemPrice: 1800000, itemCount: 1 },
-    { itemId: 4, gymId: 1, itemCategory: '식품', itemName: '단백질 쉐이크 (초코)', itemDate: '2026-06-28', itemPrice: 3500, itemCount: 50 },
-    { itemId: 5, gymId: 2, itemCategory: '소모품', itemName: '스트레칭 밴드', itemDate: '2026-06-20', itemPrice: 5000, itemCount: 20 },
-  ]);
+  // 현재 페이지에 표시할 물품 데이터 목록 (서버가 gymId+검색어+페이지 조건으로 이미 필터링/페이징해서 내려줌)
+  const [items, setItems] = useState([]);
+
+  // 서버에서 내려주는 페이징 정보 (currentPage, startPage, endPage, hasPrev, hasNext 등 - Pager.java와 동일 구조)
+  const [pager, setPager] = useState(null);
+
+  // 현재 조회 중인 페이지 번호 (1부터 시작)
+  const [page, setPage] = useState(1);
+
+  // 한 페이지당 표시 개수
+  const pageSize = 10;
+
+  // 물품 등록 폼 자동완성용 물품명 목록 (페이징과 무관하게 해당 gym의 전체 물품명을 별도 API로 조회)
+  const [itemNames, setItemNames] = useState([]);
 
   // 로그인된 유저의 사업장 id (localStorage에서 조회, 없을 시 기본값 1)
   const [gymId, setGymId] = useState(() => {
@@ -60,24 +68,123 @@ function Itempage() {
 
   const [loading, setLoading] = useState(false);
 
-  // 백엔드로부터 물품 리스트 조회 API 호출
-  const fetchItems = async () => {
+  // 검색어 상태 (서버 사이드 검색: 입력값이 바뀌면 keyword 파라미터로 서버에 재조회 요청)
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // 정렬 옵션 상태 ('' = 기본(이름순), count_desc/count_asc/price_desc/price_asc)
+  const [sortOption, setSortOption] = useState('');
+
+  // 백엔드로부터 물품 리스트를 "현재 페이지 + 검색어 + 정렬" 조건으로 페이징 조회하는 API 호출
+  // 응답 형태: { items: [...], pager: {...}, totalCount: n }
+  const fetchItems = async (targetPage, keyword, sort) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/list?gymId=${gymId}`);
+      const query = new URLSearchParams({
+        gymId,
+        page: targetPage,
+        pageSize,
+        keyword: keyword || '',
+        sort: sort || ''
+      });
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/list?${query.toString()}`);
       if (response.ok) {
-        setItems(await response.json());
+        const data = await response.json();
+        setItems(data.items || []);
+        setPager(data.pager || null);
       }
     } catch (error) {
       console.error('Failed to fetch items:', error);
     }
   };
 
+  // 물품 등록 폼 자동완성용 물품명 전체 목록 조회 API 호출 (페이징 없이 gym 전체)
+  const fetchItemNames = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/names?gymId=${gymId}`);
+      if (response.ok) {
+        setItemNames(await response.json());
+      }
+    } catch (error) {
+      console.error('Failed to fetch item names:', error);
+    }
+  };
+
+  // gymId가 바뀌면 1페이지/검색어 초기화 상태로 목록과 자동완성 목록을 다시 조회 (정렬 옵션은 유지)
   useEffect(() => {
-    fetchItems();
+    setPage(1);
+    setSearchTerm('');
+    fetchItems(1, '', sortOption);
+    fetchItemNames();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gymId]);
 
-  // 검색 상태
-  const [searchTerm, setSearchTerm] = useState('');
+  // 검색어가 바뀔 때마다 300ms 디바운스 후 1페이지부터 재조회 (매 입력마다 요청이 나가는 것을 방지)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      fetchItems(1, searchTerm, sortOption);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  // 페이지네이션 버튼 클릭 시 즉시(디바운스 없이) 해당 페이지를 조회
+  const handlePageChange = (targetPage) => {
+    setPage(targetPage);
+    fetchItems(targetPage, searchTerm, sortOption);
+  };
+
+  // 정렬 옵션 변경 시 1페이지로 이동해서 즉시 재조회 (state 갱신은 비동기라 새 값을 직접 넘겨줌)
+  const handleSortChange = (e) => {
+    const newSort = e.target.value;
+    setSortOption(newSort);
+    setPage(1);
+    fetchItems(1, searchTerm, newSort);
+  };
+
+  // CSV 필드값에 쉼표/줄바꿈/큰따옴표가 섞여 있어도 깨지지 않도록 이스케이프
+  const escapeCsvField = (value) => {
+    const str = String(value ?? '');
+    if (/[",\n]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  // CSV 내보내기: 현재 검색어 조건을 반영한 전체 목록을 서버에서 받아와 CSV 파일로 다운로드 (페이징 무시, 전체 건수)
+  const handleExportCsv = async () => {
+    try {
+      const query = new URLSearchParams({ gymId, keyword: searchTerm || '' });
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/export?${query.toString()}`);
+      if (!response.ok) {
+        alert('내보내기에 실패했습니다.');
+        return;
+      }
+
+      const allItems = await response.json();
+      if (allItems.length === 0) {
+        alert('내보낼 물품이 없습니다.');
+        return;
+      }
+
+      const header = ['번호', '분류', '물품명', '갯수'];
+      const rows = allItems.map((item, index) => [index + 1, item.itemCategory, item.itemName, item.itemCount]);
+      const csvContent = [header, ...rows].map((row) => row.map(escapeCsvField).join(',')).join('\r\n');
+
+      // 엑셀에서 한글이 깨지지 않도록 UTF-8 BOM을 파일 맨 앞에 붙임
+      const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `물품목록_${gymId}_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export CSV:', error);
+      alert('내보내기 중 오류가 발생했습니다.');
+    }
+  };
 
   // 백엔드로부터 특정 물품의 상세 구매 이력 조회 API 호출
   const handleItemClick = async (item) => {
@@ -102,7 +209,8 @@ function Itempage() {
       itemName: item.itemName || item.item_name || '',
       itemDate: item.itemDate || item.item_date || item.itemBuy || item.item_buy || '',
       itemPrice: (item.itemPrice !== undefined ? item.itemPrice : item.item_price) || 0,
-      itemCount: (item.itemCount !== undefined ? item.itemCount : item.item_count) || 0
+      itemCount: (item.itemCount !== undefined ? item.itemCount : item.item_count) || 0,
+      itemExpiryDate: item.itemExpiryDate || item.item_expiry_date || ''
     });
   };
 
@@ -114,6 +222,10 @@ function Itempage() {
       alert('물품명을 입력해주세요.');
       return;
     }
+    if (!editFormData.itemCategory.trim()) {
+      alert('분류를 입력해주세요.');
+      return;
+    }
     if (!editFormData.itemCount || parseInt(editFormData.itemCount, 10) <= 0) {
       alert('올바른 갯수를 입력해주세요.');
       return;
@@ -122,11 +234,12 @@ function Itempage() {
     const updatedItem = {
       itemId: editingItem.itemId !== undefined ? editingItem.itemId : editingItem.item_id,
       gymId: gymId,
-      itemCategory: editFormData.itemCategory,
+      itemCategory: editFormData.itemCategory.trim(),
       itemName: editFormData.itemName.trim(),
       itemDate: editFormData.itemDate || editFormData.itemBuy || '',
       itemPrice: editFormData.itemPrice ? parseInt(editFormData.itemPrice, 10) : 0,
-      itemCount: parseInt(editFormData.itemCount, 10)
+      itemCount: parseInt(editFormData.itemCount, 10),
+      itemExpiryDate: editFormData.itemExpiryDate || null
     };
 
     try {
@@ -140,7 +253,8 @@ function Itempage() {
 
       if (response.ok) {
         alert('물품 정보가 성공적으로 수정되었습니다.');
-        fetchItems();
+        fetchItems(page, searchTerm, sortOption); // 현재 보고 있던 페이지/검색어/정렬 조건 그대로 재조회
+        fetchItemNames(); // 물품명이 바뀌었을 수 있으므로 자동완성 목록도 갱신
         handleItemClick(updatedItem); // 수정한 데이터 이름 기준으로 목록 새로고침 및 갱신
         setEditingItem(null);
       } else {
@@ -175,7 +289,8 @@ function Itempage() {
 
       if (response.ok) {
         alert('물품이 삭제되었습니다.');
-        fetchItems();
+        fetchItems(page, searchTerm, sortOption); // 현재 보고 있던 페이지/검색어/정렬 조건 그대로 재조회
+        fetchItemNames(); // 해당 물품명의 이력이 전부 삭제됐을 수 있으므로 자동완성 목록도 갱신
         const deletedId = item.itemId !== undefined ? item.itemId : item.item_id;
         setDetailList(prev => {
           const remaining = prev.filter(d => {
@@ -199,18 +314,11 @@ function Itempage() {
   const currentMonthKey = useMemo(() => new Date().toISOString().split('T')[0].substring(0, 7), []);
   const [selectedMonthFilter, setSelectedMonthFilter] = useState(currentMonthKey);
 
-  // 이력에 존재하는 고유 월 목록 추출 (항상 이번 달 포함)
+  // 조회 월 선택 옵션: 실제 이력 존재 여부와 무관하게 올해(현재 연도) 1월~12월을 항상 전부 제공
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
   const availableMonths = useMemo(() => {
-    const months = new Set();
-    months.add(currentMonthKey);
-    detailList.forEach((item) => {
-      const buyDate = item.itemDate || item.item_date || item.item_Date || item.itemBuy || item.item_buy;
-      if (buyDate) {
-        months.add(buyDate.substring(0, 7));
-      }
-    });
-    return Array.from(months).sort((a, b) => b.localeCompare(a));
-  }, [detailList, currentMonthKey]);
+    return Array.from({ length: 12 }, (_, i) => `${currentYear}-${String(i + 1).padStart(2, '0')}`);
+  }, [currentYear]);
 
   // 선택된 월 기준 필터링된 상세 내역
   const filteredDetails = useMemo(() => {
@@ -253,17 +361,22 @@ function Itempage() {
     itemDate: new Date().toISOString().split('T')[0],
     itemPrice: '',
     itemCount: '',
-    itemStatus: '구매' // '구매' | '폐기' 추가 (DTO의 itemStatus 스펙 매칭)
+    itemStatus: '구매', // '구매' | '폐기' 추가 (DTO의 itemStatus 스펙 매칭)
+    itemExpiryDate: '' // 유효기간 (선택 입력, 임박 시 알림 배치 대상)
   });
 
-  // 해당 사업장(gymId) 내 중복 제거된 물품명 리스트
+  // 해당 사업장(gymId) 내 중복 제거된 물품명 리스트 (페이징된 items가 아닌 /names 전용 API 결과인 itemNames 기준)
   const existingItemNames = useMemo(() => {
-    const names = items
-      .filter(item => item.gymId === gymId)
-      .map(item => item.itemName)
-      .filter(Boolean);
+    const names = itemNames.map(item => item.itemName).filter(Boolean);
     return Array.from(new Set(names));
-  }, [items, gymId]);
+  }, [itemNames]);
+
+  // 카테고리 자동완성 후보: 기본 4종 + 이 사업장에서 실제 사용 중인 카테고리를 합침 (별도 관리 테이블 없이 물품 데이터에서 파생)
+  const existingCategories = useMemo(() => {
+    const base = ['기구', '소모품', '식품', '기타'];
+    const used = itemNames.map(item => item.itemCategory).filter(Boolean);
+    return Array.from(new Set([...base, ...used]));
+  }, [itemNames]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -276,7 +389,7 @@ function Itempage() {
     setFormData(prev => {
       const updated = { ...prev, itemName: value };
       // 기존에 등록된 물품 중 명칭이 일치하는 것이 있다면 카테고리를 자동 선택
-      const matchedItem = items.find(item => item.itemName === value && item.gymId === gymId);
+      const matchedItem = itemNames.find(item => item.itemName === value);
       if (matchedItem) {
         updated.itemCategory = matchedItem.itemCategory;
       }
@@ -288,9 +401,14 @@ function Itempage() {
     e.preventDefault();
 
     const finalItemName = formData.itemName.trim();
+    const finalItemCategory = formData.itemCategory.trim();
 
     if (!finalItemName) {
       alert('물품명을 입력하거나 선택해주세요.');
+      return;
+    }
+    if (!finalItemCategory) {
+      alert('분류를 입력하거나 선택해주세요.');
       return;
     }
     if (!formData.itemCount || parseInt(formData.itemCount, 10) <= 0) {
@@ -303,14 +421,15 @@ function Itempage() {
     const newItem = {
       itemId: 0,
       gymId: gymId,
-      itemCategory: formData.itemCategory,
+      itemCategory: finalItemCategory,
       itemName: finalItemName,
       itemDate: formData.itemDate,
       // 폐기인 경우 단가는 0원으로 자동 지정
       itemPrice: isDisposal ? 0 : (formData.itemPrice ? parseInt(formData.itemPrice, 10) : 0),
       // 폐기인 경우 DB 수량을 마이너스로 차감 저장
       itemCount: isDisposal ? -finalCount : finalCount,
-      itemStatus: formData.itemStatus // DTO의 itemStatus로 필드명 변경 전송
+      itemStatus: formData.itemStatus, // DTO의 itemStatus로 필드명 변경 전송
+      itemExpiryDate: formData.itemExpiryDate || null
     };
 
     try {
@@ -324,7 +443,9 @@ function Itempage() {
 
       if (response.ok) {
         alert('물품이 성공적으로 등록되었습니다.');
-        fetchItems();
+        setPage(1);
+        fetchItems(1, searchTerm, sortOption); // 새로 등록된 물품을 확인할 수 있도록 1페이지부터 재조회
+        fetchItemNames(); // 새 물품명이 자동완성 목록에 반영되도록 갱신
 
         // 폼 초기화 및 목록으로 돌아가기
         setFormData({
@@ -333,7 +454,8 @@ function Itempage() {
           itemDate: new Date().toISOString().split('T')[0],
           itemPrice: '',
           itemCount: '',
-          itemStatus: '구매'
+          itemStatus: '구매',
+          itemExpiryDate: ''
         });
         setActiveTab('list');
       } else {
@@ -345,17 +467,16 @@ function Itempage() {
     }
   };
 
-  // 검색어 및 gymId로 필터링된 아이템 리스트
-  const filteredItems = items.filter(item => {
-    const matchesGym = item.gymId === gymId;
-    const matchesSearch =
-      item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.itemCategory.includes(searchTerm);
-    return matchesGym && matchesSearch;
-  });
-
+  // gymId/검색어/페이지 조건은 이미 서버에서 반영되어 items에 현재 페이지 분량만 담겨 오므로 그대로 사용
   return (
     <div className="item-page-container">
+      {/* 카테고리 자동완성 후보 목록: 등록/수정 폼 둘 다 list="item-category-options"로 참조하므로 탭 전환과 무관하게 항상 렌더링되는 위치에 둠 */}
+      <datalist id="item-category-options">
+        {existingCategories.map((category) => (
+          <option key={category} value={category} />
+        ))}
+      </datalist>
+
       {/* 좌측 사이드바 탭 메뉴 영역 */}
       <aside className="item-sidebar">
         <div className="item-sidebar-title">물품 관리 시스템</div>
@@ -436,21 +557,19 @@ function Itempage() {
                       />
                     </div>
 
-                    {/* 카테고리 */}
+                    {/* 카테고리: 자동완성 후보(existingCategories)에서 고르거나, 목록에 없는 새 카테고리를 직접 입력해 추가 가능 */}
                     <div className="item-form-group">
                       <label htmlFor="editItemCategory">분류</label>
-                      <select
+                      <input
                         id="editItemCategory"
+                        type="text"
                         name="itemCategory"
-                        className="item-select"
+                        className="item-input"
+                        list="item-category-options"
+                        placeholder="분류 선택 또는 새로 입력"
                         value={editFormData.itemCategory}
                         onChange={(e) => setEditFormData(prev => ({ ...prev, itemCategory: e.target.value }))}
-                      >
-                        <option value="기구">기구</option>
-                        <option value="소모품">소모품</option>
-                        <option value="식품">식품</option>
-                        <option value="기타">기타</option>
-                      </select>
+                      />
                     </div>
 
                     {/* 등록일 */}
@@ -495,6 +614,19 @@ function Itempage() {
                         required
                       />
                     </div>
+
+                    {/* 유효기간 */}
+                    <div className="item-form-group">
+                      <label htmlFor="editItemExpiryDate">유효기간 (선택)</label>
+                      <input
+                        id="editItemExpiryDate"
+                        type="date"
+                        name="itemExpiryDate"
+                        className="item-input"
+                        value={editFormData.itemExpiryDate || ''}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, itemExpiryDate: e.target.value }))}
+                      />
+                    </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
@@ -528,7 +660,7 @@ function Itempage() {
 
                 {/* 실제 운영 시에는 로그인 정보(gymId)에 따라 고정됩니다. */}
 
-                {/* 검색 바 */}
+                {/* 검색 바 + 정렬 옵션 + CSV 내보내기 버튼 */}
                 <div className="item-search-bar">
                   <input
                     type="text"
@@ -537,9 +669,19 @@ function Itempage() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
+                  <select className="item-sort-select" value={sortOption} onChange={handleSortChange}>
+                    <option value="">기본순 (이름순)</option>
+                    <option value="count_desc">수량 많은순</option>
+                    <option value="count_asc">수량 적은순</option>
+                    <option value="price_desc">가격 높은순</option>
+                    <option value="price_asc">가격 낮은순</option>
+                  </select>
+                  <button type="button" className="item-export-btn" onClick={handleExportCsv}>
+                    CSV 내보내기
+                  </button>
                 </div>
 
-                {/* 테이블 목록 (분류, 물품 명, 갯수 항목만 출력) */}
+                {/* 테이블 목록 (분류, 물품명, 갯수, 최근 단가 출력) */}
                 <div className="item-table-wrapper">
                   <table className="item-table">
                     <thead>
@@ -548,17 +690,19 @@ function Itempage() {
                         <th>분류</th>
                         <th>물품명</th>
                         <th>갯수</th>
+                        <th>최근 단가</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredItems.length > 0 ? (
-                        filteredItems.map((item, index) => (
+                      {items.length > 0 ? (
+                        items.map((item, index) => (
                           <tr
                             key={item.itemId || index}
                             onClick={() => handleItemClick(item)}
                             style={{ cursor: 'pointer' }}
                           >
-                            <td>{filteredItems.length - index}</td>
+                            {/* 페이지가 바뀌어도 전체 목록 기준 연속된 번호가 보이도록 offset + index로 계산 */}
+                            <td>{(pager?.offset || 0) + index + 1}</td>
                             <td>
                               <span style={{
                                 padding: '0.25rem 0.55rem',
@@ -577,11 +721,14 @@ function Itempage() {
                                 {item.itemCount.toLocaleString()}
                               </span> 개
                             </td>
+                            <td>
+                              {item.itemPrice != null ? `${item.itemPrice.toLocaleString()} 원` : '-'}
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                          <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
                             검색 조건에 맞는 물품이 없거나 현재 사업장에 등록된 물품이 없습니다.
                           </td>
                         </tr>
@@ -589,6 +736,9 @@ function Itempage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* 물품 목록 하단 페이지네이션 */}
+                <Pagination pager={pager} onPageChange={handlePageChange} />
               </div>
             ) : (
               <div className="item-card">
@@ -833,7 +983,7 @@ function Itempage() {
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                           {existingItemNames.map((name) => {
                             const isSelected = formData.itemName === name;
-                            const matchedItem = items.find(item => item.itemName === name && item.gymId === gymId);
+                            const matchedItem = itemNames.find(item => item.itemName === name);
 
                             return (
                               <button
@@ -893,21 +1043,19 @@ function Itempage() {
                     </select>
                   </div>
 
-                  {/* 카테고리 */}
+                  {/* 카테고리: 자동완성 후보(existingCategories)에서 고르거나, 목록에 없는 새 카테고리를 직접 입력해 추가 가능 */}
                   <div className="item-form-group">
                     <label htmlFor="itemCategory">분류</label>
-                    <select
+                    <input
                       id="itemCategory"
+                      type="text"
                       name="itemCategory"
-                      className="item-select"
+                      className="item-input"
+                      list="item-category-options"
+                      placeholder="분류 선택 또는 새로 입력"
                       value={formData.itemCategory}
                       onChange={handleInputChange}
-                    >
-                      <option value="기구">기구</option>
-                      <option value="소모품">소모품</option>
-                      <option value="식품">식품</option>
-                      <option value="기타">기타</option>
-                    </select>
+                    />
                   </div>
 
                   {/* 등록일 */}
@@ -952,6 +1100,19 @@ function Itempage() {
                       onChange={handleInputChange}
                       min="1"
                       required
+                    />
+                  </div>
+
+                  {/* 유효기간: 선택 입력, 만료 3일 전 사장님에게 알림 발송 */}
+                  <div className="item-form-group">
+                    <label htmlFor="itemExpiryDate">유효기간 (선택)</label>
+                    <input
+                      id="itemExpiryDate"
+                      type="date"
+                      name="itemExpiryDate"
+                      className="item-input"
+                      value={formData.itemExpiryDate}
+                      onChange={handleInputChange}
                     />
                   </div>
 

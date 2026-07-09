@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.health.app.alarm.AlarmMapper">
+
+<!-- 알림 생성 쿼리: sender는 시스템 발송인 경우 null 허용 -->
+<insert id="alarmAdd" parameterType="AlarmDTO" useGeneratedKeys="true" keyProperty="alarmId" keyColumn="alarm_id">
+insert into "h_alarm" (alarm_id, receiver, sender, message, link, create_at, category, read)
+values (default, #{receiver}, #{sender, jdbcType=BIGINT}, #{message}, #{link, jdbcType=VARCHAR}, current_date, #{category}, 'N')
+</insert>
+
+<!-- 수신자 기준 알림 이력 전체 조회 (최신순, create_at이 date라 순서 보장을 위해 alarm_id로 정렬) -->
+<select id="alarmList" parameterType="Long" resultType="AlarmDTO">
+select
+    alarm_id as alarmId,
+    receiver,
+    sender,
+    message,
+    link,
+    create_at as createAt,
+    read_at as readAt,
+    category,
+    read
+from "h_alarm"
+where receiver = #{receiver}
+order by alarm_id desc
+</select>
+
+<!-- 알림 읽음 처리: read 플래그와 read_at 시각을 함께 갱신 -->
+<update id="alarmRead" parameterType="Long">
+update "h_alarm" set read = 'Y', read_at = now()
+where alarm_id = #{alarmId}
+</update>
+
+<!-- 보관 기간(1개월) 경과 알림 이력 삭제 -->
+<delete id="deleteOld" parameterType="java.time.LocalDate">
+delete from "h_alarm" where create_at &lt; #{cutoff}
+</delete>
+
+</mapper>

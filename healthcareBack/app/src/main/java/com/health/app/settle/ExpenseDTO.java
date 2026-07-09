@@ -30,4 +30,7 @@ public class ExpenseDTO {
     // 비율 (커미션 비율 및 트레이너 인센 비율)
     private double expenseRate;
 
+    // 이 지출이 어느 물품 등록(h_item.item_id)에서 자동 생성됐는지 가리키는 참조값 (null이면 settle에서 직접 입력한 지출)
+    private Long originItemId;
+
 }
