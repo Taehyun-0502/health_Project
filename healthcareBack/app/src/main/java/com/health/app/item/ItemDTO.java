@@ -19,5 +19,6 @@ public class ItemDTO {
     private LocalDate itemDate;
     private Long itemPrice;
     private String itemStatus;
+    private LocalDate itemExpiryDate; // 유효기간 (nullable, 구매 건 단위로 관리)
 
 }

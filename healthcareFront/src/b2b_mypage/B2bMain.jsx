@@ -12,7 +12,10 @@ function B2bMain() {
       <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
         {/* 회원 건의사항 접수함 링크 */}
         <Link to="b2bcomplaint" style={{ textDecoration: 'none', fontWeight: 'bold', color: 'blue' }}>회원건의 접수현황</Link>
-        
+
+        {/* 알림 내역 링크 */}
+        <Link to="notification" style={{ textDecoration: 'none' }}>알림 내역</Link>
+
         {/* 계정설정 링크 */}
         <Link to="account" style={{ textDecoration: 'none' }}>계정설정</Link>
       </div>

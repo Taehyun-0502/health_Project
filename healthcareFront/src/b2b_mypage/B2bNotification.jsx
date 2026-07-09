@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// B2C 일반 회원 마이페이지용 알림 내역 컴포넌트
-function B2cNotification() {
+// B2B 사장님 마이페이지용 알림 내역 컴포넌트
+function B2bNotification() {
   const [alarms, setAlarms] = useState([]);
   const navigate = useNavigate();
   const token = localStorage.getItem('accessToken');
@@ -82,4 +82,4 @@ function B2cNotification() {
   );
 }
 
-export default B2cNotification;
+export default B2bNotification;

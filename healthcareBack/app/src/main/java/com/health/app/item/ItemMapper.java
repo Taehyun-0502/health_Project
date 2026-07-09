@@ -33,4 +33,7 @@ public interface ItemMapper {
 
     // 등록된 아이템 삭제 쿼리 호출
     public int itemDelete(ItemDTO itemDTO) throws Exception;
+
+    // 유효기간 임박(D-3) 알림 배치용: 전체 gym 대상 구매 건 조회 쿼리 호출
+    public List<ItemDTO> findExpiringItems() throws Exception;
 }

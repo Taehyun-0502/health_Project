@@ -476,12 +476,19 @@ function Settlepage() {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     try {
-      await fetch(`${backendUrl}/fitb/settle/expense/${expenseId}`, {
+      const response = await fetch(`${backendUrl}/fitb/settle/expense/${expenseId}`, {
         method: 'DELETE',
         headers,
       });
+      if (!response.ok) {
+        const message = await response.text();
+        alert(message || '지출 삭제에 실패했습니다.');
+        return;
+      }
     } catch (err) {
       console.warn('백엔드 지출 삭제 실패:', err.message);
+      alert('지출 삭제에 실패했습니다.');
+      return;
     }
 
     // 삭제 후 현재 보고 있던 지출 페이지와 지출 대기 계약서 목록을 재조회

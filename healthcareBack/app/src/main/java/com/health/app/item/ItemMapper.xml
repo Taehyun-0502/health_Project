@@ -6,8 +6,8 @@
 
 <!-- useGeneratedKeys: insert 후 DB가 채번한 item_id를 itemDTO.itemId에 다시 채워줌 (settle 지출 연동 시 origin_item_id로 사용) -->
 <insert id="itemAdd" parameterType="ItemDTO" useGeneratedKeys="true" keyProperty="itemId" keyColumn="item_id">
-insert into "h_item" (item_id,gym_id,item_category,item_count,item_name,item_date,item_price)
-values (default,#{gymId},#{itemCategory},#{itemCount},#{itemName},#{itemDate},#{itemPrice})
+insert into "h_item" (item_id,gym_id,item_category,item_count,item_name,item_date,item_price,item_expiry_date)
+values (default,#{gymId},#{itemCategory},#{itemCount},#{itemName},#{itemDate},#{itemPrice},#{itemExpiryDate, jdbcType=DATE})
 
 </insert>
 
@@ -86,7 +86,7 @@ order by item_date desc
 
 <update id="itemUpdate" parameterType="ItemDTO">
 update "h_item"
-set item_price=#{itemPrice},item_count=#{itemCount},item_category=#{itemCategory},item_name=#{itemName}
+set item_price=#{itemPrice},item_count=#{itemCount},item_category=#{itemCategory},item_name=#{itemName},item_expiry_date=#{itemExpiryDate, jdbcType=DATE}
 where item_id=#{itemId}
 </update>
 
@@ -95,6 +95,14 @@ delete from "h_item"
 where item_id=#{itemId}
 
 </delete>
+
+<!-- 유효기간 임박 알림 배치용: 오늘로부터 정확히 D-3일째 되는 구매 건(item_count > 0, 폐기 제외)만 대상으로 함
+     "이내"가 아닌 "정확히 해당일"로 조건을 걸어 같은 행이 여러 날에 걸쳐 중복 알림되는 것을 방지 -->
+<select id="findExpiringItems" resultType="ItemDTO">
+select * from "h_item"
+where item_count > 0
+  and item_expiry_date = current_date + interval '3 day'
+</select>
 
 
 
