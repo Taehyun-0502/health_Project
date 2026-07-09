@@ -60,4 +60,21 @@ public class ResultController {
         return ResponseEntity.ok(resultService.selectAll(gymId));
     }
 
+    // 헬스장 이탈 통계 — 기간(일별/월별) 목록 + 기간별 이탈율/회원수
+    @GetMapping("/stats/periods")
+    public ResponseEntity<List<ChurnStatPeriodDTO>> statPeriods(
+            @RequestParam Long gymId,
+            @RequestParam(defaultValue = "daily") String mode) throws Exception {
+        return ResponseEntity.ok(resultService.selectStatPeriods(gymId, mode));
+    }
+
+    // 헬스장 이탈 통계 — 특정 기간의 요인/불만 항목별 비율
+    @GetMapping("/stats/breakdown")
+    public ResponseEntity<List<ChurnStatItemDTO>> statBreakdown(
+            @RequestParam Long gymId,
+            @RequestParam(defaultValue = "daily") String mode,
+            @RequestParam String period) throws Exception {
+        return ResponseEntity.ok(resultService.selectStatBreakdown(gymId, mode, period));
+    }
+
 }
