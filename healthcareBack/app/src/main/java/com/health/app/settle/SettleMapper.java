@@ -12,30 +12,6 @@ import com.health.app.pager.Pager;
 @Mapper
 public interface SettleMapper {
 
-    // 신규 매출(결제) 내역 추가 등록
-    public int payAdd(PayDTO payDTO) throws Exception;
-
-    // 매출 내역 페이징 조회 (username + Pager(페이지/검색어/조회월) + 정렬조건(sort: price_desc/price_asc/date_desc/date_asc, 기본은 최신순))
-    public List<PayDTO> payList(@Param("username") Long username, @Param("pager") Pager pager, @Param("sort") String sort) throws Exception;
-
-    // 매출 내역 전체 건수 조회 (Pager의 총 페이지/블록 계산용)
-    public long payListCount(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
-
-    // 매출 내역 전체 합계 금액 조회
-    public long payListSum(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
-
-    // CSV 내보내기용 매출 전체 목록 조회 (username + Pager(검색어/조회월) 조건, 페이징 없음)
-    public List<PayDTO> payListAll(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
-
-    // 미결제 상태이며 서명이 완료된 계약 정보 목록 조회 (UserDTO -> ContractDTO 정정)
-    public List<ContractDTO> unpaidContractList(Long username) throws Exception;
-
-    // 매출(결제) 단건 조회 (삭제 전 gymId/payDate 확인용 - 커미션 재계산에 필요)
-    public PayDTO getPayById(Long payId) throws Exception;
-
-    // 매출(결제) 내역 삭제
-    public int payDelete(Long payId) throws Exception;
-
     // 플랫폼 가맹점의 전체 커미션(정산) 내역 페이징 조회 (ADMIN 기능, Pager(페이지/상태/조회월) + 정렬조건(sort: amount_desc/amount_asc/month_desc/month_asc, 기본은 최신순))
     public List<CommissionDTO> commissionList(@Param("pager") Pager pager, @Param("sort") String sort) throws Exception;
 

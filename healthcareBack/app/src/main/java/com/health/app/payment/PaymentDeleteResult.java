@@ -1,4 +1,4 @@
-package com.health.app.settle;
+package com.health.app.payment;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -8,7 +8,7 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
-public class PayDeleteResult {
+public class PaymentDeleteResult {
 
     // 매출 삭제 성공 여부
     private boolean deleted;

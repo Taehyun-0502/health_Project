@@ -214,8 +214,13 @@ function ContractDetail() {
         { method: 'PUT', headers: { Authorization: `Bearer ${token}` } },
       );
       if (response.ok) {
-        alert('서명이 완료되어 계약이 체결되었습니다.');
-        navigate('/fitb/contractpage'); // 서명 완료 후 리스트 페이지로 이동
+        alert('서명이 완료되어 계약이 체결되었습니다. (상태: SIGNED)');
+        // 이용권(3)/PT(4) 계약은 결제 페이지로 자동 이동, 그 외(제휴/임금)는 상태만 갱신
+        if (detail?.contract === 3 || detail?.contract === 4) {
+          navigate(`/fitb/payment/${dataId}`);
+        } else {
+          fetchDetail(); // 상태 갱신 재조회
+        }
       } else {
         setMessage(`서명 실패(${response.status}): ${await response.text()}`);
       }
