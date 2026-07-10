@@ -38,11 +38,15 @@ public class CouponController {
     }
 
     // 회원의 본인 보유 쿠폰 목록 조회 API
+    // username 파라미터가 있으면 해당 회원의 쿠폰함을 조회 (사장님이 현장 결제 시 회원 쿠폰함을 확인하는 용도), 없으면 로그인 본인 쿠폰함
     @GetMapping("tolist")
-    public ResponseEntity<?> toList(@RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+    public ResponseEntity<?> toList(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam(required = false) Long username) throws Exception {
         try {
             Long loginUsername = validateAndGetUsername(authorization);
-            List<CouponDTO> list = couponService.toList(loginUsername);
+            Long targetUsername = username != null ? username : loginUsername;
+            List<CouponDTO> list = couponService.toList(targetUsername);
             return ResponseEntity.ok(list);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());

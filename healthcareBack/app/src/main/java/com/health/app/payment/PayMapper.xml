@@ -4,7 +4,7 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.health.app.payment.PayMapper">
 
-    <!-- 셀프결제 대상 계약 검증 조회: 본인 소유 + 서명완료(이용권/PT) + 아직 매출(h_payment) 미등록인 계약만 반환 -->
+    <!-- 결제 확정 대상 계약 검증 조회: 본인(사장님)이 발행한 계약 + 서명완료(이용권/PT) + 아직 매출(h_payment) 미등록인 계약만 반환 -->
     <select id="findPayableContract" resultType="com.health.app.contract.ContractDTO">
         SELECT
             d.data_id as dataId,
@@ -14,11 +14,12 @@
             d.receiver_name as receiverName,
             d.status,
             d.amount,
+            d.quantity,
             d.start_date as startDate,
             d.end_date as endDate
         FROM "h_contract_data" d
         WHERE d.data_id = #{dataId}
-          AND d.receiver_id = #{username}
+          AND d.sender_id = #{username}
           AND d.status = 'SIGNED'
           AND d.contract IN (3, 4)
           AND d.data_id NOT IN (

@@ -36,9 +36,22 @@
 
         <!-- 누적 발송 횟수 1 증가 SQL 추가 -->
     <update id="SendCount" parameterType="Long">
-        UPDATE "h_coupon_type" 
-        SET send_count = send_count + 1 
+        UPDATE "h_coupon_type"
+        SET send_count = send_count + 1
         WHERE coupon_num = #{couponNum}
     </update>
-    
+
+    <!-- 쿠폰 단건 조회 (결제 시 유효성 검증용) -->
+    <select id="getCouponById" parameterType="Long" resultType="CouponDTO">
+        SELECT c.*, t.*
+        FROM "h_coupon" c
+        INNER JOIN "h_coupon_type" t ON c.coupon_num = t.coupon_num
+        WHERE c.coupon_id = #{couponId}
+    </select>
+
+    <!-- 쿠폰 사용 처리 -->
+    <update id="markUsed" parameterType="Long">
+        UPDATE "h_coupon" SET status = '사용완료' WHERE coupon_id = #{couponId}
+    </update>
+
 </mapper>

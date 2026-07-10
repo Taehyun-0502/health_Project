@@ -10,30 +10,37 @@
         VALUES (#{username}, #{gymId}, #{installment}, #{payPrice}, #{payDate}, #{payName}, #{dataId})
     </insert>
 
-    <!-- 사장님용: 해당 지점(gym_id)의 매출 내역 목록 페이징 조회 -->
+    <!-- 사장님용: 해당 지점(gym_id)의 매출 내역 목록 페이징 조회 (h_pay 연동 결제 건은 사용 쿠폰/할인액 함께 조회) -->
     <select id="paymentList" resultType="com.health.app.payment.PaymentDTO">
         SELECT
-            pay_id as payId,
-            username,
-            gym_id as gymId,
-            installment,
-            pay_price as payPrice,
-            pay_date as payDate,
-            pay_name as payName,
-            data_id as dataId
-        FROM "h_payment"
-        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+            p.pay_id as payId,
+            p.username,
+            p.gym_id as gymId,
+            p.installment,
+            p.pay_price as payPrice,
+            p.pay_date as payDate,
+            p.pay_name as payName,
+            p.data_id as dataId,
+            hp.coupon_id as couponId,
+            ct.coupon_name as couponName,
+            CASE WHEN hp.coupon_id IS NOT NULL THEN (d.amount - p.pay_price) ELSE NULL END as discountAmount
+        FROM "h_payment" p
+        LEFT JOIN "h_pay" hp ON p.data_id = hp.data_id
+        LEFT JOIN "h_coupon" hc ON hp.coupon_id = hc.coupon_id
+        LEFT JOIN "h_coupon_type" ct ON hc.coupon_num = ct.coupon_num
+        LEFT JOIN "h_contract_data" d ON p.data_id = d.data_id
+        WHERE p.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
         <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(pay_date, 'YYYY-MM') = #{pager.month}
+            AND TO_CHAR(p.pay_date, 'YYYY-MM') = #{pager.month}
         </if>
         <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND (pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
+            AND (p.pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(p.username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
         </if>
         <choose>
-            <when test="sort == 'price_desc'">ORDER BY pay_price DESC</when>
-            <when test="sort == 'price_asc'">ORDER BY pay_price ASC</when>
-            <when test="sort == 'date_asc'">ORDER BY pay_date ASC, pay_id ASC</when>
-            <otherwise>ORDER BY pay_date DESC, pay_id DESC</otherwise>
+            <when test="sort == 'price_desc'">ORDER BY p.pay_price DESC</when>
+            <when test="sort == 'price_asc'">ORDER BY p.pay_price ASC</when>
+            <when test="sort == 'date_asc'">ORDER BY p.pay_date ASC, p.pay_id ASC</when>
+            <otherwise>ORDER BY p.pay_date DESC, p.pay_id DESC</otherwise>
         </choose>
         LIMIT #{pager.pageSize} OFFSET #{pager.offset}
     </select>
@@ -65,23 +72,30 @@
     <!-- CSV 내보내기용: paymentList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환 -->
     <select id="paymentListAll" resultType="com.health.app.payment.PaymentDTO">
         SELECT
-            pay_id as payId,
-            username,
-            gym_id as gymId,
-            installment,
-            pay_price as payPrice,
-            pay_date as payDate,
-            pay_name as payName,
-            data_id as dataId
-        FROM "h_payment"
-        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+            p.pay_id as payId,
+            p.username,
+            p.gym_id as gymId,
+            p.installment,
+            p.pay_price as payPrice,
+            p.pay_date as payDate,
+            p.pay_name as payName,
+            p.data_id as dataId,
+            hp.coupon_id as couponId,
+            ct.coupon_name as couponName,
+            CASE WHEN hp.coupon_id IS NOT NULL THEN (d.amount - p.pay_price) ELSE NULL END as discountAmount
+        FROM "h_payment" p
+        LEFT JOIN "h_pay" hp ON p.data_id = hp.data_id
+        LEFT JOIN "h_coupon" hc ON hp.coupon_id = hc.coupon_id
+        LEFT JOIN "h_coupon_type" ct ON hc.coupon_num = ct.coupon_num
+        LEFT JOIN "h_contract_data" d ON p.data_id = d.data_id
+        WHERE p.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
         <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(pay_date, 'YYYY-MM') = #{pager.month}
+            AND TO_CHAR(p.pay_date, 'YYYY-MM') = #{pager.month}
         </if>
         <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND (pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
+            AND (p.pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(p.username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
         </if>
-        ORDER BY pay_date DESC, pay_id DESC
+        ORDER BY p.pay_date DESC, p.pay_id DESC
     </select>
 
     <!-- 매출(결제) 단건 조회 (삭제 전 gymId/payDate 확인용) -->

@@ -1,16 +1,19 @@
 package com.health.app.payment;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.health.app.contract.ContractDTO;
+import com.health.app.coupon.CouponDTO;
+import com.health.app.coupon.CouponService;
 
 /**
- * 회원 셀프결제(h_pay) 확정 및 매출(h_payment) 반영 트리거를 담당하는 서비스 클래스
- * TODO: 쿠폰 연동(coupon 도메인 병합 후 재작업 예정) - 현재는 쿠폰 적용 없이 계약 금액 그대로 결제 처리
+ * 현장 결제(h_pay) 확정 및 매출(h_payment) 반영 트리거를 담당하는 서비스 클래스
+ * 결제 확정 주체는 계약을 발행한 사장님(sender)이며, h_pay/h_payment에 기록되는 결제 당사자는 회원(receiver)이다.
  */
 @Service
 public class PayService {
@@ -22,32 +25,75 @@ public class PayService {
     @Autowired
     private PaymentService paymentService;
 
-    // 회원 셀프결제 확정 처리
-    // 1. 계약 검증(본인 소유/서명완료/미결제) -> 2. h_pay insert -> 3. h_payment insert(매출 반영)
+    @Autowired
+    private CouponService couponService;
+
+    // 사장님 계정의 결제 확정 처리
+    // 1. 계약 검증(본인이 발행한 계약/서명완료/미결제) -> 2. (쿠폰 있으면) 쿠폰 검증 및 할인 적용
+    // -> 3. h_pay insert -> 4. 쿠폰 사용완료 처리 -> 5. h_payment insert(매출 반영)
     // 하나라도 실패하면 전체 롤백되도록 단일 트랜잭션으로 처리
     @Transactional
-    public PayDTO checkout(Long dataId, Long username) throws Exception {
-        ContractDTO contract = payMapper.findPayableContract(dataId, username);
+    public PayDTO checkout(Long dataId, Long ownerUsername, Long couponId) throws Exception {
+        ContractDTO contract = payMapper.findPayableContract(dataId, ownerUsername);
         if (contract == null) {
             throw new IllegalStateException("결제 가능한 계약이 아니거나 이미 결제가 완료된 계약입니다.");
         }
 
+        Long memberUsername = contract.getReceiverId();
         long price = contract.getAmount();
+        boolean isHealth = contract.getContract() == 3;
 
-        String itemLabel = contract.getContract() == 3 ? "이용권" : "PT";
+        if (couponId != null) {
+            CouponDTO coupon = couponService.getCouponById(couponId);
+
+            if (coupon == null
+                    || !memberUsername.equals(coupon.getToId())
+                    || !"미사용".equals(coupon.getStatus())
+                    || coupon.getDate() == null || coupon.getDate().isBefore(LocalDate.now())
+                    || !contract.getGymId().equals(coupon.getGymId())) {
+                throw new IllegalStateException("사용할 수 없는 쿠폰입니다.");
+            }
+
+            String requiredCategory = isHealth ? "헬스" : "PT";
+            if (!requiredCategory.equals(coupon.getCategory())) {
+                throw new IllegalStateException("계약 유형과 맞지 않는 쿠폰입니다.");
+            }
+
+            // 이용권(헬스) 쿠폰은 계약 기간(개월수), PT 쿠폰은 계약 횟수가 정확히 일치해야 적용 가능
+            if (isHealth) {
+                long months = ChronoUnit.MONTHS.between(contract.getStartDate(), contract.getEndDate());
+                if (coupon.getCouponDate() == null || coupon.getCouponDate() != months) {
+                    throw new IllegalStateException("계약 기간과 일치하지 않는 쿠폰입니다.");
+                }
+            } else {
+                if (coupon.getCouponCount() == null || !coupon.getCouponCount().equals(contract.getQuantity())) {
+                    throw new IllegalStateException("PT 횟수와 일치하지 않는 쿠폰입니다.");
+                }
+            }
+
+            long discount = price * coupon.getPercent() / 100;
+            price -= discount;
+        }
+
+        String itemLabel = isHealth ? "이용권" : "PT";
         String pName = String.format("[계약 #%d] %s - %s", dataId, itemLabel, contract.getReceiverName());
 
         PayDTO pay = new PayDTO();
         pay.setDataId(dataId);
-        pay.setUsername(username);
+        pay.setUsername(memberUsername);
         pay.setPPrice(price);
+        pay.setCouponId(couponId);
         pay.setPName(pName);
         pay.setCreatedAt(LocalDate.now());
 
         payMapper.insertPay(pay);
 
+        if (couponId != null) {
+            couponService.markUsed(couponId);
+        }
+
         PaymentDTO payment = new PaymentDTO();
-        payment.setUsername(username);
+        payment.setUsername(memberUsername);
         payment.setGymId(contract.getGymId());
         payment.setInstallment(0);
         payment.setPayPrice(price);

@@ -16,6 +16,7 @@ import ContractDetail from './contract/ContractDetail.jsx';
 import Itempage from './item/Itempage.jsx';
 import B2bAccount from './b2b_mypage/B2bAccount.jsx';
 import Contractpage from './contract/Contractpage.jsx';
+import Payment from './payment/Payment.jsx';
 import Settlepage from './settle/settlepage.jsx'
 import B2bMain from './b2b_mypage/B2bMain.jsx';
 import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
@@ -59,6 +60,7 @@ function App() {
         <Route path="b2bmypage/b2blist" element={<B2bList />} />
         <Route path="contract/new" element={<ContractNew />} />
         <Route path="contract/:dataId" element={<ContractDetail />} />
+        <Route path="payment/:dataId" element={<Payment />} />
         <Route path="itempage" element={<Itempage />} />
         <Route path="contractpage" element={<Contractpage />} />
         <Route path="Settlepage" element={<Settlepage />} />

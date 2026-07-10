@@ -12,10 +12,10 @@ import com.health.app.config.JwtUtill;
 import io.jsonwebtoken.Claims;
 
 /**
- * 회원 셀프결제(체크아웃)를 처리하는 REST 컨트롤러
+ * 사장님의 현장 결제 확정(체크아웃)을 처리하는 REST 컨트롤러
  */
 @RestController
-@RequestMapping("/fitc/payment")
+@RequestMapping("/fitb/payment")
 public class PayController {
 
     @Autowired
@@ -24,8 +24,7 @@ public class PayController {
     @Autowired
     private JwtUtill jwtUtill;
 
-    // 회원 셀프결제 확정 API - 계약 결제, 성공 시 매출(h_payment)에도 자동 반영
-    // TODO: 쿠폰 연동(coupon 도메인 병합 후 재작업 예정)
+    // 사장님 결제 확정 API (OWNER용) - 계약 결제 + (선택)쿠폰 적용, 성공 시 매출(h_payment)에도 자동 반영
     @PostMapping("/checkout")
     public ResponseEntity<?> checkout(
             @RequestHeader(value = "Authorization", required = false) String authorization,
@@ -42,10 +41,10 @@ public class PayController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
         }
 
-        Long username = Long.parseLong(claims.getSubject());
+        Long ownerUsername = Long.parseLong(claims.getSubject());
 
         try {
-            PayDTO result = payService.checkout(req.getDataId(), username);
+            PayDTO result = payService.checkout(req.getDataId(), ownerUsername, req.getCouponId());
             return ResponseEntity.ok(result);
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -32,4 +32,11 @@ public class PaymentDTO {
     // 결제 항목
     private String payName;
 
+    // 사용된 쿠폰 id (h_pay 연동 결제가 아니거나 쿠폰 미사용 시 null)
+    private Long couponId;
+    // 사용된 쿠폰명
+    private String couponName;
+    // 쿠폰 할인 금액 (쿠폰 미사용 시 null)
+    private Long discountAmount;
+
 }

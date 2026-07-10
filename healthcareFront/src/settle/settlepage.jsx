@@ -628,12 +628,14 @@ function Settlepage() {
         alert('내보낼 매출 내역이 없습니다.');
         return;
       }
-      const header = ['결제ID', '회원연락처', '결제항목', '결제금액', '할부', '결제일'];
+      const header = ['결제ID', '회원연락처', '결제항목', '결제금액', '사용쿠폰', '할인금액', '할부', '결제일'];
       const rows = allPays.map((p) => [
         p.payId ?? '',
         p.username ?? '',
         p.payName,
         p.payPrice,
+        p.couponId ? p.couponName : '미사용',
+        p.couponId ? p.discountAmount : 0,
         p.installment === 0 ? '일시불' : `${p.installment}개월`,
         p.payDate,
       ]);
@@ -998,6 +1000,7 @@ function Settlepage() {
                       <th>회원 연락처(ID)</th>
                       <th>결제 항목</th>
                       <th>결제 금액</th>
+                      <th>쿠폰</th>
                       <th>결제 방법</th>
                       <th>결제일</th>
                       <th>작업</th>
@@ -1010,6 +1013,15 @@ function Settlepage() {
                         <td>{p.username ? (p.username.toString().startsWith('0') ? p.username : '0' + p.username) : '-'}</td>
                         <td><strong>{p.payName}</strong></td>
                         <td style={{ fontWeight: '600' }}>{formatWon(p.payPrice)}</td>
+                        <td>
+                          {p.couponId ? (
+                            <span style={{ color: 'var(--accent-color, #2563eb)' }}>
+                              {p.couponName} (-{formatWon(p.discountAmount)})
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--text-secondary, #999)' }}>미사용</span>
+                          )}
+                        </td>
                         <td>{p.installment === 0 ? '일시불' : `${p.installment}개월 할부`}</td>
                         <td>{p.payDate}</td>
                         <td>
@@ -1025,13 +1037,31 @@ function Settlepage() {
                     ))}
                     {pays.length === 0 && (
                       <tr>
-                        <td colSpan="7" className="no-data-row">조건에 해당하는 매출 내역이 없습니다.</td>
+                        <td colSpan="8" className="no-data-row">조건에 해당하는 매출 내역이 없습니다.</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
               <Pagination pager={payPager} onPageChange={handlePayPageChange} />
+
+              {/* 쿠폰 적용 현장 결제 (h_pay 연동, /fitb/payment 페이지로 이동) */}
+              {unpaidContracts.length > 0 && (
+                <div className="card-premium expense-form-card">
+                  <h3>💳 쿠폰 적용 결제</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
+                    회원이 보유한 쿠폰을 확인하고 할인을 적용해 결제를 확정합니다.
+                  </p>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {unpaidContracts.map((c) => (
+                      <li key={c.dataId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-color, #e5e7eb)' }}>
+                        <span>[{c.contract === 3 ? '이용권' : 'PT'}] {c.receiverName} (₩{c.amount?.toLocaleString()}) - #{c.dataId}</span>
+                        <Link to={`/fitb/payment/${c.dataId}`} className="btn-premium">쿠폰 적용 결제하기</Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* 매출 등록 폼 (계약 연동) */}
               <div className="card-premium expense-form-card">
