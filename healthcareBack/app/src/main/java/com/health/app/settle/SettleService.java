@@ -50,68 +50,33 @@ public class SettleService {
         }
     }
 
-    // 결제 매출 등록 처리
-    public int payAdd(PayDTO payDTO) throws Exception {
-        return settleMapper.payAdd(payDTO);
-    }
-
-    // 매출 목록 페이징 조회 처리: 목록 조회 -> 전체 건수/합계 조회 -> Pager에 offset/블록 정보 계산 후 함께 반환
-    public PagedResponse<PayDTO> payList(Long username, Pager pager, String sort) throws Exception {
-        pager.makeOffset();
-        List<PayDTO> items = settleMapper.payList(username, pager, sort);
-        long totalCount = settleMapper.payListCount(username, pager);
-        long totalAmount = settleMapper.payListSum(username, pager);
-        pager.makeBlock(totalCount);
-
-        return new PagedResponse<>(items, pager, totalCount, totalAmount);
-    }
-
-    // CSV 내보내기용 매출 전체 목록 조회 처리 (현재 검색어/조회월 조건 반영, 페이징 없음)
-    public List<PayDTO> payListAll(Long username, Pager pager) throws Exception {
-        return settleMapper.payListAll(username, pager);
-    }
-
-    // 미결제 계약서 목록 조회 처리 (매출 연동용, UserDTO -> ContractDTO 정정)
-    public List<ContractDTO> unpaidContractList(Long username) throws Exception {
-        return settleMapper.unpaidContractList(username);
-    }
-
-    // 매출(결제) 삭제 및 해당 월 커미션 자동 재계산 처리
+    // payment 도메인(PaymentService.paymentDelete)에서 매출 삭제 직후 호출하는 커미션 재계산 협력 메서드
     // - 아직 커미션이 생성되지 않은 달: 재계산할 대상이 없으므로 그대로 종료 (다음 정산 생성 시 자동으로 최신 매출 반영됨)
     // - 커미션이 '미지급' 상태인 달: 삭제 후 남은 매출 기준으로 즉시 재계산하여 반영
-    // - 커미션이 '지급' 상태인 달: 이미 지급 완료된 금액이라 자동으로 낮추지 않고, 관리자 확인이 필요하다는 경고만 반환
+    // - 커미션이 '지급' 상태인 달: 이미 지급 완료된 금액이라 자동으로 낮추지 않고, 관리자에게 확인 알림만 발송
+    // 반환값: 이미 지급 완료 상태라 재계산을 건너뛰었는지 여부 (true면 호출부에서 관리자 확인 필요 경고 처리)
     @org.springframework.transaction.annotation.Transactional
-    public PayDeleteResult payDelete(Long payId) throws Exception {
-        PayDTO pay = settleMapper.getPayById(payId);
-        if (pay == null) {
-            return new PayDeleteResult(false, false);
-        }
-
-        int result = settleMapper.payDelete(payId);
-        if (result <= 0) {
-            return new PayDeleteResult(false, false);
-        }
-
-        java.time.LocalDate monthStart = pay.getPayDate().withDayOfMonth(1);
-        CommissionDTO settlement = settleMapper.getCommissionByGymAndMonth(pay.getGymId(), monthStart);
+    public boolean recalcCommissionAfterPaymentDeleted(Long gymId, java.time.LocalDate payDate) throws Exception {
+        java.time.LocalDate monthStart = payDate.withDayOfMonth(1);
+        CommissionDTO settlement = settleMapper.getCommissionByGymAndMonth(gymId, monthStart);
         if (settlement == null) {
-            return new PayDeleteResult(true, false);
+            return false;
         }
         if ("지급".equals(settlement.getStatus())) {
-            Long receiver = resolveOwnerReceiver(pay.getGymId());
+            Long receiver = resolveOwnerReceiver(gymId);
             if (receiver != null) {
                 sendAlarmSafely(receiver,
                         "이미 지급 완료된 정산 금액이라 매출 삭제가 자동 반영되지 않았습니다. 확인이 필요합니다.",
                         "/fitb/Settlepage", "SETTLE_RECALC");
             }
-            return new PayDeleteResult(true, true);
+            return true;
         }
 
         java.time.LocalDate monthEnd = monthStart.with(java.time.temporal.TemporalAdjusters.lastDayOfMonth());
-        long newCommission = settleMapper.sumGymSalesForMonth(pay.getGymId(), monthStart, monthEnd, settlement.getCommissionRate());
+        long newCommission = settleMapper.sumGymSalesForMonth(gymId, monthStart, monthEnd, settlement.getCommissionRate());
         settleMapper.updateCommissionAmount(settlement.getSettlementId(), newCommission);
 
-        return new PayDeleteResult(true, false);
+        return false;
     }
 
     // 관리자용 가맹점 전체 커미션 목록 페이징 조회 처리

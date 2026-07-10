@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.health.app.payment.PaymentMapper">
+
+    <!-- 신규 매출(결제) 정보 추가 등록 -->
+    <insert id="paymentAdd" parameterType="com.health.app.payment.PaymentDTO">
+        INSERT INTO "h_payment" (username, gym_id, installment, pay_price, pay_date, pay_name, data_id)
+        VALUES (#{username}, #{gymId}, #{installment}, #{payPrice}, #{payDate}, #{payName}, #{dataId})
+    </insert>
+
+    <!-- 사장님용: 해당 지점(gym_id)의 매출 내역 목록 페이징 조회 -->
+    <select id="paymentList" resultType="com.health.app.payment.PaymentDTO">
+        SELECT
+            pay_id as payId,
+            username,
+            gym_id as gymId,
+            installment,
+            pay_price as payPrice,
+            pay_date as payDate,
+            pay_name as payName,
+            data_id as dataId
+        FROM "h_payment"
+        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+        <if test="pager.month != null and pager.month != ''">
+            AND TO_CHAR(pay_date, 'YYYY-MM') = #{pager.month}
+        </if>
+        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+            AND (pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
+        </if>
+        <choose>
+            <when test="sort == 'price_desc'">ORDER BY pay_price DESC</when>
+            <when test="sort == 'price_asc'">ORDER BY pay_price ASC</when>
+            <when test="sort == 'date_asc'">ORDER BY pay_date ASC, pay_id ASC</when>
+            <otherwise>ORDER BY pay_date DESC, pay_id DESC</otherwise>
+        </choose>
+        LIMIT #{pager.pageSize} OFFSET #{pager.offset}
+    </select>
+
+    <!-- 사장님용: 매출 내역 전체 건수 조회 (Pager 총 페이지 계산용) -->
+    <select id="paymentListCount" resultType="long">
+        SELECT COUNT(*) FROM "h_payment"
+        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+        <if test="pager.month != null and pager.month != ''">
+            AND TO_CHAR(pay_date, 'YYYY-MM') = #{pager.month}
+        </if>
+        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+            AND (pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
+        </if>
+    </select>
+
+    <!-- 사장님용: 매출 내역 전체 합계 금액 조회 (필터 조건 적용, 페이지 무관) -->
+    <select id="paymentListSum" resultType="long">
+        SELECT COALESCE(SUM(pay_price), 0) FROM "h_payment"
+        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+        <if test="pager.month != null and pager.month != ''">
+            AND TO_CHAR(pay_date, 'YYYY-MM') = #{pager.month}
+        </if>
+        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+            AND (pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
+        </if>
+    </select>
+
+    <!-- CSV 내보내기용: paymentList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환 -->
+    <select id="paymentListAll" resultType="com.health.app.payment.PaymentDTO">
+        SELECT
+            pay_id as payId,
+            username,
+            gym_id as gymId,
+            installment,
+            pay_price as payPrice,
+            pay_date as payDate,
+            pay_name as payName,
+            data_id as dataId
+        FROM "h_payment"
+        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+        <if test="pager.month != null and pager.month != ''">
+            AND TO_CHAR(pay_date, 'YYYY-MM') = #{pager.month}
+        </if>
+        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+            AND (pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
+        </if>
+        ORDER BY pay_date DESC, pay_id DESC
+    </select>
+
+    <!-- 매출(결제) 단건 조회 (삭제 전 gymId/payDate 확인용) -->
+    <select id="getPaymentById" parameterType="Long" resultType="com.health.app.payment.PaymentDTO">
+        SELECT
+            pay_id as payId,
+            username,
+            gym_id as gymId,
+            installment,
+            pay_price as payPrice,
+            pay_date as payDate,
+            pay_name as payName,
+            data_id as dataId
+        FROM "h_payment"
+        WHERE pay_id = #{payId}
+    </select>
+
+    <!-- 매출(결제) 내역 삭제 -->
+    <delete id="paymentDelete" parameterType="Long">
+        DELETE FROM "h_payment" WHERE pay_id = #{payId}
+    </delete>
+
+    <!-- 사장님용: 미결제된 서명 완료 계약서 목록 조회 (매출 등록 연동 후보) -->
+    <select id="unpaidContractList" parameterType="Long" resultType="com.health.app.contract.ContractDTO">
+        SELECT
+            d.data_id as dataId,
+            d.contract,
+            d.gym_id as gymId,
+            d.sender_id as senderId,
+            d.receiver_id as receiverId,
+            d.receiver_name as receiverName,
+            d.status,
+            d.start_date as startDate,
+            d.end_date as endDate,
+            d.amount,
+            d.quantity,
+            d.issue_date as issueDate,
+            d.signed_at as signedAt,
+            d.manager_id as managerId
+        FROM "h_contract_data" d
+        WHERE d.sender_id = #{username}
+          AND d.status = 'SIGNED'
+          AND d.contract IN (3, 4)
+          AND d.data_id NOT IN (
+              SELECT data_id FROM "h_payment" WHERE data_id IS NOT NULL
+          )
+        ORDER BY d.issue_date DESC, d.data_id DESC
+    </select>
+
+</mapper>

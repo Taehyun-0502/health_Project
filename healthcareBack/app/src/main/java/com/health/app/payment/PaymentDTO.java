@@ -1,4 +1,4 @@
-package com.health.app.settle;
+package com.health.app.payment;
 
 import java.time.LocalDate;
 
@@ -13,7 +13,7 @@ import lombok.ToString;
 @Setter
 @Getter
 @ToString
-public class PayDTO {
+public class PaymentDTO {
 
     // 결제 PK
     private Long payId;

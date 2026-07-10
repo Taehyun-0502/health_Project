@@ -144,7 +144,7 @@ function Settlepage() {
       const query = new URLSearchParams({ page: targetPage, pageSize: 10, keyword: keyword || '' });
       if (month && month !== 'ALL') query.set('month', month);
       if (sort) query.set('sort', sort);
-      const response = await fetch(`${backendUrl}/fitb/settle/paylist?${query.toString()}`, { headers });
+      const response = await fetch(`${backendUrl}/fitb/payment/paylist?${query.toString()}`, { headers });
       if (response.ok) {
         const data = await response.json();
         setPays(data.items || []);
@@ -197,7 +197,7 @@ function Settlepage() {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     try {
-      const response = await fetch(`${backendUrl}/fitb/settle/unpaid-contracts`, { headers });
+      const response = await fetch(`${backendUrl}/fitb/payment/unpaid-contracts`, { headers });
       if (response.ok) {
         setUnpaidContracts(await response.json());
       } else {
@@ -503,7 +503,7 @@ function Settlepage() {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     try {
-      const response = await fetch(`${backendUrl}/fitb/settle/pay/${payId}`, {
+      const response = await fetch(`${backendUrl}/fitb/payment/pay/${payId}`, {
         method: 'DELETE',
         headers,
       });
@@ -558,7 +558,7 @@ function Settlepage() {
     };
 
     try {
-      const response = await fetch(`${backendUrl}/fitb/settle/payadd`, {
+      const response = await fetch(`${backendUrl}/fitb/payment/payadd`, {
         method: 'POST',
         headers,
         body: JSON.stringify(newPayObj)
@@ -618,7 +618,7 @@ function Settlepage() {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const query = new URLSearchParams({ keyword: ownerSearchQuery || '' });
       if (ownerMonthFilter !== 'ALL') query.set('month', ownerMonthFilter);
-      const response = await fetch(`${backendUrl}/fitb/settle/paylist/export?${query.toString()}`, { headers });
+      const response = await fetch(`${backendUrl}/fitb/payment/paylist/export?${query.toString()}`, { headers });
       if (!response.ok) {
         alert('내보내기에 실패했습니다.');
         return;
