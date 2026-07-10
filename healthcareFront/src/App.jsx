@@ -22,7 +22,7 @@ import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
 import B2bNotification from './b2b_mypage/B2bNotification.jsx';
 import Dashboard from './dashboard/dashboard.jsx';
 import B2bList from './b2b_mypage/B2bList.jsx';
-//import B2cSurvey from './b2c_mypage/B2cSurvey.jsx'; 
+import B2cSurvey from './b2c_mypage/B2cSurvey.jsx'; 
 
 
 
@@ -43,7 +43,7 @@ function App() {
         <Route path="checkin" element={<B2cCheckIn />} />
         <Route path="b2ccomplaint" element={<B2cComplaint />} />
         <Route path="account" element={<B2cAccount />} />
-        {/* <Route path="survey" element={<B2cSurvey />} /> */}
+        <Route path="survey" element={<B2cSurvey />} />
       </Route>
 
       {/* 사장님 포털 화면 */}

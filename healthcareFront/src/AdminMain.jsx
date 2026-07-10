@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import B2bPromotion from './promotion/B2bPromotion.jsx'; // ◀ 프로모션 컴포넌트 임포트
+
 
 // 사장님/트레이너 전용 메인 포털 컴포넌트 (디자인 제외 Plain 버전)
 function AdminMain() {
@@ -177,6 +179,10 @@ function AdminMain() {
       <div style={{ border: '1px solid #ccc', padding: '20px', minHeight: '200px' }}>
         {tabs.map((tab) => {
           if (activeTab !== tab.id) return null;
+          // 프로모션 탭일 경우 커스텀 쿠폰 발송 컴포넌트를 출력
+          if (tab.id === 'promotion') {
+            return <B2bPromotion key={tab.id} />;
+          }
           return (
             <div key={tab.id}>
               <h3>{tab.title}</h3>
