@@ -21,5 +21,6 @@ public class MemberDTO {
     private String role;         // 역할 권한 (varchar)
     private Long gymId;          // 사업장 정보 번호 (int8)
     private LocalDate birth;
+    private String status;
    
 }

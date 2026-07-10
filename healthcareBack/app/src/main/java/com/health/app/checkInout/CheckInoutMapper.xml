@@ -5,7 +5,7 @@
 <mapper namespace="com.health.app.checkInout.CheckInoutMapper">
 
 <select id="list" parameterType="Long" resultType="com.health.app.checkInout.CheckInoutDTO">
-select * from "h_check_inout" where username=#{username} and check_in &gt;= now() - interval '1 month' order by check_in desc
+select * from "h_check_inout" where username=#{username} order by check_in desc
 </select>
 
 </mapper>
