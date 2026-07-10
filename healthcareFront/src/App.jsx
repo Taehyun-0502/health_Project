@@ -16,6 +16,9 @@ import ContractDetail from './contract/ContractDetail.jsx';
 import Itempage from './item/Itempage.jsx';
 import B2bAccount from './b2b_mypage/B2bAccount.jsx';
 import Contractpage from './contract/Contractpage.jsx';
+import ContractLayout from './contract/ContractLayout.jsx';
+import RosterPage from './contract/RosterPage.jsx';
+import JobSeekerPage from './contract/JobSeekerPage.jsx';
 import Settlepage from './settle/settlepage.jsx'
 import B2bMain from './b2b_mypage/B2bMain.jsx';
 import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
@@ -53,7 +56,12 @@ function App() {
       <Route path="/fitb/contract/:dataId" element={<ContractDetail />} />
       <Route path="/fitb/itempage" element={<Itempage />} />
       <Route path="/fitb/b2bmypage" element={<B2bMain />} />
-      <Route path="/fitb/contractpage" element={<Contractpage />} />
+      {/* 계약 패키지 2Depth 메뉴 - Contract(계약서 리스트) / Member(역할별 로스터) / 구직 트레이너(ADMIN) */}
+      <Route path="/fitb/contractpage" element={<ContractLayout />}>
+        <Route index element={<Contractpage />} />
+        <Route path="member" element={<RosterPage />} />
+        <Route path="jobseekers" element={<JobSeekerPage />} />
+      </Route>
       <Route path="/fitb/b2bmypage/b2bcomplaint" element={<B2bComplaint />} />
       <Route path="/fitb/b2bmypage/notification" element={<B2bNotification />} />
       <Route path="/fitb/Settlepage" element={<Settlepage />} />
