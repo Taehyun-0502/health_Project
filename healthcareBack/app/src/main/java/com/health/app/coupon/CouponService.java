@@ -52,4 +52,14 @@ public class CouponService {
         }
         return result;
     }
+
+    // 쿠폰 단건 조회 (결제 시 유효성 검증용)
+    public CouponDTO getCouponById(Long couponId) throws Exception {
+        return couponMapper.getCouponById(couponId);
+    }
+
+    // 쿠폰 사용 처리
+    public int markUsed(Long couponId) throws Exception {
+        return couponMapper.markUsed(couponId);
+    }
 }
