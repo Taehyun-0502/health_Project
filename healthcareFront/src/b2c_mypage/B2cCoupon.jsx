@@ -70,7 +70,8 @@ function B2cCoupon() {
                 <th style={{ padding: '10px', textAlign: 'left' }}>보낸사람</th>
                 <th style={{ padding: '10px', textAlign: 'left' }}>쿠폰 이름</th>
                 <th style={{ padding: '10px', textAlign: 'left' }}>종류</th>
-                <th style={{ padding: '10px', textAlign: 'left' }}>할인률(%)</th>
+                <th style={{ padding: '10px', textAlign: 'left' }}>할인률</th>
+                <th style={{ padding: '10px', textAlign: 'left' }}>혜택 상세</th>
                 <th style={{ padding: '10px', textAlign: 'center' }}>만료일</th>
                 <th style={{ padding: '10px', textAlign: 'center' }}>상태</th>
               </tr>
@@ -81,7 +82,12 @@ function B2cCoupon() {
                   <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.fromName}</td>
                   <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.couponName}</td>
                   <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.category}</td>
-                  <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.percent}</td>
+                  <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.percent}%</td>
+                  <td style={{ padding: '10px', fontWeight: 'bold' }}>
+                    {/* 카테고리별 혜택 종류 조건 분기 화면 표시 */}
+                    {coupon.category === '헬스' && coupon.couponDate && `${coupon.couponDate}개월`}
+                    {coupon.category === 'PT' && coupon.couponCount && `${coupon.couponCount}회`}
+                  </td>
                   <td style={{ padding: '10px', textAlign: 'center', color: '#666' }}>{coupon.date}</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <span style={{
