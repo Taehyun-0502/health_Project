@@ -28,8 +28,8 @@ public class CouponService {
         return couponMapper.createCoupon(typeDTO);
     }
     // 해당 헬스장의 등록된 쿠폰 종류 목록 조회
-    public List<CouponTypeDTO> CouponTypeList(Long gymId) throws Exception {
-        return couponMapper.CouponTypeList(gymId);
+    public List<CouponTypeDTO> couponTypeList(Long gymId) throws Exception {
+        return couponMapper.couponTypeList(gymId);
     }
     // 사장님의 회원 쿠폰 발송 및 카운팅 증가 트랜잭션 비즈니스 로직
          @Transactional
@@ -39,7 +39,7 @@ public class CouponService {
         
         // 2. 발송 성공 시 해당 쿠폰 종류의 누적 발송 횟수 1 증가
         if (result > 0) {
-            couponMapper.SendCount(couponDTO.getCouponNum());
+            couponMapper.sendCount(couponDTO.getCouponNum());
             
             // 3. 수신 회원에게 실시간 SSE 알림 팝업 전송 (인자 5개 완비)
             alarmService.sendAlarm(
@@ -62,4 +62,10 @@ public class CouponService {
     public int markUsed(Long couponId) throws Exception {
         return couponMapper.markUsed(couponId);
     }
+
+    //발송된 쿠폰 상태 조회
+    public List<CouponDTO> couponStatus(Long fromId)throws Exception{
+        return couponMapper.couponStatus(fromId);
+    }
+
 }

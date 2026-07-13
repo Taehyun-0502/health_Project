@@ -28,4 +28,9 @@
     set status = #{status}
     where complaint_id = #{complaintId}
     </update>
+
+    <!-- 건의글 단건 상세 조회 (알림 작성자 타겟 확보용) -->
+    <select id="getComplaintById" parameterType="Long" resultType="ComplaintDTO">
+    select * from h_complaint where complaint_id = #{complaintId}
+    </select>
 </mapper>

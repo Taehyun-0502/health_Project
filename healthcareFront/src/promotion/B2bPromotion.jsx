@@ -6,6 +6,8 @@ function B2bPromotion() {
   
   // 상태 관리 (쿠폰 종류 목록, 입력 폼 데이터 등)
   const [couponTypes, setCouponTypes] = useState([]);
+  const [members, setMembers] = useState([]); // ◀ 지점 회원 목록 상태 추가
+  const [sentCoupons, setSentCoupons] = useState([]); // ◀ 발송 쿠폰 전체 상태 추가
   const [category, setCategory] = useState('헬스');
   const [percent, setPercent] = useState('');
   const [couponName, setCouponName] = useState('');
@@ -35,8 +37,46 @@ function B2bPromotion() {
     }
   };
 
+  // 소속 지점의 일반 회원 목록 백엔드 로드
+  const fetchMembers = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token || !user.gymId) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/member/list/gym?gymId=${user.gymId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setMembers(data);
+      }
+    } catch (err) {
+      console.error('지점 회원 목록 로드 실패:', err);
+    }
+  };
+
+  // 사장님이 발송한 쿠폰 상태 현황 목록 백엔드 로드
+  const fetchSentCoupons = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/coupon/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSentCoupons(data);
+      }
+    } catch (err) {
+      console.error('발송 쿠폰 상태 목록 로드 실패:', err);
+    }
+  };
+
   useEffect(() => {
     fetchCouponTypes();
+    fetchMembers(); // ◀ 회원 목록 로드 메서드 기동
+    fetchSentCoupons(); // ◀ 발송 쿠폰 상태 목록 로드 기동
   }, []);
 
   // 사장님의 새로운 쿠폰 종류 생성 처리 핸들러
@@ -117,6 +157,7 @@ function B2bPromotion() {
         setExpiryDate('');
         setSelectedType(null); // 모달 닫기
         fetchCouponTypes(); // 발송 수(sendCount) 업데이트를 위해 목록 갱신
+        fetchSentCoupons(); // ◀ 추가: 통계 카운트 실시간 동기화
       } else {
         const errText = await response.text();
         alert(`발송 실패: ${errText}`);
@@ -126,9 +167,47 @@ function B2bPromotion() {
     }
   };
 
+  // 발송된 전체 쿠폰 통계 파생 계산 (Derived State)
+  const totalCount = sentCoupons.length;
+  const unuseCount = sentCoupons.filter(c => c.status === '미사용').length;
+  const usedCount = sentCoupons.filter(c => c.status === '사용완료').length;
+  const expiredCount = sentCoupons.filter(c => c.status === '기간만료').length;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', textAlign: 'left' }}>
       
+      {/* 0. 쿠폰 발송 및 사용 상태 집계 카드 현황판 */}
+      <div style={{ padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <h4 style={{ margin: '0 0 15px 0', color: '#111827' }}>📊 쿠폰 발행 및 사용 통계 현황</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
+          
+          {/* 총 발행 수 */}
+          <div style={{ padding: '12px', border: '1px solid #f3f4f6', borderRadius: '6px', backgroundColor: '#f9fafb', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '3px' }}>총 발행 수</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>{totalCount}건</div>
+          </div>
+
+          {/* 미사용 수 */}
+          <div style={{ padding: '12px', border: '1px solid #dbeafe', borderRadius: '6px', backgroundColor: '#eff6ff', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: '#2563eb', marginBottom: '3px' }}>미사용 (사용대기)</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e40af' }}>{unuseCount}건</div>
+          </div>
+
+          {/* 사용 완료 수 */}
+          <div style={{ padding: '12px', border: '1px solid #d1fae5', borderRadius: '6px', backgroundColor: '#ecfdf5', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: '#10b981', marginBottom: '3px' }}>사용 완료</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#065f46' }}>{usedCount}건</div>
+          </div>
+
+          {/* 유효기간 만료 수 */}
+          <div style={{ padding: '12px', border: '1px solid #fee2e2', borderRadius: '6px', backgroundColor: '#fef2f2', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: '#ef4444', marginBottom: '3px' }}>기간 만료</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#991b1b' }}>{expiredCount}건</div>
+          </div>
+
+        </div>
+      </div>
+
       {/* 1. 쿠폰 종류 생성 폼 */}
       <div style={{ padding: '20px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fafafa' }}>
         <h4 style={{ margin: '0 0 15px 0', color: '#333' }}>🎟️ 새 할인 쿠폰 종류 만들기 (커스터마이징)</h4>
@@ -258,15 +337,20 @@ function B2bPromotion() {
             </p>
             <form onSubmit={handleSendCoupon} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>수신 회원 아이디(전화번호)</label>
-                <input 
-                  type="text" 
-                  value={receiverId} 
-                  onChange={(e) => setReceiverId(e.target.value)} 
-                  required 
-                  placeholder="예: 66666602"
-                  style={{ width: '90%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', color: '#333' }}
-                />
+                <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>수신 회원 선택</label>
+                <select
+                  value={receiverId}
+                  onChange={(e) => setReceiverId(e.target.value)}
+                  required
+                  style={{ width: '95%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', color: '#333', backgroundColor: '#fff' }}
+                >
+                  <option value="">-- 회원을 선택해 주세요 --</option>
+                  {members.map((member) => (
+                    <option key={member.username} value={member.username}>
+                      {member.name} ({member.username})
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>사용 만료 기한</label>
