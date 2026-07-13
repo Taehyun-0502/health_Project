@@ -17,4 +17,7 @@ public interface ComplaintMapper {
 
     // 사장님의 접수된 건의글 처리상태 변경 메서드
     public int update(ComplaintDTO complaintDTO)throws Exception;
+
+    // 건의글 단건 상세 조회 메서드 (알림 수신자 식별용)
+    public ComplaintDTO getComplaintById(Long complaintId) throws Exception;
 }

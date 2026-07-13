@@ -22,6 +22,7 @@ function Payment() {
   const [detail, setDetail] = useState(null);
   const [coupons, setCoupons] = useState([]);
   const [selectedCouponId, setSelectedCouponId] = useState(null);
+  const [installment, setInstallment] = useState(0);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -106,7 +107,7 @@ function Payment() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ dataId: Number(dataId), couponId: selectedCouponId }),
+        body: JSON.stringify({ dataId: Number(dataId), couponId: selectedCouponId, installment }),
       });
       if (response.ok) {
         alert('결제가 완료되었습니다.');
@@ -172,9 +173,21 @@ function Payment() {
         </div>
       )}
 
+      <h2>결제 방법</h2>
+      <label>
+        할부 개월
+        <select value={installment} onChange={(e) => setInstallment(Number(e.target.value))}>
+          <option value={0}>일시불</option>
+          <option value={3}>3개월 할부</option>
+          <option value={6}>6개월 할부</option>
+          <option value={12}>12개월 할부</option>
+        </select>
+      </label>
+
       <h2>결제 요약</h2>
       <p>기본 금액: {money(detail.amount)}원</p>
       {selectedCoupon && <p>쿠폰 할인: -{money(discount)}원</p>}
+      <p>결제 방법: {installment === 0 ? '일시불' : `${installment}개월 할부`}</p>
       <p><strong>최종 결제 금액: {money(finalPrice)}원</strong></p>
 
       <button type="button" onClick={handleCheckout} disabled={submitting}>

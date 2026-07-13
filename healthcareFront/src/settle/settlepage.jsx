@@ -3,6 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import './settlepage.css';
 import Pagination from './Pagination';
 
+const UNPAID_CONTRACTS_PER_PAGE = 5;
+const UNPAID_CONTRACT_PAGE_BLOCK_SIZE = 5;
+
 function Settlepage() {
   const navigate = useNavigate();
 
@@ -50,6 +53,8 @@ function Settlepage() {
   const [adminMonthFilter, setAdminMonthFilter] = useState('ALL');
   const [ownerMonthFilter, setOwnerMonthFilter] = useState('ALL');
   const [ownerSearchQuery, setOwnerSearchQuery] = useState('');
+  const [unpaidContractType, setUnpaidContractType] = useState('ALL');
+  const [unpaidContractPage, setUnpaidContractPage] = useState(1);
 
   // 정렬 옵션 상태 ('' = 기본(최신순)). 매출/지출 탭은 동일한 옵션 체계를 공유
   const [ownerSortOption, setOwnerSortOption] = useState('');
@@ -73,18 +78,37 @@ function Settlepage() {
   const [newExpenseDate, setNewExpenseDate] = useState('');
   const [newExpenseRate, setNewExpenseRate] = useState('0');
 
-  // 매출 등록 (계약 연동) 폼 상태
-  const [selectedContractId, setSelectedContractId] = useState('');
-  const [payInstallment, setPayInstallment] = useState('0');
-  const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0]);
+  // 미결제 계약은 유형 필터를 먼저 적용한 뒤 5건씩 페이지로 나눠 표시
+  const filteredUnpaidContracts = unpaidContracts.filter((contract) => (
+    unpaidContractType === 'ALL' || String(contract.contract) === unpaidContractType
+  ));
+  const unpaidContractTotalPages = Math.ceil(filteredUnpaidContracts.length / UNPAID_CONTRACTS_PER_PAGE);
+  const currentUnpaidContractPage = unpaidContractTotalPages > 0
+    ? Math.min(unpaidContractPage, unpaidContractTotalPages)
+    : 1;
+  const unpaidContractStartPage = Math.floor(
+    (currentUnpaidContractPage - 1) / UNPAID_CONTRACT_PAGE_BLOCK_SIZE
+  ) * UNPAID_CONTRACT_PAGE_BLOCK_SIZE + 1;
+  const unpaidContractEndPage = Math.min(
+    unpaidContractStartPage + UNPAID_CONTRACT_PAGE_BLOCK_SIZE - 1,
+    unpaidContractTotalPages
+  );
+  const unpaidContractPager = unpaidContractTotalPages > 0 ? {
+    currentPage: currentUnpaidContractPage,
+    startPage: unpaidContractStartPage,
+    endPage: unpaidContractEndPage,
+    hasPrev: unpaidContractStartPage > 1,
+    hasNext: unpaidContractEndPage < unpaidContractTotalPages,
+  } : null;
+  const pagedUnpaidContracts = filteredUnpaidContracts.slice(
+    (currentUnpaidContractPage - 1) * UNPAID_CONTRACTS_PER_PAGE,
+    currentUnpaidContractPage * UNPAID_CONTRACTS_PER_PAGE
+  );
 
-  // 선택된 계약 정보 파생 변수
-  const selectedContract = unpaidContracts.find(c => c.dataId === parseInt(selectedContractId, 10));
-  const autoPayPrice = selectedContract ? selectedContract.amount : '';
-  const autoPayUsername = selectedContract ? selectedContract.receiverId : '';
-  const autoPayName = selectedContract 
-    ? `[계약 #${selectedContract.dataId}] ${selectedContract.contract === 3 ? '이용권' : 'PT'} - ${selectedContract.receiverName}`
-    : '';
+  const handleUnpaidContractTypeChange = (e) => {
+    setUnpaidContractType(e.target.value);
+    setUnpaidContractPage(1);
+  };
 
   // 관리자 권한용 커미션 내역을 "페이지 + 지급상태 + 조회월 + 정렬" 조건으로 페이징 조회 (실패 시 목업 데이터로 폴백)
   const fetchCommissions = async (targetPage, status, month, sort) => {
@@ -526,57 +550,6 @@ function Settlepage() {
     fetchUnpaidContracts();
   };
 
-  // 매출 등록 핸들러 (OWNER 기능 - 계약 연동)
-  const handleAddPay = async (e) => {
-    e.preventDefault();
-    if (!selectedContract) {
-      alert('연동할 계약서를 선택해 주세요.');
-      return;
-    }
-
-    const gymId = loginUser?.gymId || selectedContract.gymId || 101;
-    const newPayObj = {
-      username: autoPayUsername,
-      gymId: parseInt(gymId, 10),
-      installment: parseInt(payInstallment, 10),
-      payPrice: parseInt(autoPayPrice, 10),
-      payDate: payDate,
-      payName: autoPayName,
-      dataId: selectedContract.dataId
-    };
-
-    // 입력 폼 리셋
-    setSelectedContractId('');
-    setPayInstallment('0');
-    setPayDate(new Date().toISOString().split('T')[0]);
-
-    // 백엔드 API 요청
-    const backendUrl = import.meta.env.VITE_BACKEND_URL;
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-    };
-
-    try {
-      const response = await fetch(`${backendUrl}/fitb/payment/payadd`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(newPayObj)
-      });
-      if (response.ok) {
-        alert('매출이 성공적으로 등록되었습니다.');
-      } else {
-        throw new Error('서버 등록 실패');
-      }
-    } catch (err) {
-      console.warn('백엔드 매출 등록 실패:', err.message);
-    }
-
-    // 새로 등록된 매출을 확인할 수 있도록 매출 목록을 1페이지부터 재조회하고, 계약서 드롭다운도 갱신
-    fetchPays(1, ownerSearchQuery, ownerMonthFilter, ownerSortOption);
-    fetchUnpaidContracts();
-  };
-
   // 금액 포맷 함수
   const formatWon = (value) => {
     return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
@@ -1010,7 +983,7 @@ function Settlepage() {
                     {pays.map((p, index) => (
                       <tr key={p.payId || p.dataId || index}>
                         <td>{p.payId ? `#${p.payId}` : `임시 (계약 #${p.dataId})`}</td>
-                        <td>{p.username ? (p.username.toString().startsWith('0') ? p.username : '0' + p.username) : '-'}</td>
+                        <td>{p.username ?? '-'}</td>
                         <td><strong>{p.payName}</strong></td>
                         <td style={{ fontWeight: '600' }}>{formatWon(p.payPrice)}</td>
                         <td>
@@ -1045,114 +1018,41 @@ function Settlepage() {
               </div>
               <Pagination pager={payPager} onPageChange={handlePayPageChange} />
 
-              {/* 쿠폰 적용 현장 결제 (h_pay 연동, /fitb/payment 페이지로 이동) */}
+              {/* 미결제 계약 목록 (h_pay 연동, /fitb/payment 페이지로 이동) */}
               {unpaidContracts.length > 0 && (
                 <div className="card-premium expense-form-card">
-                  <h3>💳 쿠폰 적용 결제</h3>
+                  <h3>💳 미결제 리스트</h3>
                   <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
                     회원이 보유한 쿠폰을 확인하고 할인을 적용해 결제를 확정합니다.
                   </p>
+                  <div className="unpaid-contract-filter">
+                    <label htmlFor="unpaid-contract-type">계약 유형</label>
+                    <select
+                      id="unpaid-contract-type"
+                      className="select-premium"
+                      value={unpaidContractType}
+                      onChange={handleUnpaidContractTypeChange}
+                    >
+                      <option value="ALL">전체 계약</option>
+                      <option value="3">헬스 계약</option>
+                      <option value="4">PT 계약</option>
+                    </select>
+                  </div>
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                    {unpaidContracts.map((c) => (
+                    {pagedUnpaidContracts.map((c) => (
                       <li key={c.dataId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-color, #e5e7eb)' }}>
                         <span>[{c.contract === 3 ? '이용권' : 'PT'}] {c.receiverName} (₩{c.amount?.toLocaleString()}) - #{c.dataId}</span>
                         <Link to={`/fitb/payment/${c.dataId}`} className="btn-premium">쿠폰 적용 결제하기</Link>
                       </li>
                     ))}
+                    {pagedUnpaidContracts.length === 0 && (
+                      <li className="no-data-row">선택한 유형의 미결제 계약이 없습니다.</li>
+                    )}
                   </ul>
+                  <Pagination pager={unpaidContractPager} onPageChange={setUnpaidContractPage} />
                 </div>
               )}
 
-              {/* 매출 등록 폼 (계약 연동) */}
-              <div className="card-premium expense-form-card">
-                <h3>📊 계약 연동 신규 매출 등록</h3>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
-                  서명 완료된 회원 계약서(이용권/PT) 정보를 불러와 결제 매출로 등록합니다. 이미 매출 등록된 계약은 선택 목록에 표시되지 않습니다.
-                </p>
-                <form onSubmit={handleAddPay}>
-                  <div className="expense-form-grid">
-                    <div className="form-group">
-                      <label className="form-label">연동할 계약서 선택</label>
-                      <select 
-                        className="form-input"
-                        required
-                        value={selectedContractId}
-                        onChange={(e) => setSelectedContractId(e.target.value)}
-                      >
-                        <option value="">-- 계약서를 선택해 주세요 --</option>
-                        {unpaidContracts.map(c => (
-                          <option key={c.dataId} value={c.dataId}>
-                            [{c.contract === 3 ? '이용권' : 'PT'}] {c.receiverName} (₩{c.amount?.toLocaleString()}) - #{c.dataId}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">회원 연락처</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        readOnly 
-                        placeholder="계약 선택 시 자동 입력"
-                        value={autoPayUsername ? (autoPayUsername.toString().startsWith('0') ? autoPayUsername : '0' + autoPayUsername) : ''}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">결제 금액 (원)</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        readOnly 
-                        placeholder="계약 선택 시 자동 입력"
-                        value={autoPayPrice ? autoPayPrice.toLocaleString() + ' 원' : ''}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">결제 항목명</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        readOnly 
-                        placeholder="계약 선택 시 자동 입력"
-                        value={autoPayName}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">할부 구분 (선택)</label>
-                      <select 
-                        className="form-input"
-                        value={payInstallment}
-                        onChange={(e) => setPayInstallment(e.target.value)}
-                      >
-                        <option value="0">일시불</option>
-                        <option value="3">3개월 할부</option>
-                        <option value="6">6개월 할부</option>
-                        <option value="12">12개월 할부</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">결제 완료일</label>
-                      <input 
-                        type="date" 
-                        className="form-input" 
-                        required
-                        value={payDate}
-                        onChange={(e) => setPayDate(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="btn-submit-container">
-                    <button type="submit" className="btn-premium btn-submit-premium">
-                      매출 등록하기
-                    </button>
-                  </div>
-                </form>
-              </div>
             </div>
           )}
 

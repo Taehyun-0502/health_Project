@@ -17,6 +17,9 @@ public interface AlarmMapper {
     // 알림 읽음 처리 쿼리 호출
     public int alarmRead(Long alarmId) throws Exception;
 
+    // 수신 회원의 모든 알림 일괄 읽음 처리 쿼리 호출 (신규 추가 메서드)
+    public int readAllByReceiver(Long receiver) throws Exception;
+    
     // 보관 기간(1개월)이 지난 알림 이력 삭제 쿼리 호출
     public int deleteOld(LocalDate cutoff) throws Exception;
 }

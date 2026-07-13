@@ -34,4 +34,9 @@
   select * from "h_member" where gym_id = #{gymId} and upper(role) = 'OWNER' limit 1
   </select>
 
+  <!-- gym_id 기준 지점별 소속 일반 회원 목록 조회 SQL -->
+  <select id="findMembersByGymId" parameterType="Long" resultType="MemberDTO">
+  select username, name, gym_id, role from "h_member" where gym_id = #{gymId} and upper(role) = 'MEMBER' order by name asc
+  </select>
+
 </mapper>
