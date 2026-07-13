@@ -45,19 +45,7 @@ public class AlarmService {
     // sender는 시스템(배치/이벤트 트리거) 발송인 경우 null
     public void sendAlarm(Long receiver, Long sender, String message, String link, String category) throws Exception {
         String username = String.valueOf(receiver);
-
-        // 저장소에서 해당 회원의 연결망 획득
-        SseEmitter emitter = alarmRepository.get(username);
-
-        if (emitter != null) {
-            try {
-                // event().name("alarm") 형식으로 데이터를 캡슐화해 쏩니다.
-                emitter.send(SseEmitter.event().name("alarm").data(message));
-            } catch (IOException e) {
-                // 통신이 깨졌거나 클라이언트가 탭을 닫아 전송 실패한 경우 저장소에서 삭제
-                alarmRepository.remove(username);
-            }
-        }
+        SseEmitter emitter = alarmRepository.get(username); // ◀ 변수 로드 복구
 
         // 실시간 수신 여부와 무관하게 이력은 항상 h_alarm에 남긴다
         AlarmDTO alarmDTO = new AlarmDTO();
@@ -67,6 +55,16 @@ public class AlarmService {
         alarmDTO.setLink(link);
         alarmDTO.setCategory(category);
         alarmMapper.alarmAdd(alarmDTO);
+
+        if (emitter != null) {
+            try {
+                // ◀ 변경: message 텍스트 대신 이동 경로가 포함된 alarmDTO 객체 자체를 JSON 직렬화 전송
+                emitter.send(SseEmitter.event().name("alarm").data(alarmDTO));
+            } catch (IOException e) {
+                // 통신이 깨졌거나 클라이언트가 탭을 닫아 전송 실패한 경우 저장소에서 삭제
+                alarmRepository.remove(username);
+            }
+        }
     }
 
     // 3. 수신자 기준 알림 이력 목록 조회

@@ -45,8 +45,8 @@ public class CouponService {
             alarmService.sendAlarm(
                 couponDTO.getToId(),                                     // 1) 수신 회원 (receiver)
                 couponDTO.getFromId(),                                   // 2) 발송 사장님 (sender)
-                "새로운 쿠폰이 도착했습니다: " + couponDTO.getCouponName(), // 3) 메시지 (message)
-                "/mypage",                                               // 4) 클릭 시 이동할 경로 (link)
+                "새로운 쿠폰이 도착했습니다: " + couponDTO.getCouponName(),   // 3) 메시지 (message)
+                "/mypage/coupon",                                        // 4) 클릭 시 이동할 경로 (link)
                 "COUPON"                                                 // 5) 알림 종류 구분 (category)
             );
         }
