@@ -44,7 +44,8 @@ public class PayController {
         Long ownerUsername = Long.parseLong(claims.getSubject());
 
         try {
-            PayDTO result = payService.checkout(req.getDataId(), ownerUsername, req.getCouponId());
+            PayDTO result = payService.checkout(
+                    req.getDataId(), ownerUsername, req.getCouponId(), req.getInstallment());
             return ResponseEntity.ok(result);
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
