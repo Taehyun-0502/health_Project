@@ -59,6 +59,14 @@ public class ItemController {
         return itemService.itemListAll(gymId, keyword);
     }
 
+    // 특정 카테고리(기본:기구) 아이템 목록 조회 — 이탈통계 기구불만 옆 표시용
+    @GetMapping("byCategory")
+    public List<ItemDTO> itemByCategory(
+            Long gymId,
+            @RequestParam(required = false, defaultValue = "기구") String category) throws Exception {
+        return itemService.selectByCategory(gymId, category);
+    }
+
     // 아이템 상세보기 메서드
     @GetMapping("detail")
     public List<ItemDTO> itemDetail(ItemDTO itemDTO) throws Exception {

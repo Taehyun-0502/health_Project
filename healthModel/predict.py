@@ -80,8 +80,7 @@ def _vectorize(m):
         gap = _num(m.get("마지막_방문_경과일", 0)) or 0.0
         m["상대_방문공백"] = round(min(gap / (7.0 / v), 20), 2)
     if isinstance(m.get("주_이용_시간대_혼잡도"), str):
-        val = m["주_이용_시간대_혼잡도"].replace(" ", "")
-        m["주_이용_시간대_혼잡도"] = _CONG.get(val, _CONG.get(m["주_이용_시간대_혼잡도"], 1))
+        m["주_이용_시간대_혼잡도"] = _CONG[m["주_이용_시간대_혼잡도"]]
 
     # 설문 미응답 처리: 설문 컬럼이 하나라도 비면 '미응답'으로 간주(학습 분포와 일치시키기 위해
     # 5개를 통째로 NaN 처리하고 플래그 0). 호출자가 설문_응답여부를 명시하면 그 값을 존중.
@@ -126,13 +125,6 @@ def predict(member, top_k=3):
     comp = {c: float(mdl.predict_proba(X)[0, 1]) for c, mdl in _COMP.items()}
     top_comp = sorted(comp.items(), key=lambda kv: -kv[1])[:top_k]
 
-    # 카테고리별 불만 예측 (가격불만, 기구불만, 직원불만, 서비스불만)
-    cat_comp = {}
-    for cat in ["가격불만", "기구불만", "직원불만", "서비스불만"]:
-        items = [(c, p) for c, p in comp.items() if c.startswith(cat)]
-        sorted_items = sorted(items, key=lambda x: -x[1])[:3]
-        cat_comp[cat] = [{"항목": c, "확률%": round(p * 100, 1)} for c, p in sorted_items]
-
     return {
         "위험등급": tier,
         "등급_실측이탈률%": _tier_actual(tier),          # 같은 등급의 과거 실제 이탈률
@@ -141,7 +133,6 @@ def predict(member, top_k=3):
         "위험요인_이탈↑": _drv(pos, 0),                  # 이탈을 밀어올리는 요인
         "보호요인_이탈↓": _drv(neg, 1),                  # 이탈을 잡아주는 요인
         "예상_불만이유": [{"항목": c, "확률%": round(p * 100, 1)} for c, p in top_comp],
-        "카테고리별_예상불만": cat_comp,
     }
 
 def _score(member):
@@ -212,21 +203,6 @@ def predict_gym(members, capacity=None, top_k=3):
 
     capacity: 이번 기간 실제로 컨택 가능한 인원수(직원 캐파시티). 주면 top-N 액션 블록 포함.
     """
-    if not members:
-        return {
-            "회원수": 0,
-            "예상_이탈율": 0.0,
-            "예상_이탈인원": 0.0,
-            "예상_이탈인원_95CI": [0.0, 0.0],
-            "확률보정_적용": False,
-            "위험등급_분포": [{"등급": nm, "인원": 0, "비율%": 0.0, "실측이탈률%": _tier_actual(nm)} for nm in _TNAMES],
-            "액션_top_N": {"액션대상_수": 0, "액션대상_비율%": 0.0, "커버_예상이탈인원": 0.0, "예상이탈_커버율%": 0.0},
-            "위험군_수": 0,
-            "이탈이유_top5": [],
-            "개입_우선순위": [],
-            "주요_이탈사유": [],
-        }
-
     X = np.vstack([_vectorize(m)[0] for m in members])
     n = len(members)
 
