@@ -1,0 +1,53 @@
+/* 계약 패키지 2Depth 메뉴 최소 스타일 - 탭 레이아웃 + 활성 탭 표시 정도만 */
+.contract-layout {
+  padding: 8px;
+}
+
+.contract-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #ddd;
+  margin-bottom: 12px;
+}
+
+.contract-tab {
+  padding: 8px 16px;
+  text-decoration: none;
+  color: #555;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: #f5f5f5;
+}
+
+.contract-tab.active {
+  color: #111;
+  font-weight: 700;
+  background: #fff;
+  border-color: #bbb;
+  border-bottom: 2px solid #fff;
+  margin-bottom: -2px;
+}
+
+/* 로스터 명단 역할 필터 (전체/트레이너/회원) - 활성 버튼 표시 정도의 최소 스타일 */
+.roster-filter {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.roster-filter-btn {
+  padding: 4px 12px;
+  border: 1px solid #bbb;
+  border-radius: 12px;
+  background: #f5f5f5;
+  color: #555;
+  cursor: pointer;
+}
+
+.roster-filter-btn.active {
+  background: #333;
+  border-color: #333;
+  color: #fff;
+  font-weight: 700;
+}

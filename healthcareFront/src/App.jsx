@@ -16,16 +16,23 @@ import ContractDetail from './contract/ContractDetail.jsx';
 import Itempage from './item/Itempage.jsx';
 import B2bAccount from './b2b_mypage/B2bAccount.jsx';
 import Contractpage from './contract/Contractpage.jsx';
+import ContractLayout from './contract/ContractLayout.jsx';
+import RosterPage from './contract/RosterPage.jsx';
+import JobSeekerPage from './contract/JobSeekerPage.jsx';
 import Payment from './payment/Payment.jsx';
+
+
 import Settlepage from './settle/settlepage.jsx'
 import B2bMain from './b2b_mypage/B2bMain.jsx';
 import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
 import B2bNotification from './b2b_mypage/B2bNotification.jsx';
 import Dashboard from './dashboard/dashboard.jsx';
 import B2bList from './b2b_mypage/B2bList.jsx';
-import B2cSurvey from './b2c_mypage/B2cSurvey.jsx'; 
+import B2cSurvey from './b2c_mypage/B2cSurvey.jsx';
 import FitcLayout from './components/FitcLayout.jsx'; // ◀ 일반회원 레이아웃 임포트
-import FitbLayout from './components/FitbLayout.jsx'; // ◀ 사장님 레이아웃 임포트
+import FitbLayout from './components/FitbLayout.jsx'; // ◀ 사장님 레이아웃 임포트 
+
+
 
 // 메인 애플리케이션 컴포넌트
 function App() {
@@ -35,6 +42,11 @@ function App() {
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
       <Route path="/join" element={<Join />} />
+
+
+
+
+
 
       {/* 일반 회원 포털 영역 (FitcLayout 래핑으로 전역 헤더 상시 적용) */}
       <Route path="/fitc" element={<FitcLayout />}>
@@ -50,7 +62,12 @@ function App() {
         </Route>
       </Route>
 
-      {/* 사장님 포털 영역 (FitbLayout 래핑으로 전역 헤더 상시 적용) */}
+      {/* 사장님 포털 화면 */}
+
+
+
+
+      {/* 계약 패키지 2Depth 메뉴 - Contract(계약서 리스트) / Member(역할별 로스터) / 구직 트레이너(ADMIN) */}
       <Route path="/fitb" element={<FitbLayout />}>
         <Route index element={<AdminMain />} />
         <Route path="b2bmypage" element={<B2bMain />} />
@@ -62,13 +79,20 @@ function App() {
         <Route path="contract/:dataId" element={<ContractDetail />} />
         <Route path="payment/:dataId" element={<Payment />} />
         <Route path="itempage" element={<Itempage />} />
-        <Route path="contractpage" element={<Contractpage />} />
+        <Route path="/fitb/contractpage" element={<ContractLayout />}>
+          <Route index element={<Contractpage />} />
+          <Route path="member" element={<RosterPage />} />
+          <Route path="jobseekers" element={<JobSeekerPage />} />
+        </Route>
+
         <Route path="Settlepage" element={<Settlepage />} />
         <Route path="dashboard" element={<Dashboard />} />
       </Route>
+
+
+
     </Routes>
   );
 }
 
 export default App;
-

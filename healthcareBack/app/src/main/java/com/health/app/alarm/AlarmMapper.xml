@@ -33,6 +33,12 @@ update "h_alarm" set read = 'Y', read_at = now()
 where alarm_id = #{alarmId}
 </update>
 
+<!-- 수신 회원의 모든 알림 일괄 읽음 처리 (신규 메서드 전용 쿼리) -->
+<update id="readAllByReceiver" parameterType="Long">
+update "h_alarm" set read = 'Y', read_at = now()
+where receiver = #{receiver} and read = 'N'
+</update>
+
 <!-- 보관 기간(1개월) 경과 알림 이력 삭제 -->
 <delete id="deleteOld" parameterType="java.time.LocalDate">
 delete from "h_alarm" where create_at &lt; #{cutoff}

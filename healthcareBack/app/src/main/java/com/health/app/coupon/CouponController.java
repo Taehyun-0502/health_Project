@@ -42,7 +42,7 @@ public class CouponController {
     @GetMapping("tolist")
     public ResponseEntity<?> toList(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestParam(required = false) Long username) throws Exception {
+            @RequestParam(value = "username", required = false) Long username) throws Exception {
         try {
             Long loginUsername = validateAndGetUsername(authorization);
             Long targetUsername = username != null ? username : loginUsername;
@@ -72,12 +72,12 @@ public class CouponController {
 
     // 사장님 지점의 쿠폰 종류 목록 조회 API
     @GetMapping("type/list")
-    public ResponseEntity<?> CouponTypeList(
+    public ResponseEntity<?> couponTypeList(
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam("gymId") Long gymId) throws Exception {
         try {
             validateAndGetUsername(authorization); // 토큰 검증 수행
-            List<CouponTypeDTO> list = couponService.CouponTypeList(gymId);
+            List<CouponTypeDTO> list = couponService.couponTypeList(gymId);
             return ResponseEntity.ok(list);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
@@ -99,6 +99,20 @@ public class CouponController {
             }
             return ResponseEntity.badRequest().body("쿠폰 발송 실패");
         } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("status")
+    public ResponseEntity<?> couponStatus(@RequestHeader(value="Authorization", required=false)String authorization)throws Exception{
+        try{
+        Long fromId = validateAndGetUsername(authorization);
+
+        List<CouponDTO> list = couponService.couponStatus(fromId);
+        return ResponseEntity.ok(list);
+        }
+        catch(IllegalArgumentException e){
+            // 3. 토큰이 비었거나 위조된 경우 401 에러 리턴
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }

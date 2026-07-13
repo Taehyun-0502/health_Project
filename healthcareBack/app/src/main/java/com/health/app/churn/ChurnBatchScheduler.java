@@ -20,7 +20,7 @@ import org.springframework.web.client.RestTemplate;
  * - EC2 단일 인스턴스 상시 실행 전제. 다중 인스턴스로 확장 시 분산 락(ShedLock 등) 필요.
  * - EC2 기본 타임존(UTC)과 무관하게 한국시간으로 돌도록 zone 지정.
  */
-@Component
+// @Component
 public class ChurnBatchScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(ChurnBatchScheduler.class);

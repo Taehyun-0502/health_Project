@@ -25,6 +25,8 @@ public class PayDTO {
     private Long pPrice;
     // 사용된 쿠폰 id (미사용 시 null)
     private Long couponId;
+    // 할부 개월 수 (0: 일시불)
+    private int installment;
     // 결제 항목명
     private String pName;
     // 결제 발생일

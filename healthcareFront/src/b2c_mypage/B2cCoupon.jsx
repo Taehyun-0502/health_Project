@@ -87,6 +87,7 @@ function B2cCoupon() {
                     {/* 카테고리별 혜택 종류 조건 분기 화면 표시 */}
                     {coupon.category === '헬스' && coupon.couponDate && `${coupon.couponDate}개월`}
                     {coupon.category === 'PT' && coupon.couponCount && `${coupon.couponCount}회`}
+                    {coupon.category === '체험권' && coupon.couponCount && `${coupon.couponCount}회`}
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center', color: '#666' }}>{coupon.date}</td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>

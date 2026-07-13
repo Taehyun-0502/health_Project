@@ -21,4 +21,7 @@ public interface MemberMapper {
 
     // gym_id 기준 사장님(OWNER) 계정 단건 조회 메서드 - 알림 발송 대상(username) 식별용
     public MemberDTO findOwnerByGymId(Long gymId) throws Exception;
+
+    // gym_id 기준 지점별 소속 일반 회원 목록 조회 메서드
+    public List<MemberDTO> findMembersByGymId(Long gymId) throws Exception;
 }

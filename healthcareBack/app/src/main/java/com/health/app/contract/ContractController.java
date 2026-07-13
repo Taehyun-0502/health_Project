@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.health.app.config.JwtUtill;
+import com.health.app.member.MemberDTO;
 import io.jsonwebtoken.Claims;
 
 @RestController
@@ -62,6 +63,67 @@ public class ContractController {
         return ResponseEntity.ok(userList);
     }
 
+    // 제휴 계약(1) 대상자(사장님) 목록 조회 API 메서드 (ADMIN 전용)
+    // 발행 폼에서 사장님 select 선택 -> receiverId 자동 입력용
+    @GetMapping("/owners")
+    public ResponseEntity<?> ownerList(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        List<MemberDTO> owners = contractService.ownerList(claims.get("role", String.class));
+
+        if (owners == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
+        }
+        return ResponseEntity.ok(owners);
+    }
+
+    // 역할별 리스트/로스터 조회 API 메서드 (계약 대상 명단 - 매장/트레이너/회원)
+    // ADMIN: gymId 없으면 제휴 매장 리스트, 있으면 매장별 명단 / OWNER: 소속 명단 / TRAINER: 담당 회원
+    @GetMapping("/roster")
+    public ResponseEntity<?> contractRoster(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam(required = false) Long gymId) throws Exception {
+
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        ContractDTO contractDTO = new ContractDTO();
+        contractDTO.setUsername(Long.parseLong(claims.getSubject()));
+        contractDTO.setRole(claims.get("role", String.class));
+        contractDTO.setGymId(gymId);
+
+        List<ContractDTO> roster = contractService.contractRoster(contractDTO);
+        if (roster == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
+        }
+        return ResponseEntity.ok(roster);
+    }
+
+    // 구직 트레이너(구인구직 풀) 조회 API 메서드
+    // 관계사(ADMIN)가 구직 풀에서 소개할 트레이너를 선별하기 위한 조회 - 이름·전화번호 등 최소 정보만 반환
+    @GetMapping("/jobseekers")
+    public ResponseEntity<?> jobSeekingTrainers(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        List<MemberDTO> trainers = contractService.jobSeekingTrainers(claims.get("role", String.class));
+        if (trainers == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
+        }
+        return ResponseEntity.ok(trainers);
+    }
+
     // 계약서 발행 API 메서드
     @PostMapping("/insert")
     public ResponseEntity<String> contractInsert(
@@ -84,7 +146,8 @@ public class ContractController {
         } else if (result == -2) {
             return ResponseEntity.badRequest().body("수신자 이름을 입력해 주세요.");
         } else if (result > 0) {
-            return ResponseEntity.ok("Success");
+            // 발행된 계약서 번호 반환 - 사장님 대면 서명 동선(발행 -> 바로 서명폼 이동)에서 사용
+            return ResponseEntity.ok(String.valueOf(contractDTO.getDataId()));
         } else {
             return ResponseEntity.badRequest().body("Fail");
         }
