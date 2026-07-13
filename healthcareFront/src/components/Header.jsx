@@ -59,6 +59,20 @@ function Header() {
     setUnreadCount(0);
   };
 
+  // 4-1. 모든 알림 일괄 읽음 처리 (신규 독립 메서드)
+  const handleMarkAllAsRead = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token || unreadCount === 0) return;
+    try {
+      await fetch(`${import.meta.env.VITE_BACKEND_URL}/alarm/read/all`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (err) {
+      console.warn('알림 일괄 읽음 처리 통신 실패:', err);
+    }
+  };
+
   return (
     <div style={{
       display: 'flex',
@@ -83,7 +97,10 @@ function Header() {
         {/* 알림 종 */}
         <div style={{ position: 'relative' }}>
           <button
-            onClick={handleToggleAlarm}
+            onClick={() => {
+              handleToggleAlarm();   // 1) 기존 화면 토글 및 리셋 로직 원형 보존 호출
+              handleMarkAllAsRead(); // 2) 신규 일괄 읽음 처리 API 독립 호출
+            }}
             style={{
               position: 'relative',
               background: 'none',

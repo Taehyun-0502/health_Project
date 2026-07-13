@@ -83,4 +83,9 @@ public class AlarmService {
     public int deleteOldAlarms() throws Exception {
         return alarmMapper.deleteOld(java.time.LocalDate.now().minusMonths(1));
     }
+
+    // 6. 회원의 모든 알림 일괄 읽음 처리 (신규 추가 메서드)
+    public int readAllAlarms(Long receiver) throws Exception {
+        return alarmMapper.readAllByReceiver(receiver);
+    }
 }

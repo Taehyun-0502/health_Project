@@ -34,7 +34,7 @@ public class MemberController {
     @GetMapping("/list/gym")
     public ResponseEntity<?> getGymMembers(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestParam("gymId") Long gymId) throws Exception {
+            @RequestParam(value = "gymId") Long gymId) throws Exception {
 
         // 1. JWT 토큰 존재 여부 확인
         if (authorization == null || !authorization.startsWith("Bearer ")) {

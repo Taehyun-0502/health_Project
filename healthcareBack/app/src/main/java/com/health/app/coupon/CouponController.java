@@ -42,7 +42,7 @@ public class CouponController {
     @GetMapping("tolist")
     public ResponseEntity<?> toList(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestParam(required = false) Long username) throws Exception {
+            @RequestParam(value = "username", required = false) Long username) throws Exception {
         try {
             Long loginUsername = validateAndGetUsername(authorization);
             Long targetUsername = username != null ? username : loginUsername;
