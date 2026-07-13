@@ -983,7 +983,7 @@ function Settlepage() {
                     {pays.map((p, index) => (
                       <tr key={p.payId || p.dataId || index}>
                         <td>{p.payId ? `#${p.payId}` : `임시 (계약 #${p.dataId})`}</td>
-                        <td>{p.username ? (p.username.toString().startsWith('0') ? p.username : '0' + p.username) : '-'}</td>
+                        <td>{p.username ?? '-'}</td>
                         <td><strong>{p.payName}</strong></td>
                         <td style={{ fontWeight: '600' }}>{formatWon(p.payPrice)}</td>
                         <td>
