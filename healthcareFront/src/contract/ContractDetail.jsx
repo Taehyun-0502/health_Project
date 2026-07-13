@@ -96,6 +96,7 @@ function Activation({ d }) {
       <ul>
         <li>✓ PT 잔여 횟수 지급</li>
         <li>지급 횟수: {d.quantity ?? '-'}회</li>
+        <li>잔여 횟수: {d.remainingCount ?? '-'}회 (체결 시 자동 생성)</li>
         <li>유효기간: {d.startDate ?? '-'} ~ {d.endDate ?? '-'}</li>
       </ul>
     );
@@ -122,6 +123,10 @@ function ContractDetail() {
   const navigate = useNavigate();
   const [detail, setDetail] = useState(null);
   const [message, setMessage] = useState('');
+
+  // 제휴 계약(1)은 OWNER만 수신자로서 서명 가능 - ADMIN(발행자) 조회 시 서명 영역 미노출용
+  const loginUser = JSON.parse(localStorage.getItem('user') || 'null');
+  const isAdmin = loginUser?.role?.toUpperCase() === 'ADMIN';
 
   // 서명폼 상태 (서명자 성명 + 동의 항목 + 서명 패드)
   const [signerName, setSignerName] = useState('');
@@ -246,11 +251,15 @@ function ContractDetail() {
         <button onClick={() => navigate('/fitb/contractpage')}>← 리스트로</button>
         <p>{message}</p>
 
-        {/* 상태 흐름 표시 */}
+        {/* 상태 흐름 표시 - 이용권(3)/PT(4)는 서명 시 ACTIVE, 만료 시 TERMINATED */}
         <p>
-          상태: <b>{detail.status}</b>{' '}
+          상태: <b>{detail.status}</b>
+          {' '}
           (
-          {['DRAFT', 'ISSUED', 'SIGNED', 'EXPIRED'].map((s, i) => (
+          {(detail.contract === 3 || detail.contract === 4
+            ? ['DRAFT', 'ISSUED', 'ACTIVE', 'TERMINATED']
+            : ['DRAFT', 'ISSUED', 'SIGNED', 'EXPIRED']
+          ).map((s, i) => (
             <span key={s}>
               {i > 0 && ' › '}
               {s === detail.status ? <b>[{s}]</b> : s}
@@ -287,8 +296,8 @@ function ContractDetail() {
             <td>
               {detail.receiverName ?? '-'} (인)
               <br />
-              {detail.status === 'SIGNED' || detail.status === 'EXPIRED'
-                ? `전자서명 완료 · ${detail.signedAt?.replace('T', ' ') ?? '-'}`
+              {detail.signedAt
+                ? `전자서명 완료 · ${detail.signedAt.replace('T', ' ')}`
                 : '서명 대기 중'}
             </td>
           </tr>
@@ -296,8 +305,13 @@ function ContractDetail() {
       </table>
       <hr className="no-print" />
 
-      {/* status에 따른 서명 영역 분기 */}
-      {detail.status === 'ISSUED' && (
+      {/* 제휴 계약(1)은 ADMIN이 발행자라 서명 대상이 아님 - 서명 영역 대신 읽기 전용 안내 표시 */}
+      {detail.status === 'ISSUED' && detail.contract === 1 && isAdmin && (
+        <p className="no-print">수신자(사장님) 서명 대기 중입니다.</p>
+      )}
+
+      {/* status에 따른 서명 영역 분기 (제휴 계약(1)은 ADMIN에게 미노출) */}
+      {detail.status === 'ISSUED' && !(detail.contract === 1 && isAdmin) && (
         <div className="no-print">
           <h2>수신자 서명</h2>
           <p>아래 동의 항목을 확인하고 서명하시면 계약이 체결됩니다. 모바일에서는 손가락으로 서명할 수 있습니다.</p>
@@ -355,7 +369,7 @@ function ContractDetail() {
         </div>
       )}
 
-      {detail.status === 'SIGNED' && (
+      {(detail.status === 'SIGNED' || detail.status === 'ACTIVE') && (
         <div className="no-print">
           <h2>계약 체결 완료</h2>
           <p>서명일시: {detail.signedAt?.replace('T', ' ') ?? '-'}</p>
@@ -370,6 +384,7 @@ function ContractDetail() {
 
       {detail.status === 'DRAFT' && <p className="no-print">아직 발행되지 않은 초안(DRAFT) 상태로, 서명할 수 없습니다.</p>}
       {detail.status === 'EXPIRED' && <p className="no-print">만료(EXPIRED)된 계약서로, 서명할 수 없습니다.</p>}
+      {detail.status === 'TERMINATED' && <p className="no-print">이용 기간이 종료(TERMINATED)된 계약서입니다.</p>}
     </div>
   );
 }

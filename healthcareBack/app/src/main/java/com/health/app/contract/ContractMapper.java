@@ -2,6 +2,7 @@ package com.health.app.contract;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
+import com.health.app.member.MemberDTO;
 
 @Mapper
 public interface ContractMapper {
@@ -15,6 +16,28 @@ public interface ContractMapper {
     // 계약서 상세 조회 메서드
     public ContractDTO contractDetail(ContractDTO contractDTO) throws Exception;
 
-    // 계약서 서명 처리 메서드 (ISSUED -> SIGNED)
+    // 계약서 서명 처리 메서드 (ISSUED -> 이용권·PT는 ACTIVE, 그 외 SIGNED)
     public int contractSign(ContractDTO contractDTO) throws Exception;
+
+    // 계약 만료 일괄 갱신 메서드 (end_date 경과 시 status로 만료 전이)
+    public int contractExpireSweep() throws Exception;
+
+    // 기존 임금 계약(2) 조회 메서드 (사장님-트레이너 조합 기준, 재작성=UPDATE 판단용)
+    public ContractDTO wageContractFind(ContractDTO contractDTO) throws Exception;
+
+    // 임금 계약(2) 재작성(갱신) 메서드 - 기존 행 UPDATE 후 ISSUED로 재발행
+    public int wageContractUpdate(ContractDTO contractDTO) throws Exception;
+
+    // 구직 트레이너(구인구직 풀) 조회 메서드
+    // role=TRAINER & status=이탈(유효 임금계약 2 없음), 이름·전화번호 등 최소 정보만 반환
+    public List<MemberDTO> jobSeekingTrainers() throws Exception;
+
+    // (ADMIN) 제휴 매장 리스트 조회 메서드 - 제휴 계약(1) 기준, 매장명·계약 기간 포함(D-Day는 프론트 계산)
+    public List<ContractDTO> rosterGymList() throws Exception;
+
+    // (ADMIN/OWNER) 매장 소속 트레이너·회원 명단 조회 메서드 - gym_id 격리, 인원별 최신 계약 기간 포함
+    public List<ContractDTO> rosterMemberList(ContractDTO contractDTO) throws Exception;
+
+    // (TRAINER) 담당 유저 리스트 조회 메서드 - 담당 PT 계약(4, manager_id) 기준
+    public List<ContractDTO> rosterManagedList(ContractDTO contractDTO) throws Exception;
 }

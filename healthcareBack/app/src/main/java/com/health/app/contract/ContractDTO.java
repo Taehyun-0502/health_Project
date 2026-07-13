@@ -20,14 +20,16 @@ public class ContractDTO {
     private Long receiverId; // 수신자 (가입전 null) (int8, FK)
     private String receiverName;
 
-    private String status; // DRAFT/ISSUED/SIGNED/EXPIRED (varchar)
+    private String status; // DRAFT/ISSUED/SIGNED/EXPIRED + ACTIVE/TERMINATED(이용권·PT) (varchar)
+    // 만료 여부는 별도 컬럼 없이 status(EXPIRED/TERMINATED)로 일원화
     private LocalDate startDate; // 공통: 시작일 (date)
     private LocalDate endDate; // 공통: 종료일 (date)
     private Long amount; // 공통: 금액 (int8)
 
     private Double contractRate; // 공통: 요율 수수료/인센티브 (numeric)
 
-    private Integer quantity; // 고유: 총 PT횟수(PT) (int4)
+    private Integer quantity; // 고유: 총 PT횟수(PT) (int4) - 계약서상 스냅샷, 차감되지 않음
+    private Integer remainingCount; // 고유: PT 잔여횟수 (int4) - 서명(ACTIVE 전환) 시 quantity로 초기화
 
     private LocalDate issueDate; // 발행일 (date)
     private LocalDateTime signedAt; // 서명완료일시 (timestamp - 시각 포함)
