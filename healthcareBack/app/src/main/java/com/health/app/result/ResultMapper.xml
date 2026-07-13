@@ -207,6 +207,20 @@
         </choose>
     </select>
 
+    <!-- 프로모션 발송용: 그 헬스장 회원 전체를 이탈율 높은 순으로 -->
+    <!-- 회원(role='member')만 대상. 이탈 분석 결과가 있는 회원만 (h_churn_result 조인) -->
+    <select id="selectMembersByChurn" resultType="com.health.app.result.ChurnStatMemberDTO">
+        select mem.username    as username,
+               mem.name        as name,
+               r.churn_rate    as churnRate
+        from "h_member" mem
+        join "h_model_data" md   on mem.username = md.username
+        join "h_churn_result" r  on md.model_id = r.model_id
+        where mem.gym_id = #{gymId}
+          and lower(mem.role) = 'member'
+        order by r.churn_rate desc
+    </select>
+
     <!-- 불만 조치 도우미: 그 헬스장의 트레이너(직원) 명단 -->
     <select id="selectTrainers" resultType="map">
         select username, name, email

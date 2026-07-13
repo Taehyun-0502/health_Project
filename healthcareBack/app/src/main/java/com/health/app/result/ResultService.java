@@ -59,6 +59,11 @@ public class ResultService {
         return resultMapper.selectRiskMembers(gymId, mode, period);
     }
 
+    // 프로모션 발송용: 그 헬스장 회원 전체를 이탈율 높은 순으로
+    public List<ChurnStatMemberDTO> selectMembersByChurn(Long gymId) throws Exception {
+        return resultMapper.selectMembersByChurn(gymId);
+    }
+
     // 불만 조치 도우미: 그 헬스장 트레이너(직원) 명단
     public List<Map<String, Object>> selectTrainers(Long gymId) throws Exception {
         return resultMapper.selectTrainers(gymId);

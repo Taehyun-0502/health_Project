@@ -98,6 +98,12 @@ public class ResultController {
         return ResponseEntity.ok(resultService.selectRiskMembers(gymId, mode, period));
     }
 
+    // 프로모션 발송용 — 그 헬스장 회원 전체 명단(+이탈율)을 이탈율 높은 순으로
+    @GetMapping("/members/byChurn")
+    public ResponseEntity<List<ChurnStatMemberDTO>> membersByChurn(@RequestParam Long gymId) throws Exception {
+        return ResponseEntity.ok(resultService.selectMembersByChurn(gymId));
+    }
+
     // 불만 조치 도우미 — 그 헬스장 트레이너(직원) 명단 (직원불만: 전문성부족/과도한영업 옆)
     @GetMapping("/stats/helper/trainers")
     public ResponseEntity<List<Map<String, Object>>> helperTrainers(@RequestParam Long gymId) throws Exception {

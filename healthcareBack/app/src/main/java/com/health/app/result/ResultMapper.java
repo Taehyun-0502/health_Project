@@ -48,6 +48,9 @@ public interface ResultMapper {
                                                @Param("mode") String mode,
                                                @Param("period") String period) throws Exception;
 
+    // 프로모션 발송용: 그 헬스장 회원 전체를 이탈율 높은 순으로 (username/이름/이탈율)
+    List<ChurnStatMemberDTO> selectMembersByChurn(@Param("gymId") Long gymId) throws Exception;
+
     // 불만 조치 도우미: 그 헬스장의 트레이너(직원) 명단 — 직원불만(전문성부족/과도한영업) 옆 표시용
     List<Map<String, Object>> selectTrainers(@Param("gymId") Long gymId) throws Exception;
 
