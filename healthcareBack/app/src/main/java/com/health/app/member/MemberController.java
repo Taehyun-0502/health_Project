@@ -1,16 +1,19 @@
 package com.health.app.member;
 
 import java.util.HashMap;
+import java.util.List; // ◀ List 임포트 추가
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping; // ◀ GetMapping 임포트 추가
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam; // ◀ RequestParam 임포트 추가
 import org.springframework.web.bind.annotation.RestController;
 
 import com.health.app.config.JwtUtill;
@@ -26,6 +29,29 @@ public class MemberController {
     
     @Autowired
     private JwtUtill jwtUtill;
+
+    // 사장님 소속 지점의 일반 회원 목록 조회 API
+    @GetMapping("/list/gym")
+    public ResponseEntity<?> getGymMembers(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam(value = "gymId") Long gymId) throws Exception {
+
+        // 1. JWT 토큰 존재 여부 확인
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        // 2. JWT 토큰 분석
+        try {
+            jwtUtill.extractAllClaims(authorization.substring(7));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        }
+
+        // 3. 서비스 조회 및 리턴
+        List<MemberDTO> members = memberService.findMembersByGymId(gymId);
+        return ResponseEntity.ok(members);
+    }
 
     // 로그인된 회원의 계정 정보(이메일, 비밀번호) 수정 API
     // PUT /member/update
@@ -110,3 +136,4 @@ public class MemberController {
         }
     }
 }
+

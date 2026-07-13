@@ -20,7 +20,7 @@ public class CouponDTO {
 
     // 2. h_coupon_type 조인 컬럼 매핑 (화면 표시용)
     private String couponName;   // 쿠폰명
-    private String category;     // 헬스 / PT 구분
+    private String category;     // 헬스 / PT / PT체험권
     private Integer percent;     // 할인율 (0~100)
     private Integer couponDate;  // 헬스용 적용 개월수
     private Integer couponCount; // PT용 적용 횟수

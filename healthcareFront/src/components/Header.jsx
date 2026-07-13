@@ -21,7 +21,7 @@ function Header() {
     })
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        setAlarms(data.map((alarm) => alarm.message));
+        setAlarms(data); // ◀ 변경: DTO 객체 배열 그대로 셋업
         setUnreadCount(data.filter((alarm) => alarm.read !== 'Y').length);
       })
       .catch((err) => console.warn('헤더 알림 이력 조회 실패:', err.message));
@@ -35,8 +35,17 @@ function Header() {
 
     // 실시간 알람 수신 상태 업데이트
     eventSource.addEventListener('alarm', (event) => {
-      const message = event.data;
-      setAlarms((prev) => [message, ...prev]);
+      try {
+        const alarmData = JSON.parse(event.data);
+        setAlarms((prev) => [alarmData, ...prev]);
+      } catch (e) {
+        const tempAlarm = {
+          alarmId: Date.now(),
+          message: event.data,
+          link: '/mypage'
+        };
+        setAlarms((prev) => [tempAlarm, ...prev]);
+      }
       setUnreadCount((prev) => prev + 1);
     });
 
@@ -57,6 +66,20 @@ function Header() {
   const handleToggleAlarm = () => {
     setShowDropdown(!showDropdown);
     setUnreadCount(0);
+  };
+
+  // 4-1. 모든 알림 일괄 읽음 처리 (신규 독립 메서드)
+  const handleMarkAllAsRead = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token || unreadCount === 0) return;
+    try {
+      await fetch(`${import.meta.env.VITE_BACKEND_URL}/alarm/read/all`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (err) {
+      console.warn('알림 일괄 읽음 처리 통신 실패:', err);
+    }
   };
 
   return (
@@ -83,7 +106,10 @@ function Header() {
         {/* 알림 종 */}
         <div style={{ position: 'relative' }}>
           <button
-            onClick={handleToggleAlarm}
+            onClick={() => {
+              handleToggleAlarm();   // 1) 기존 화면 토글 및 리셋 로직 원형 보존 호출
+              handleMarkAllAsRead(); // 2) 신규 일괄 읽음 처리 API 독립 호출
+            }}
             style={{
               position: 'relative',
               background: 'none',
@@ -132,18 +158,28 @@ function Header() {
                 <p style={{ fontSize: '11px', color: '#999', margin: '10px 0', textAlign: 'center' }}>새로운 알람이 없습니다.</p>
               ) : (
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  {alarms.map((alarmMsg, index) => (
+                  {alarms.map((alarm, index) => (
                     <li
-                      key={index}
+                      key={alarm.alarmId || index}
+                      onClick={() => {
+                        if (alarm.link) {
+                          navigate(alarm.link); // ◀ 지정된 페이지 경로로 이동
+                          setShowDropdown(false); // ◀ 드롭다운 팝업 닫기
+                        }
+                      }}
                       style={{
                         fontSize: '11px',
                         padding: '8px',
                         borderBottom: '1px solid #f9f9f9',
                         wordBreak: 'break-all',
-                        color: '#444'
+                        color: '#444',
+                        cursor: 'pointer', // ◀ 마우스 클릭 손가락 효과
+                        transition: 'background 0.2s'
                       }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                     >
-                      📢 {alarmMsg}
+                      📢 {alarm.message}
                     </li>
                   ))}
                 </ul>

@@ -22,6 +22,12 @@ public class MemberService {
         return memberMapper.findOwnerByGymId(gymId);
     }
 
+    // gym_id 기준 지점별 소속 일반 회원 목록 조회 메서드
+    public List<MemberDTO> findMembersByGymId(Long gymId) throws Exception {
+        return memberMapper.findMembersByGymId(gymId);
+    }
+
+
     public int update(MemberDTO memberDTO) throws Exception {
         // 1. 공백 및 필수값 검증
     if (memberDTO.getPassword() == null || memberDTO.getPassword().trim().isEmpty()) {

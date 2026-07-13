@@ -79,4 +79,19 @@ public class AlarmController {
         int result = alarmService.alarmRead(alarmId);
         return ResponseEntity.ok(result);
     }
+
+    // 로그인한 사용자의 모든 알림 일괄 읽음 처리 API (신규 추가 메서드)
+    @PostMapping("/read/all")
+    public ResponseEntity<?> readAll(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        Long receiver = Long.parseLong(claims.getSubject());
+        int result = alarmService.readAllAlarms(receiver);
+        return ResponseEntity.ok(result);
+    }
 }
