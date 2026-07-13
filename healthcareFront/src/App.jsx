@@ -19,13 +19,18 @@ import Contractpage from './contract/Contractpage.jsx';
 import ContractLayout from './contract/ContractLayout.jsx';
 import RosterPage from './contract/RosterPage.jsx';
 import JobSeekerPage from './contract/JobSeekerPage.jsx';
+import Payment from './payment/Payment.jsx';
+
+
 import Settlepage from './settle/settlepage.jsx'
 import B2bMain from './b2b_mypage/B2bMain.jsx';
 import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
 import B2bNotification from './b2b_mypage/B2bNotification.jsx';
 import Dashboard from './dashboard/dashboard.jsx';
 import B2bList from './b2b_mypage/B2bList.jsx';
-//import B2cSurvey from './b2c_mypage/B2cSurvey.jsx'; 
+import B2cSurvey from './b2c_mypage/B2cSurvey.jsx';
+import FitcLayout from './components/FitcLayout.jsx'; // ◀ 일반회원 레이아웃 임포트
+import FitbLayout from './components/FitbLayout.jsx'; // ◀ 사장님 레이아웃 임포트 
 
 
 
@@ -33,40 +38,58 @@ import B2bList from './b2b_mypage/B2bList.jsx';
 function App() {
   return (
     <Routes>
+      {/* 로그인 및 기본 인증 영역 */}
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
       <Route path="/join" element={<Join />} />
-      <Route path="/fitc" element={<MemberMain />} />
 
-      {/* 일반 회원 마이페이지 하위 중첩 탭 전체 매핑 */}
-      <Route path="/fitc/mypage" element={<B2cMain />}>
-        <Route path="membership" element={<Membership />} />
 
-        <Route path="coupon" element={<B2cCoupon />} />
-        <Route path="checkin" element={<B2cCheckIn />} />
-        <Route path="b2ccomplaint" element={<B2cComplaint />} />
-        <Route path="account" element={<B2cAccount />} />
-        {/* <Route path="survey" element={<B2cSurvey />} /> */}
+
+
+
+
+      {/* 일반 회원 포털 영역 (FitcLayout 래핑으로 전역 헤더 상시 적용) */}
+      <Route path="/fitc" element={<FitcLayout />}>
+        <Route index element={<MemberMain />} />
+        {/* 일반 회원 마이페이지 하위 중첩 탭 전체 매핑 */}
+        <Route path="mypage" element={<B2cMain />}>
+          <Route path="membership" element={<Membership />} />
+          <Route path="coupon" element={<B2cCoupon />} />
+          <Route path="checkin" element={<B2cCheckIn />} />
+          <Route path="b2ccomplaint" element={<B2cComplaint />} />
+          <Route path="account" element={<B2cAccount />} />
+          <Route path="survey" element={<B2cSurvey />} />
+        </Route>
       </Route>
 
       {/* 사장님 포털 화면 */}
-      <Route path="/fitb" element={<AdminMain />} />
-      <Route path="/fitb/b2bmypage/account" element={<B2bAccount />} />
-      <Route path="/fitb/contract/new" element={<ContractNew />} />
-      <Route path="/fitb/contract/:dataId" element={<ContractDetail />} />
-      <Route path="/fitb/itempage" element={<Itempage />} />
-      <Route path="/fitb/b2bmypage" element={<B2bMain />} />
+
+
+
+
       {/* 계약 패키지 2Depth 메뉴 - Contract(계약서 리스트) / Member(역할별 로스터) / 구직 트레이너(ADMIN) */}
-      <Route path="/fitb/contractpage" element={<ContractLayout />}>
-        <Route index element={<Contractpage />} />
-        <Route path="member" element={<RosterPage />} />
-        <Route path="jobseekers" element={<JobSeekerPage />} />
+      <Route path="/fitb" element={<FitbLayout />}>
+        <Route index element={<AdminMain />} />
+        <Route path="b2bmypage" element={<B2bMain />} />
+        <Route path="b2bmypage/account" element={<B2bAccount />} />
+        <Route path="b2bmypage/b2bcomplaint" element={<B2bComplaint />} />
+        <Route path="b2bmypage/notification" element={<B2bNotification />} />
+        <Route path="b2bmypage/b2blist" element={<B2bList />} />
+        <Route path="contract/new" element={<ContractNew />} />
+        <Route path="contract/:dataId" element={<ContractDetail />} />
+        <Route path="payment/:dataId" element={<Payment />} />
+        <Route path="itempage" element={<Itempage />} />
+        <Route path="/fitb/contractpage" element={<ContractLayout />}>
+          <Route index element={<Contractpage />} />
+          <Route path="member" element={<RosterPage />} />
+          <Route path="jobseekers" element={<JobSeekerPage />} />
+        </Route>
+
+        <Route path="Settlepage" element={<Settlepage />} />
+        <Route path="dashboard" element={<Dashboard />} />
       </Route>
-      <Route path="/fitb/b2bmypage/b2bcomplaint" element={<B2bComplaint />} />
-      <Route path="/fitb/b2bmypage/notification" element={<B2bNotification />} />
-      <Route path="/fitb/Settlepage" element={<Settlepage />} />
-      <Route path="/fitb/dashboard" element={<Dashboard />} />
-      <Route path="/fitb/b2bmypage/b2blist" element={<B2bList />} />
+
+
 
     </Routes>
   );
