@@ -1,6 +1,7 @@
 package com.health.app.result;
 
 import java.util.List;
+import java.util.Map;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -34,5 +35,29 @@ public interface ResultMapper {
     List<ChurnStatItemDTO> selectStatBreakdown(@Param("gymId") Long gymId,
                                                @Param("mode") String mode,
                                                @Param("period") String period) throws Exception;
+
+    // 드릴다운: 특정 요인/불만을 가진 위험군 회원 명단(+이탈율)
+    List<ChurnStatMemberDTO> selectStatMembers(@Param("gymId") Long gymId,
+                                               @Param("mode") String mode,
+                                               @Param("period") String period,
+                                               @Param("statType") String statType,
+                                               @Param("statKey") String statKey) throws Exception;
+
+    // 특정 기간 위험군 회원 전체 명단 + 이탈이유(top1~3)
+    List<ChurnRiskMemberDTO> selectRiskMembers(@Param("gymId") Long gymId,
+                                               @Param("mode") String mode,
+                                               @Param("period") String period) throws Exception;
+
+    // 프로모션 발송용: 그 헬스장 회원 전체를 이탈율 높은 순으로 (username/이름/이탈율)
+    List<ChurnStatMemberDTO> selectMembersByChurn(@Param("gymId") Long gymId) throws Exception;
+
+    // 불만 조치 도우미: 그 헬스장의 트레이너(직원) 명단 — 직원불만(전문성부족/과도한영업) 옆 표시용
+    List<Map<String, Object>> selectTrainers(@Param("gymId") Long gymId) throws Exception;
+
+    // 불만 조치 도우미: 해당 기간 특정 불만(statKey)이 예측된 회원들의 방문 시간대 분포(최빈 순)
+    List<Map<String, Object>> selectComplaintVisitSlots(@Param("gymId") Long gymId,
+                                                        @Param("mode") String mode,
+                                                        @Param("period") String period,
+                                                        @Param("statKey") String statKey) throws Exception;
 
 }

@@ -11,7 +11,8 @@ import lombok.ToString;
 public class ChurnStatPeriodDTO {
 
     private String period;        // 일별: 'YYYY-MM-DD', 월별: 'YYYY-MM'
-    private Integer totalMembers; // 분모(예측 회원수) — 월별은 일평균 반올림
+    private Integer totalMembers; // 전체 분석 회원수 — 월별은 일평균 반올림
+    private Integer riskMembers;  // 위험군(개입·긴급) 회원수 = 요인·불만 %의 분모
     private Double avgChurnRate;  // 그 기간 이탈율(0~1)
 
 }

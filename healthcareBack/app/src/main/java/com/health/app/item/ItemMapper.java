@@ -36,4 +36,7 @@ public interface ItemMapper {
 
     // 유효기간 임박(D-3) 알림 배치용: 전체 gym 대상 구매 건 조회 쿼리 호출
     public List<ItemDTO> findExpiringItems() throws Exception;
+
+    // 특정 gym의 특정 카테고리 아이템 목록(물품명 단위 집계) — 이탈통계 기구불만 옆 표시용
+    public List<ItemDTO> selectByCategory(@Param("gymId") Long gymId, @Param("category") String category) throws Exception;
 }

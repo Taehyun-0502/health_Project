@@ -31,13 +31,24 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import pandas as pd
+import numpy as np
+import joblib
+import shap
 import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-# 엔진 재사용 (app.py 와 동일한 predict.py)
-from predict import predict, simulate, predict_gym
+# ─────────────────── 이탈 예측 엔진 (churn_bundle.joblib) ───────────────────
+# predict.py 제거 후 추론을 churn.py 내부에 self-contained 로 재구현.
+_BUNDLE = joblib.load(os.path.join(HERE, "churn_bundle.joblib"))
+_CHURN_MODEL = _BUNDLE["churn_model"]
+_CALIB_MODEL = _BUNDLE.get("calib_model")
+_FEATURES = _BUNDLE["features"]                                     # 모델 입력 피처 순서(16개)
+_CONG_MAP = _BUNDLE.get("cong_map", {"여유": 1, "보통": 2, "혼잡": 3, "매우혼잡": 4})
+_TIER_EDGES = _BUNDLE.get("tier_edges", [25, 45, 65])
+_TIER_NAMES = _BUNDLE.get("tier_names", ["안정", "관찰", "개입", "긴급"])
+_EXPLAINER = shap.TreeExplainer(_CHURN_MODEL)
 
 
 # ─────────────────────────── DB 설정 ───────────────────────────
@@ -79,8 +90,8 @@ SURVEY_TABLE = os.getenv("SURVEY_TABLE", "h_survey")
 SELECT_COLS = (
     "model_id, username, age, total_month, visit_per_week, aver_exercise, "
     "pt_yn, group_yn, time_cong, last_days, contract_type, "
-    "survey_id, cost_rate, employee_rate, service_rate, equip_rate, "
-    "member_issue, injury_issue, injury_area"
+    "survey_id, service_rate1, service_rate2, cost_rate, equip_rate1, equip_rate2, "
+    "employee_rate1, employee_rate2, injury_issue"
 )
 
 
@@ -96,6 +107,12 @@ def get_conn():
 
 
 # ─────────────────────── 컬럼 → 모델 피처 매핑 ───────────────────────
+def _norm_cong(v):
+    """혼잡도 라벨을 predict.py 의 cong_map 키와 일치하도록 정규화(공백 제거).
+    DB(h_time_congestion)는 '매우 혼잡'(공백)으로 저장되지만 모델 cong_map 키는 '매우혼잡'(공백X)."""
+    return v.replace(" ", "") if isinstance(v, str) else v
+
+
 def row_to_member(r: dict) -> dict:
     """h_model_data + h_survey 한 행 → predict.py 가 기대하는 회원 dict.
 
@@ -115,21 +132,25 @@ def row_to_member(r: dict) -> dict:
         "최근한달_일평균_운동시간": num(r.get("aver_exercise")),
         "PT_가입여부": 1 if r.get("pt_yn") else 0,
         "그룹수업_참여": 1 if r.get("group_yn") else 0,
-        "주_이용_시간대_혼잡도": r.get("time_cong"),
+        "주_이용_시간대_혼잡도": _norm_cong(r.get("time_cong")),
         "마지막_방문_경과일": r.get("last_days"),
         # 추가 메타데이터
         "gym_id": r.get("gym_id"),
         "gym_name": r.get("gym_name"),
     }
 
-    # survey_id가 있으면 설문 응답값을 모델 피처로 함께 전달
+    # survey_id가 있으면 설문 응답값(불만 항목 1~5 + 부상여부)을 모델 피처로 함께 전달.
+    # 설문이 없으면(LEFT JOIN NULL) 넣지 않음 → 엔진이 결측(미응답)으로 처리.
+    # 부상부위(injury_area)는 모델 피처가 아니므로 조회/전달하지 않음.
     if r.get("survey_id") is not None:
         member.update({
-            "가격_만족도": r.get("cost_rate"),
-            "직원_만족도": r.get("employee_rate"),
-            "서비스_만족도": r.get("service_rate"),
-            "기구_만족도": r.get("equip_rate"),
-            "불편_회원_경험": 1 if r.get("member_issue") else 0,
+            "서비스불만_비매너회원": r.get("service_rate1"),
+            "서비스불만_환경불편": r.get("service_rate2"),
+            "가격불만": r.get("cost_rate"),
+            "기구불만_기구상태불만": r.get("equip_rate1"),
+            "기구불만_기구부족": r.get("equip_rate2"),
+            "직원불만_불친절": r.get("employee_rate1"),
+            "직원불만_전문성부족": r.get("employee_rate2"),
             "최근한달_부상경험": 1 if r.get("injury_issue") else 0,
         })
 
@@ -187,21 +208,22 @@ def fetch_one(username: int):
                     m.contract_type
                 ) AS contract_type,
                 s.survey_id,
+                s.service_rate1,
+                s.service_rate2,
                 s.cost_rate,
-                s.employee_rate,
-                s.service_rate,
-                s.equip_rate,
-                s.member_issue,
+                s.equip_rate1,
+                s.equip_rate2,
+                s.employee_rate1,
+                s.employee_rate2,
                 s.injury_issue,
-                s.injury_area,
                 mem.gym_id,
                 g.gym_name
             FROM "{TABLE}" m
             LEFT JOIN "h_member" mem ON m.username = mem.username
             LEFT JOIN "h_gym" g ON mem.gym_id = g.gym_id
             LEFT JOIN LATERAL (
-                SELECT survey_id, cost_rate, employee_rate, service_rate, equip_rate,
-                       member_issue, injury_issue, injury_area
+                SELECT survey_id, service_rate1, service_rate2, cost_rate, equip_rate1, equip_rate2,
+                       employee_rate1, employee_rate2, injury_issue
                 FROM "{SURVEY_TABLE}"
                 WHERE username = m.username
                 ORDER BY survey_id DESC
@@ -264,27 +286,29 @@ def fetch_all():
                     m.contract_type
                 ) AS contract_type,
                 s.survey_id,
+                s.service_rate1,
+                s.service_rate2,
                 s.cost_rate,
-                s.employee_rate,
-                s.service_rate,
-                s.equip_rate,
-                s.member_issue,
+                s.equip_rate1,
+                s.equip_rate2,
+                s.employee_rate1,
+                s.employee_rate2,
                 s.injury_issue,
-                s.injury_area,
                 mem.gym_id,
                 g.gym_name
             FROM "{TABLE}" m
             LEFT JOIN "h_member" mem ON m.username = mem.username
             LEFT JOIN "h_gym" g ON mem.gym_id = g.gym_id
             LEFT JOIN LATERAL (
-                SELECT survey_id, cost_rate, employee_rate, service_rate, equip_rate,
-                       member_issue, injury_issue, injury_area
+                SELECT survey_id, service_rate1, service_rate2, cost_rate, equip_rate1, equip_rate2,
+                       employee_rate1, employee_rate2, injury_issue
                 FROM "{SURVEY_TABLE}"
                 WHERE username = m.username
                 ORDER BY survey_id DESC
                 LIMIT 1
             ) s ON TRUE
-            WHERE EXISTS (
+            WHERE mem.role = 'member'
+              AND EXISTS (
                 SELECT 1 FROM "h_check_inout" c WHERE c.username = m.username
             )
         '''
@@ -420,9 +444,18 @@ def update_time_congestion_statistics(days: int = 30):
     """최근 days일 출석 데이터를 기반으로 헬스장별 시간대 방문 통계 및 혼잡도를 갱신.
     연월 구분 없이 gym_id + hour 기준으로 최신 혼잡도를 덮어쓴다(carry-forward)."""
     with get_conn() as conn, conn.cursor() as cur:
-        # 1. 헬스장별 총 회원 수 조회
+        # 1. 헬스장별 총 회원 수 조회 (기구 데이터 없는 gym 의 폴백용)
         cur.execute('SELECT gym_id, COUNT(*) AS member_count FROM "h_member" GROUP BY gym_id')
         gym_members = {row['gym_id']: row['member_count'] for row in cur.fetchall()}
+
+        # 1-c. 헬스장별 수용량 = 기구(item_category='기구') item_count 합계 × 1.7
+        cur.execute('''
+            SELECT gym_id, SUM(item_count) * 1.7 AS capacity
+            FROM "h_item"
+            WHERE item_category = '기구'
+            GROUP BY gym_id
+        ''')
+        gym_capacity = {row['gym_id']: float(row['capacity']) for row in cur.fetchall() if row['capacity']}
 
         # 1-b. 헬스장별 '영업일수'(최근 days일 중 출석이 있었던 고유 날짜 수) — 시간대 평균의 분모
         cur.execute('''
@@ -433,15 +466,24 @@ def update_time_congestion_statistics(days: int = 30):
         ''', (days,))
         gym_open_days = {row['gym_id']: row['open_days'] for row in cur.fetchall()}
 
-        # 2. 최근 days일 헬스장별 시간대별 총 방문 수 조회
+        # 2. 최근 days일 헬스장별 시간대별 '동시 이용자 수' 집계.
+        #    각 방문의 체류구간 [입장, 입장+운동시간) 이 정시(o'clock) t 를 덮으면 그 시간대에 현재이용자로 카운트.
+        #    (예: 18:10 입장 90분 → 퇴장 19:40 → 19시 정시에 현재이용자. 20시엔 아님)
+        #    total_present = 윈도우 내 (방문 × 덮는 정시) 합계 → 아래에서 영업일수로 나눠 '평균 동시 이용자'.
         cur.execute('''
-            SELECT
-                gym_id,
-                EXTRACT(HOUR FROM check_in)::INT AS hour,
-                COUNT(*) AS total_visits
-            FROM "h_check_inout"
-            WHERE check_in >= CURRENT_DATE - make_interval(days => %s)
-            GROUP BY gym_id, EXTRACT(HOUR FROM check_in)::INT
+            SELECT gym_id, hour, COUNT(*) AS total_present
+            FROM (
+                SELECT ci.gym_id, EXTRACT(HOUR FROM m)::INT AS hour
+                FROM "h_check_inout" ci
+                CROSS JOIN LATERAL generate_series(
+                        date_trunc('hour', ci.check_in),
+                        ci.check_in + make_interval(mins => COALESCE(ci.duration, 0)::int),
+                        interval '1 hour') AS m
+                WHERE ci.check_in >= CURRENT_DATE - make_interval(days => %s)
+                  AND m >= ci.check_in
+                  AND m <  ci.check_in + make_interval(mins => COALESCE(ci.duration, 0)::int)
+            ) p
+            GROUP BY gym_id, hour
         ''', (days,))
         rows = cur.fetchall()
         if not rows:
@@ -452,29 +494,29 @@ def update_time_congestion_statistics(days: int = 30):
         active_gyms = list({row['gym_id'] for row in rows})
         cur.execute('DELETE FROM "h_time_congestion" WHERE gym_id = ANY(%s)', (active_gyms,))
 
-        # 3. 최대 이용 가능 인원(10%) 대비 점유율 기준으로 혼잡도 분류 및 UPSERT
+        # 3. 수용량(기구×1.7) 대비 '평균 동시 이용자' 점유율 기준으로 혼잡도 분류 및 UPSERT
         for row in rows:
             gym_id = row['gym_id']
             hour = row['hour']
-            total_visits = row['total_visits']
+            total_present = row['total_present']
 
-            # 분모 = 그 gym의 윈도우 내 영업일수(전체 시간대 통틀어 출석 있던 고유 날짜 수).
-            #        '그 시간대 방문일수'로 나누면 0인 날이 빠져 모든 시간대가 ~1로 뭉개짐 → gym 영업일수로.
+            # 분모 = 그 gym의 윈도우 내 영업일수 → 영업한 하루당 그 시간대 '평균 동시 이용자 수'
             open_days = gym_open_days.get(gym_id) or 1
-            # 영업한 하루당 그 시간대 평균 방문 인원
-            daily_avg = total_visits / open_days
+            daily_avg = total_present / open_days
 
-            # 헬스장 총 회원수 기반 최대 동시 이용 가능 인원 (10%)
-            total_members = gym_members.get(gym_id, 0)
-            max_capacity = total_members * 0.1
+            # 최대 동시 이용 가능 인원 = 기구 수량 합계 × 1.7.
+            #   기구 데이터가 없는 헬스장은 기존 방식(회원수 10%)으로 폴백.
+            max_capacity = gym_capacity.get(gym_id)
+            if not max_capacity or max_capacity <= 0:
+                max_capacity = gym_members.get(gym_id, 0) * 0.1
             if max_capacity <= 0:
                 max_capacity = 1.0  # Zero Division 방지
 
-            # 점유율 계산 (일평균 / 최대인원 * 100)
+            # 점유율 = 평균 동시 이용자 / 최대 수용 인원 * 100
             occupancy_rate = (daily_avg / max_capacity) * 100.0
 
-            # 혼잡도 수준 구분
-            if occupancy_rate < 40.0:
+            # 혼잡도 수준 구분: 여유<50, 보통 50~70, 혼잡 70~90, 매우혼잡 90+
+            if occupancy_rate < 50.0:
                 level = '여유'
             elif occupancy_rate < 70.0:
                 level = '보통'
@@ -483,8 +525,7 @@ def update_time_congestion_statistics(days: int = 30):
             else:
                 level = '매우 혼잡'
 
-            # h_time_congestion 에 적재 (gym_id + hour). visit_count = 최근 days일 그 시간대 총 방문 건수(정수).
-            #  (daily_avg 는 소수라 BIGINT 컬럼에 못 담음 → 등급 판정용으로만 쓰고, 저장은 총 건수)
+            # h_time_congestion 적재 (gym_id + hour). visit_count = 그 시간대 '평균 동시 이용자 수'(반올림 정수).
             cur.execute('''
                 INSERT INTO "h_time_congestion" (gym_id, hour, visit_count, congestion_level)
                 VALUES (%s, %s, %s, %s)
@@ -492,7 +533,7 @@ def update_time_congestion_statistics(days: int = 30):
                 DO UPDATE SET
                     visit_count = EXCLUDED.visit_count,
                     congestion_level = EXCLUDED.congestion_level
-            ''', (gym_id, hour, int(total_visits), level))
+            ''', (gym_id, hour, int(round(daily_avg)), level))
         conn.commit()
 
 
@@ -523,7 +564,7 @@ def get_members_time_congestion(days: int = 30) -> dict:
         '''
         cur.execute(query, (days,))
         for row in cur.fetchall():
-            result_map[row['username']] = row['congestion_level']
+            result_map[row['username']] = _norm_cong(row['congestion_level'])
     return result_map
 
 
@@ -545,116 +586,87 @@ def health():
     return {"status": "ok", "table": TABLE, "survey_table": SURVEY_TABLE}
 
 
-@app.get("/churn/{username}")
-def churn_member(username: int):
-    """회원 1명 → 위험등급·이탈요인(진단) + 개선 시뮬레이션."""
-    row = fetch_one(username)
-    if row is None:
-        raise HTTPException(status_code=404,
-                            detail=f"member {username} not found in {TABLE}")
-    
-    # 헬스장 혼잡도 통계 테이블 갱신 및 주 이용 시간대 혼잡도 도출
-    update_time_congestion_statistics()
-    congestion_map = get_members_time_congestion()
-    time_cong = congestion_map.get(username, "보통")
-    
-    # 최근 30일 출결을 바탕으로 주당 방문 횟수 및 일평균 운동시간 계산
-    inouts = fetch_recent_inouts(username)
-    visit_per_week = calculate_visit_per_week_pandas(inouts, username)
-    aver_exercise = calculate_aver_exercise_pandas(inouts, username)
-    last_days = calculate_last_days(username)
-    
-    member = row_to_member(row)
-    member["이번달_주당방문횟수"] = visit_per_week
-    member["최근한달_일평균_운동시간"] = aver_exercise
-    member["마지막_방문_경과일"] = last_days
-    member["주_이용_시간대_혼잡도"] = time_cong
-    
-    return {
-        "username": row["username"],
-        "contract_type": row["contract_type"],
-        "age": int(row["age"]) if row["age"] is not None else None,
-        "total_month": int(row["total_month"]) if row["total_month"] is not None else None,
-        "pt_yn": 1 if row["pt_yn"] else 0,
-        "visit_per_week": visit_per_week,  # 백엔드 기입용
-        "aver_exercise": aver_exercise,    # 백엔드 기입용
-        "last_days": last_days,            # 백엔드 기입용
-        "time_cong": time_cong,            # 백엔드 기입용
-        "진단": predict(member),
-        "시뮬레이션": simulate(member),
-    }
+# ─────────────────── 이탈 예측 (벡터화 · 등급 · SHAP 요인) ───────────────────
+def _tier(score):
+    """위험점수(0~100) → 등급 (tier_edges/tier_names 기준)."""
+    for edge, name in zip(_TIER_EDGES, _TIER_NAMES):
+        if score < edge:
+            return name
+    return _TIER_NAMES[-1]
 
 
-@app.get("/churn")
-def churn_gym():
-    """헬스장 전체(h_model_data 전 회원) 대시보드 집계."""
-    rows = fetch_all()
-    if not rows:
-        raise HTTPException(status_code=404, detail=f"no rows in {TABLE}")
-    
-    # 헬스장 혼잡도 통계 테이블 갱신 및 주 이용 시간대 혼잡도 도출
-    update_time_congestion_statistics()
-    congestion_map = get_members_time_congestion()
-    
-    # 최근 30일 출결을 바탕으로 전체 회원의 주당 방문 횟수 및 일평균 운동시간 계산
-    inouts = fetch_recent_inouts()
-    visits_map = calculate_all_visit_per_week_pandas(inouts)
-    exercise_map = calculate_all_aver_exercise_pandas(inouts)
-    last_days_map = calculate_all_last_days()
-    
-    members = []
-    for r in rows:
-        m = row_to_member(r)
-        m["이번달_주당방문횟수"] = visits_map.get(r["username"], 0.0)
-        m["최근한달_일평균_운동시간"] = exercise_map.get(r["username"], 0.0)
-        m["마지막_방문_경과일"] = last_days_map.get(r["username"], 999)
-        m["주_이용_시간대_혼잡도"] = congestion_map.get(r["username"], "보통")
-        members.append(m)
-        
-    return predict_gym(members)
+def _vectorize(member: dict) -> np.ndarray:
+    """회원 dict → 모델 입력 피처 벡터(_FEATURES 순서). 결측은 NaN(XGBoost가 처리).
+    · 상대_방문공백 = 마지막_방문_경과일 ÷ 평소주기(=7/이번달_주당방문횟수)로 파생.
+    · 주_이용_시간대_혼잡도(문자열) → cong_map 코드로 변환."""
+    vals = []
+    for f in _FEATURES:
+        if f == "상대_방문공백":
+            rel = member.get("상대_방문공백")
+            if rel is None:
+                last = member.get("마지막_방문_경과일")
+                vpw = member.get("이번달_주당방문횟수")
+                if last is None:
+                    rel = np.nan
+                elif vpw:
+                    rel = float(last) * float(vpw) / 7.0
+                else:
+                    rel = float(last) / 7.0
+            vals.append(float(rel) if rel is not None else np.nan)
+        elif f == "주_이용_시간대_혼잡도":
+            v = _norm_cong(member.get(f))
+            vals.append(float(_CONG_MAP[v]) if v in _CONG_MAP else np.nan)
+        else:
+            v = member.get(f)
+            vals.append(float(v) if v is not None else np.nan)
+    return np.array(vals, dtype=float)
+
+
+def _predict_batch(members):
+    """회원 dict 리스트 → [(churn_rate(0~1), tier, [이탈요인 컬럼 top3])].
+    이탈요인 = SHAP 값이 양수(이탈↑)인 피처 상위 3개(컬럼 이름)."""
+    X = np.vstack([_vectorize(m) for m in members])
+    proba = (_CALIB_MODEL.predict_proba(X) if _CALIB_MODEL is not None
+             else _CHURN_MODEL.predict_proba(X))
+    probs = proba[:, 1]
+    sv = np.asarray(_EXPLAINER.shap_values(X))
+    if sv.ndim == 3:            # (classes, n, features) 형태면 양성 클래스 선택
+        sv = sv[-1]
+    out = []
+    for i in range(len(members)):
+        score = float(probs[i]) * 100.0
+        order = np.argsort(-sv[i])                       # 기여도 큰 순
+        tops = [_FEATURES[j] for j in order if sv[i][j] > 0][:3]
+        out.append((float(probs[i]), _tier(score), tops))
+    return out
 
 
 # ─────────────────────── 전체 회원 이탈 예측 배치 ───────────────────────
 def analyze_and_save_all(days: int = 30, chunk_size: int = 1000) -> dict:
-    """전체 회원 이탈 예측을 계산해 h_churn_result 에 일괄 UPSERT (하루 1회 배치용).
-
-    /churn 엔드포인트와 동일하게 회원별 피처를 구성 → predict() 로 진단 →
-    위험점수(churn_rate) 와 이탈요인 top3 를 추출 → model_id 기준으로 벌크 UPSERT.
-    대량일 때 메모리 보호를 위해 chunk_size 단위로 예측·기입한다.
-
-    ※ h_churn_result.model_id 에 UNIQUE 제약이 있어야 ON CONFLICT 가 동작한다.
-    """
-    # 0) 출석 기록이 있는데 h_model_data 에 아직 없는 회원을 신규 등록 (skeleton 행: username만)
-    #    → 나머지 피처(age/total_month/방문/혼잡도 등)는 아래 fetch_all·피처맵에서 계산됨
+    """전체 회원 이탈 예측 → h_churn_result UPSERT + gym 통계(이탈요인) 적재 (하루 1회 배치).
+    top1~3_reason = 가장 큰 이탈요인 top3(컬럼 이름). 불만 예측(complaint)은 없음."""
+    # 0) 출석 있는 신규 회원 skeleton 등록 + churn(실제 이탈) 동기화
     with get_conn() as conn, conn.cursor() as cur:
         cur.execute('''
             INSERT INTO "h_model_data" (username)
-            SELECT DISTINCT c.username
-            FROM "h_check_inout" c
-            WHERE NOT EXISTS (
-                SELECT 1 FROM "h_model_data" m WHERE m.username = c.username
-            )
+            SELECT DISTINCT c.username FROM "h_check_inout" c
+            WHERE NOT EXISTS (SELECT 1 FROM "h_model_data" m WHERE m.username = c.username)
+              AND EXISTS (SELECT 1 FROM "h_member" mem WHERE mem.username = c.username AND mem.role = 'member')
         ''')
         inserted = cur.rowcount
-
-        # churn(실제 이탈) 갱신 — h_contract_data 에 계약(receiver_id)이 있으면 FALSE, 없으면 TRUE
         cur.execute('''
-            UPDATE "h_model_data" m
-            SET churn = NOT EXISTS (
-                SELECT 1 FROM "h_contract_data" c WHERE c.receiver_id = m.username
-            )
+            UPDATE "h_model_data" m SET churn = (mem.status = '이탈')
+            FROM "h_member" mem WHERE m.username = mem.username AND mem.status IN ('이용중', '이탈')
         ''')
         conn.commit()
 
-    rows = fetch_all()   # 출석 있는 회원만 반환 (fetch_all 에 EXISTS(h_check_inout) 필터 있음)
-    # churn(실제 이탈=계약없음)=TRUE 회원은 예측·피처·통계 갱신 대상에서 제외 → 마지막 상태로 동결
+    rows = fetch_all()
     excluded_churned = sum(1 for r in rows if r.get("churn"))
     rows = [r for r in rows if not r.get("churn")]
     if not rows:
-        return {"신규등록": inserted, "이탈제외": excluded_churned,
-                "처리": 0, "회원수": 0, "메시지": "예측 대상(활성 출석 회원) 없음"}
+        return {"신규등록": inserted, "이탈제외": excluded_churned, "처리": 0, "회원수": 0,
+                "메시지": "예측 대상(활성 출석 회원) 없음"}
 
-    # 1) 혼잡도 통계 갱신 + 배치 피처 맵 (전체 한 번씩만 계산)
     update_time_congestion_statistics(days)
     congestion_map = get_members_time_congestion(days)
     inouts = fetch_recent_inouts()
@@ -663,131 +675,100 @@ def analyze_and_save_all(days: int = 30, chunk_size: int = 1000) -> dict:
     last_days_map = calculate_all_last_days()
 
     upsert_sql = '''
-        INSERT INTO "h_churn_result"
-            (model_id, churn_rate, top1_reason, top2_reason, top3_reason)
+        INSERT INTO "h_churn_result" (model_id, churn_rate, top1_reason, top2_reason, top3_reason)
         VALUES (%s, %s, %s, %s, %s)
         ON CONFLICT (model_id) DO UPDATE SET
-            churn_rate  = EXCLUDED.churn_rate,
-            top1_reason = EXCLUDED.top1_reason,
-            top2_reason = EXCLUDED.top2_reason,
-            top3_reason = EXCLUDED.top3_reason
+            churn_rate = EXCLUDED.churn_rate, top1_reason = EXCLUDED.top1_reason,
+            top2_reason = EXCLUDED.top2_reason, top3_reason = EXCLUDED.top3_reason
     '''
-
-    # h_model_data 피처 갱신용 — 예측에 쓰인 계산값을 되돌려 저장(skeleton 행의 NULL 채움)
     feature_sql = '''
-        UPDATE "h_model_data" SET
-            age = %s, total_month = %s, visit_per_week = %s, aver_exercise = %s,
-            pt_yn = %s, time_cong = %s, last_days = %s, contract_type = %s
-        WHERE model_id = %s
+        UPDATE "h_model_data" SET age=%s, total_month=%s, visit_per_week=%s, aver_exercise=%s,
+            pt_yn=%s, time_cong=%s, last_days=%s, contract_type=%s WHERE model_id=%s
     '''
 
-    # 2) 청크 단위로 회원별 예측 → h_model_data 피처 갱신 + h_churn_result 벌크 UPSERT
-    #    + gym별 일별 통계 tally (분모=회원수 스냅샷 / 분자=회원 top3 요인·불만 집계)
     total = 0
-    gym_total = {}       # gym_id -> 회원수 (h_churn_gym_daily.total_members = %의 분모)
-    gym_churn_sum = {}   # gym_id -> churn_rate 합 (avg_churn_rate 계산용)
-    gym_factor = {}      # (gym_id, 피처키) -> 회원수 (이탈요인 분자)
-    gym_complaint = {}   # (gym_id, 불만항목) -> 회원수 (불만이유 분자)
+    RISK_TIERS = {"개입", "긴급"}
+    gym_total, gym_churn_sum, gym_risk_total, gym_factor = {}, {}, {}, {}
+    stat_member = []     # (gym_id, 'factor', 피처키, username, churn_rate)
     with get_conn() as conn, conn.cursor() as cur:
         for start in range(0, len(rows), chunk_size):
-            result_records = []
-            feature_records = []
-            for r in rows[start:start + chunk_size]:
+            chunk = rows[start:start + chunk_size]
+            members, metas = [], []
+            for r in chunk:
                 uname = r["username"]
                 vpw = visits_map.get(uname, 0.0)
                 avex = exercise_map.get(uname, 0.0)
                 ldays = last_days_map.get(uname, 999)
                 tcong = congestion_map.get(uname, "보통")
+                m = row_to_member(r)
+                m["이번달_주당방문횟수"] = vpw
+                m["일평균_운동시간"] = avex
+                m["마지막_방문_경과일"] = ldays
+                m["주_이용_시간대_혼잡도"] = tcong
+                members.append(m)
+                metas.append((r, vpw, avex, ldays, tcong))
 
-                member = row_to_member(r)
-                member["이번달_주당방문횟수"] = vpw
-                member["최근한달_일평균_운동시간"] = avex
-                member["마지막_방문_경과일"] = ldays
-                member["주_이용_시간대_혼잡도"] = tcong
-
-                diag = predict(member)
-                score = diag.get("위험점수")
-                churn_rate = (float(score) / 100.0) if score is not None else None
-                risk = diag.get("위험요인_이탈↑") or []
-                tops = [risk[i].get("해석") if i < len(risk) and risk[i] else None
-                        for i in range(3)]
-
-                result_records.append((r["model_id"], churn_rate, tops[0], tops[1], tops[2]))
-                # age/total_month/pt_yn/contract_type 는 fetch_all 이 계약에서 계산한 값(r),
-                # visit_per_week/aver_exercise/last_days/time_cong 는 출석 기반 계산값
+            preds = _predict_batch(members)
+            result_records, feature_records = [], []
+            for (r, vpw, avex, ldays, tcong), (churn_rate, tier, tops) in zip(metas, preds):
+                t = [tops[k] if k < len(tops) else None for k in range(3)]
+                result_records.append((r["model_id"], churn_rate, t[0], t[1], t[2]))
                 feature_records.append((r["age"], r["total_month"], vpw, avex,
-                                        r["pt_yn"], tcong, ldays, r["contract_type"],
-                                        r["model_id"]))
-
-                # gym별 통계 tally — gym_id 없는 회원(h_member 미매칭)은 집계 제외
+                                        r["pt_yn"], tcong, ldays, r["contract_type"], r["model_id"]))
                 gid = r.get("gym_id")
                 if gid is not None:
                     gym_total[gid] = gym_total.get(gid, 0) + 1
-                    if churn_rate is not None:
-                        gym_churn_sum[gid] = gym_churn_sum.get(gid, 0.0) + churn_rate
-                    # 이탈요인: 회원 top3 요인의 '피처키'(컬럼) 집계
-                    for f in risk[:3]:
-                        key = f.get("컬럼") if f else None
-                        if key:
+                    gym_churn_sum[gid] = gym_churn_sum.get(gid, 0.0) + churn_rate
+                    if tier in RISK_TIERS:
+                        gym_risk_total[gid] = gym_risk_total.get(gid, 0) + 1
+                        for key in tops:
                             gym_factor[(gid, key)] = gym_factor.get((gid, key), 0) + 1
-                    # 불만이유: 회원 top3 불만 '항목'(예: 서비스불만_환경불편) 집계
-                    for c in (diag.get("예상_불만이유") or [])[:3]:
-                        item = c.get("항목") if c else None
-                        if item:
-                            gym_complaint[(gid, item)] = gym_complaint.get((gid, item), 0) + 1
+                            stat_member.append((gid, 'factor', key, r["username"], churn_rate))
 
-            cur.executemany(feature_sql, feature_records)   # h_model_data 피처 되돌려 저장
-            cur.executemany(upsert_sql, result_records)     # h_churn_result 예측 결과
+            cur.executemany(feature_sql, feature_records)
+            cur.executemany(upsert_sql, result_records)
             conn.commit()
             total += len(result_records)
 
-    # 2-b) gym별 일별 통계 적재 (오늘자 = CURRENT_DATE)
-    #      h_churn_gym_daily(분모·이탈율) + h_churn_stat_daily(요인·불만 롱포맷 분자)
-    #      %는 저장 안 함 — 조회 시 member_count / total_members 로 계산.
+    # gym 일별 통계 적재 (이탈요인만)
     with get_conn() as conn, conn.cursor() as cur:
-        # 같은 날 재실행 대비: 오늘자 롱포맷 통계를 먼저 비우고 재적재(사라진 key 잔존 방지)
         cur.execute('DELETE FROM "h_churn_stat_daily" WHERE stat_date = CURRENT_DATE')
-
-        # (FK 부모 먼저) gym 일별 요약 UPSERT
+        cur.execute('DELETE FROM "h_churn_stat_member" WHERE stat_date = CURRENT_DATE')
         gym_daily_records = [
-            (gid, cnt, round(gym_churn_sum.get(gid, 0.0) / cnt, 4) if cnt else None)
+            (gid, cnt, round(gym_churn_sum.get(gid, 0.0) / cnt, 4) if cnt else None, gym_risk_total.get(gid, 0))
             for gid, cnt in gym_total.items()
         ]
         cur.executemany('''
-            INSERT INTO "h_churn_gym_daily" (gym_id, stat_date, total_members, avg_churn_rate)
-            VALUES (%s, CURRENT_DATE, %s, %s)
+            INSERT INTO "h_churn_gym_daily" (gym_id, stat_date, total_members, avg_churn_rate, risk_members)
+            VALUES (%s, CURRENT_DATE, %s, %s, %s)
             ON CONFLICT (gym_id, stat_date) DO UPDATE SET
-                total_members  = EXCLUDED.total_members,
-                avg_churn_rate = EXCLUDED.avg_churn_rate
+                total_members = EXCLUDED.total_members, avg_churn_rate = EXCLUDED.avg_churn_rate,
+                risk_members = EXCLUDED.risk_members
         ''', gym_daily_records)
-
-        # 요인·불만 롱포맷 분자 (stat_type: 'factor' | 'complaint')
         stat_records = [(gid, 'factor', key, cnt) for (gid, key), cnt in gym_factor.items()]
-        stat_records += [(gid, 'complaint', item, cnt) for (gid, item), cnt in gym_complaint.items()]
         cur.executemany('''
             INSERT INTO "h_churn_stat_daily" (gym_id, stat_date, stat_type, stat_key, member_count)
             VALUES (%s, CURRENT_DATE, %s, %s, %s)
         ''', stat_records)
+        cur.executemany('''
+            INSERT INTO "h_churn_stat_member" (gym_id, stat_date, stat_type, stat_key, username, churn_rate)
+            VALUES (%s, CURRENT_DATE, %s, %s, %s, %s)
+        ''', stat_member)
         conn.commit()
 
-    # 3) 출석이 없어 예측 대상이 아닌 회원의 낡은 결과 행 정리
+    # 출석 없어진 회원의 낡은 결과 정리
     with get_conn() as conn, conn.cursor() as cur:
         cur.execute('''
-            DELETE FROM "h_churn_result"
-            WHERE model_id IN (
+            DELETE FROM "h_churn_result" WHERE model_id IN (
                 SELECT m.model_id FROM "h_model_data" m
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM "h_check_inout" c WHERE c.username = m.username
-                )
-            )
+                WHERE NOT EXISTS (SELECT 1 FROM "h_check_inout" c WHERE c.username = m.username))
         ''')
         deleted = cur.rowcount
         conn.commit()
 
-    return {"신규등록": inserted, "이탈제외": excluded_churned,
-            "처리": total, "회원수": len(rows), "정리삭제": deleted,
-            "통계_gym수": len(gym_total),
-            "통계_요인key수": len(gym_factor), "통계_불만key수": len(gym_complaint)}
+    return {"신규등록": inserted, "이탈제외": excluded_churned, "처리": total, "회원수": len(rows),
+            "정리삭제": deleted, "통계_gym수": len(gym_total),
+            "위험군수": sum(gym_risk_total.values()), "통계_요인key수": len(gym_factor)}
 
 
 @app.post("/churn/batch")

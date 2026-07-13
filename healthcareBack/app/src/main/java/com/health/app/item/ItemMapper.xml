@@ -104,6 +104,20 @@ where item_count > 0
   and item_expiry_date = current_date + interval '3 day'
 </select>
 
+<!-- 특정 gym의 특정 카테고리(예:기구) 아이템을 물품명 단위로 집계 (이탈통계 기구불만 옆 표시용) -->
+<select id="selectByCategory" resultType="ItemDTO">
+select
+    gym_id        as gymId,
+    item_category as itemCategory,
+    item_name     as itemName,
+    sum(item_count) as itemCount
+from "h_item"
+where gym_id = #{gymId} and item_category = #{category}
+group by gym_id, item_category, item_name
+having sum(item_count) > 0
+order by itemCount desc, item_name
+</select>
+
 
 
 

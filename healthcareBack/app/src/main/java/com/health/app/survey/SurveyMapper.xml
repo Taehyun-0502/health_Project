@@ -7,17 +7,18 @@
     <!-- 설문 데이터 저장 -->
     <insert id="create" parameterType="SurveyDTO">
     insert into "h_survey"
-    (username, cost_rate, employee_rate, service_rate, equip_rate,
-     member_issue, injury_issue, injury_area)
+    (username, service_rate1, service_rate2, cost_rate, equip_rate1, equip_rate2,
+     employee_rate1, employee_rate2, injury_issue, injury_area)
     values
-    (#{username}, #{costRate}, #{employeeRate}, #{serviceRate}, #{equipRate},
-     #{memberIssue}, #{injuryIssue}, #{injuryArea})
+    (#{username}, #{serviceRate1}, #{serviceRate2}, #{costRate}, #{equipRate1}, #{equipRate2},
+     #{employeeRate1}, #{employeeRate2}, #{injuryIssue}, #{injuryArea})
     </insert>
 
     <!-- 회원 1명의 최신 설문 데이터 조회 -->
     <select id="selectByUsername" parameterType="long" resultType="SurveyDTO">
-    select survey_id, username, cost_rate, employee_rate, service_rate, equip_rate,
-           member_issue, injury_issue, injury_area
+    select survey_id, username, service_rate1, service_rate2, cost_rate,
+           equip_rate1, equip_rate2, employee_rate1, employee_rate2,
+           injury_issue, injury_area
     from "h_survey"
     where username = #{username}
     order by survey_id desc
@@ -26,8 +27,9 @@
 
     <!-- 전체 회원 최신 설문 데이터 조회 -->
     <select id="selectAll" resultType="SurveyDTO">
-    select s1.survey_id, s1.username, s1.cost_rate, s1.employee_rate, s1.service_rate,
-           s1.equip_rate, s1.member_issue, s1.injury_issue, s1.injury_area
+    select s1.survey_id, s1.username, s1.service_rate1, s1.service_rate2, s1.cost_rate,
+           s1.equip_rate1, s1.equip_rate2, s1.employee_rate1, s1.employee_rate2,
+           s1.injury_issue, s1.injury_area
     from "h_survey" s1
     join (
         select username, max(survey_id) as max_survey_id
