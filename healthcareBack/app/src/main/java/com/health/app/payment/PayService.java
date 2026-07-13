@@ -33,7 +33,11 @@ public class PayService {
     // -> 3. h_pay insert -> 4. 쿠폰 사용완료 처리 -> 5. h_payment insert(매출 반영)
     // 하나라도 실패하면 전체 롤백되도록 단일 트랜잭션으로 처리
     @Transactional
-    public PayDTO checkout(Long dataId, Long ownerUsername, Long couponId) throws Exception {
+    public PayDTO checkout(Long dataId, Long ownerUsername, Long couponId, int installment) throws Exception {
+        if (installment != 0 && installment != 3 && installment != 6 && installment != 12) {
+            throw new IllegalStateException("할부 개월 수가 올바르지 않습니다.");
+        }
+
         ContractDTO contract = payMapper.findPayableContract(dataId, ownerUsername);
         if (contract == null) {
             throw new IllegalStateException("결제 가능한 계약이 아니거나 이미 결제가 완료된 계약입니다.");
@@ -83,6 +87,7 @@ public class PayService {
         pay.setUsername(memberUsername);
         pay.setPPrice(price);
         pay.setCouponId(couponId);
+        pay.setInstallment(installment);
         pay.setPName(pName);
         pay.setCreatedAt(LocalDate.now());
 
@@ -95,7 +100,7 @@ public class PayService {
         PaymentDTO payment = new PaymentDTO();
         payment.setUsername(memberUsername);
         payment.setGymId(contract.getGymId());
-        payment.setInstallment(0);
+        payment.setInstallment(installment);
         payment.setPayPrice(price);
         payment.setPayDate(LocalDate.now());
         payment.setPayName(pName);

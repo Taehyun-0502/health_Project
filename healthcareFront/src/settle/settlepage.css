@@ -388,6 +388,19 @@
   font-weight: 700;
 }
 
+.unpaid-contract-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.unpaid-contract-filter label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .expense-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
