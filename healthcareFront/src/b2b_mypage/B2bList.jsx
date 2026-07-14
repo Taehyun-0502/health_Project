@@ -23,6 +23,17 @@ const FACTOR_ORDER = [
   '가격불만',
 ];
 
+// 불만족 요인별 액션 버튼 라벨 (기능 미구현 — 버튼만 노출)
+const FACTOR_ACTION = {
+  '서비스불만_환경불편': '헬퍼',
+  '서비스불만_비매너회원': '시간대 조회',
+  '기구불만_기구부족': '기구 리스트 조회',
+  '기구불만_기구상태불만': '서비스 센터 리스트 조회',
+  '직원불만_불친절': '교육 프로그램 제공',
+  '직원불만_전문성부족': '담당자 리스트',
+  '가격불만': '쿠폰',
+};
+
 // 비율 막대
 function Bar({ pct, color }) {
   return (
@@ -51,10 +62,25 @@ function StatRow({ label, pct, memberCount, open, onClick }) {
 }
 
 // 회원 명단 하위행 (요인 로우 클릭 시)
-function MemberListRow({ loading, members }) {
+function MemberListRow({ loading, members, statKey }) {
+  const action = FACTOR_ACTION[statKey];
   return (
     <tr>
       <td colSpan={3} style={{ padding: '6px 8px 10px 28px', background: '#fffdf5' }}>
+        {action && (
+          <div style={{ marginBottom: '8px' }}>
+            <button
+              type="button"
+              style={{
+                padding: '5px 14px', borderRadius: '6px', cursor: 'pointer',
+                border: '1px solid #ef6c00', background: '#fff', color: '#ef6c00',
+                fontSize: '13px', fontWeight: 'bold',
+              }}
+            >
+              {action}
+            </button>
+          </div>
+        )}
         {loading ? <span style={{ color: '#888' }}>명단 불러오는 중…</span>
           : members.length === 0 ? <span style={{ color: '#888' }}>해당 회원 없음</span>
           : (
@@ -129,7 +155,7 @@ function Breakdown({ items, riskMembers, gymId, mode, period }) {
       <StatRow key={f.statKey} open={open} onClick={() => toggle(f.statKey)}
         label={f.statKey} pct={f.pct} memberCount={f.memberCount} />
     );
-    if (open) rows.push(<MemberListRow key={`${f.statKey}-m`} loading={mLoading} members={members} />);
+    if (open) rows.push(<MemberListRow key={`${f.statKey}-m`} loading={mLoading} members={members} statKey={f.statKey} />);
   });
 
   return (
