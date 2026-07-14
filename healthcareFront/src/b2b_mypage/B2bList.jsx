@@ -51,6 +51,9 @@ const COUPON_FACTOR = '가격불만';
 // 이 요인의 버튼(헬퍼)을 누르면 헬퍼 요청 팝업 → h_helper 등록
 const HELPER_FACTOR = '서비스불만_환경불편';
 
+// 이 요인들의 버튼(PT체험권 발송)을 누르면 쿠폰 발송 팝업 → 오늘자 위험군 회원에게 쿠폰 발송
+const PT_TRIAL_FACTORS = ['PT_가입여부', '최근한달_부상경험'];
+
 // 방문 시간대 표시 순서(시간순)
 const SLOT_ORDER = ['새벽(00-06)', '오전(06-11)', '점심(11-14)', '오후(14-18)', '저녁(18-22)', '야간(22-24)'];
 
@@ -291,11 +294,64 @@ function MemberListRow({ loading, members, statKey, gymId, mode, period }) {
   const showServiceCenter = statKey === SERVICE_CENTER_FACTOR;  // 기구상태불만 → 버튼 대신 서비스센터 목록
   const isCoupon = statKey === COUPON_FACTOR;            // 가격불만 → 버튼 누르면 프로모션 탭으로 이동
   const isHelper = statKey === HELPER_FACTOR;            // 환경불편 → 헬퍼 버튼 누르면 요청 팝업
+  const isPtTrial = PT_TRIAL_FACTORS.includes(statKey);  // PT가입여부/부상경험 → PT체험권 발송 팝업
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [helperOpen, setHelperOpen] = useState(false);
   const [helperText, setHelperText] = useState('');
   const [helperSending, setHelperSending] = useState(false);
+
+  // PT체험권(쿠폰) 발송 팝업 상태
+  const [ptOpen, setPtOpen] = useState(false);
+  const [couponTypes, setCouponTypes] = useState([]);
+  const [selectedCouponNum, setSelectedCouponNum] = useState('');
+  const [ptExpiry, setPtExpiry] = useState('');
+  const [ptSending, setPtSending] = useState(false);
+
+  // 팝업 열릴 때 그 헬스장(gym_id)의 쿠폰 종류 목록 로드
+  useEffect(() => {
+    if (!ptOpen || !gymId) return;
+    const token = localStorage.getItem('accessToken');
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/coupon/type/list?gymId=${gymId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setCouponTypes(Array.isArray(d) ? d : []))
+      .catch((e) => { console.error('쿠폰 종류 조회 실패:', e); setCouponTypes([]); });
+  }, [ptOpen, gymId]);
+
+  // 선택 회원들에게 쿠폰 발송 (이미 발송(status=1)된 회원은 서버가 스킵)
+  const submitPtTrial = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!selectedCouponNum) { alert('발송할 쿠폰을 선택하세요.'); return; }
+    if (!ptExpiry) { alert('사용 만료 기한을 지정하세요.'); return; }
+    const coupon = couponTypes.find((c) => String(c.couponNum) === String(selectedCouponNum));
+    setPtSending(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/coupon/sendChurnTargets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({
+          couponNum: Number(selectedCouponNum),
+          couponName: coupon?.couponName,
+          date: ptExpiry,
+          usernames: members.map((m) => m.username),
+        }),
+      });
+      if (res.ok) {
+        const r = await res.json();
+        alert(`${r.sent}명에게 발송 완료` + (r.skipped ? ` (이미 발송된 ${r.skipped}명 제외)` : ''));
+        setPtOpen(false); setSelectedCouponNum(''); setPtExpiry('');
+      } else {
+        alert('쿠폰 발송에 실패했습니다.');
+      }
+    } catch (e) {
+      console.error('PT체험권 발송 오류:', e);
+      alert('통신 오류로 발송에 실패했습니다.');
+    } finally {
+      setPtSending(false);
+    }
+  };
 
   // 헬퍼 요청 등록 — username=로그인 사장님, title/status는 서버 고정
   const submitHelper = async () => {
@@ -331,6 +387,7 @@ function MemberListRow({ loading, members, statKey, gymId, mode, period }) {
               onClick={
                 isCoupon ? () => navigate('/fitb?tab=promotion')
                 : isHelper ? () => setHelperOpen(true)
+                : isPtTrial ? () => setPtOpen(true)
                 : undefined
               }
               style={{
@@ -371,6 +428,62 @@ function MemberListRow({ loading, members, statKey, gymId, mode, period }) {
                 <button type="button" onClick={submitHelper} disabled={helperSending}
                         style={{ padding: '6px 15px', border: 'none', borderRadius: '4px', background: '#ef6c00', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
                   {helperSending ? '요청 중…' : '요청'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PT체험권(쿠폰) 발송 팝업 */}
+        {ptOpen && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex',
+                        justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}
+               onClick={() => !ptSending && setPtOpen(false)}>
+            <div style={{ background: '#fff', borderRadius: '8px', padding: '22px', width: '400px', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}
+                 onClick={(e) => e.stopPropagation()}>
+              <h4 style={{ margin: '0 0 4px' }}>🎟️ 쿠폰 발송 설정</h4>
+              <p style={{ fontSize: '12px', color: '#888', margin: '0 0 14px' }}>
+                아래 <b>{members.length}명</b>에게 선택한 쿠폰을 발송합니다. (이미 발송된 회원은 자동 제외)
+              </p>
+
+              {/* 쿠폰 선택 (그 헬스장 gym_id 쿠폰만) */}
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>발송할 쿠폰</label>
+              <select value={selectedCouponNum} onChange={(e) => setSelectedCouponNum(e.target.value)}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', marginBottom: '14px' }}>
+                <option value="">-- 쿠폰 선택 --</option>
+                {couponTypes.map((c) => (
+                  <option key={c.couponNum} value={c.couponNum}>
+                    {c.couponName} ({c.category} {c.percent}%)
+                  </option>
+                ))}
+              </select>
+
+              {/* 대상 회원 (바 드릴다운 회원 자동 포함, 읽기전용) */}
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                대상 회원 ({members.length}명)
+              </label>
+              <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid #ccc', borderRadius: '4px', padding: '8px', marginBottom: '14px', fontSize: '13px' }}>
+                {members.length === 0 ? <span style={{ color: '#888' }}>대상 회원이 없습니다.</span>
+                  : members.map((m) => (
+                      <div key={m.username} style={{ padding: '2px 0' }}>
+                        {m.name} <span style={{ color: '#999', fontSize: '11px' }}>({m.username})</span>
+                      </div>
+                    ))}
+              </div>
+
+              {/* 사용 만료 기한 */}
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>사용 만료 기한</label>
+              <input type="date" value={ptExpiry} onChange={(e) => setPtExpiry(e.target.value)}
+                     style={{ width: '100%', boxSizing: 'border-box', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} />
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <button type="button" onClick={() => setPtOpen(false)} disabled={ptSending}
+                        style={{ padding: '6px 12px', border: '1px solid #ccc', borderRadius: '4px', background: '#fff', cursor: 'pointer' }}>
+                  취소
+                </button>
+                <button type="button" onClick={submitPtTrial} disabled={ptSending || members.length === 0}
+                        style={{ padding: '6px 15px', border: 'none', borderRadius: '4px', background: '#ef6c00', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
+                  {ptSending ? '보내는 중…' : '보내기'}
                 </button>
               </div>
             </div>
