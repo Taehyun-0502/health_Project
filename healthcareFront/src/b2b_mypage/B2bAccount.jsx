@@ -42,6 +42,7 @@ function B2cAccount() {
         // 개인정보 변경 성공 시 세션을 클리어하고 강제 로그아웃 리다이렉트
         localStorage.removeItem('user');
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken'); // ◀ 리프레쉬 토큰 제거
         navigate('/');
       } else {
         const errorText = await response.text();

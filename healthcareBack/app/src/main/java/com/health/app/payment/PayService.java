@@ -64,16 +64,16 @@ public class PayService {
             }
 
             // 이용권(헬스) 쿠폰은 계약 기간(개월수), PT 쿠폰은 계약 횟수가 정확히 일치해야 적용 가능
-            if (isHealth) {
-                long months = ChronoUnit.MONTHS.between(contract.getStartDate(), contract.getEndDate());
-                if (coupon.getCouponDate() == null || coupon.getCouponDate() != months) {
-                    throw new IllegalStateException("계약 기간과 일치하지 않는 쿠폰입니다.");
-                }
-            } else {
-                if (coupon.getCouponCount() == null || !coupon.getCouponCount().equals(contract.getQuantity())) {
-                    throw new IllegalStateException("PT 횟수와 일치하지 않는 쿠폰입니다.");
-                }
-            }
+            // if (isHealth) {
+            //     long months = ChronoUnit.MONTHS.between(contract.getStartDate(), contract.getEndDate());
+            //     if (coupon.getCouponDate() == null || coupon.getCouponDate() != months) {
+            //         throw new IllegalStateException("계약 기간과 일치하지 않는 쿠폰입니다.");
+            //     }
+            // } else {
+            //     if (coupon.getCouponCount() == null || !coupon.getCouponCount().equals(contract.getQuantity())) {
+            //         throw new IllegalStateException("PT 횟수와 일치하지 않는 쿠폰입니다.");
+            //     }
+            // }
 
             long discount = price * coupon.getPercent() / 100;
             price -= discount;

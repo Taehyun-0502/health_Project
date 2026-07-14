@@ -1,9 +1,12 @@
 package com.health.app.member;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.health.app.config.JwtUtill;
 import com.health.app.contract.ContractDTO;
 
 @Service
@@ -11,6 +14,9 @@ public class MemberService {
 
     @Autowired
     private MemberMapper memberMapper;
+
+    @Autowired
+    private JwtUtill jwtUtill;
 
     // 권한(role) 기준 회원 목록 조회 메서드
     public List<MemberDTO> findByRole(String role) throws Exception {
@@ -142,5 +148,64 @@ public class MemberService {
         // 보안상 비밀번호 필드는 지우고 반환
         existMember.setPassword(null);
         return existMember;
+    }
+
+    // 로그인 성공 후 Access 및 Refresh 토큰 발행 및 DB 저장
+    public Map<String, String> generateLoginTokens(MemberDTO member) throws Exception {
+        // 1. 유효기간이 다른 두 종류의 토큰 생성 (JwtUtill 활용)
+        String accessToken = jwtUtill.generateToken(member.getUsername().toString(), member.getRole());
+        String refreshToken = jwtUtill.generateRefreshToken(member.getUsername().toString());
+        
+        // 2. DB h_refresh_token 테이블에 토큰 저장용 DTO 바인딩 조립
+        RefreshTokenDTO tokenDTO = new RefreshTokenDTO();
+        tokenDTO.setUsername(member.getUsername());
+        tokenDTO.setRefreshToken(refreshToken);
+        tokenDTO.setExpiryDate(jwtUtill.getExpiryDateTime()); // 7일 만료일 계산
+        
+        // 3. MemberMapper.java에 추가 선언했던 updateToken 호출 (저장 혹은 기존토큰 덮어쓰기)
+        memberMapper.updateToken(tokenDTO);
+        
+        // 4. 프론트엔드로 리턴해 주기 위해 Map에 키-값 매핑
+        Map<String, String> tokenMap = new java.util.HashMap<>();
+        tokenMap.put("accessToken", accessToken);
+        tokenMap.put("refreshToken", refreshToken);
+        
+        return tokenMap;
+    }
+
+    // 리프레쉬 토큰 대조 검증 후 새로운 Access Token 단독 발급
+    public String refreshAccessToken(String refreshToken) throws Exception {
+        // 1. 토큰 포맷 및 위조/만료 여부 1차 유효성 검사 (JwtUtill 활용)
+        if (!jwtUtill.isRefreshTokenValid(refreshToken)) {
+            throw new IllegalArgumentException("유효하지 않거나 만료된 리프레쉬 토큰입니다.");
+        }
+        
+        // 2. 데이터베이스에 보관 중인 토큰인지 2차 조회 대조
+        RefreshTokenDTO dbToken = memberMapper.getRefreshToken(refreshToken);
+        if (dbToken == null) {
+            throw new IllegalArgumentException("존재하지 않거나 만료된 로그인 세션 토큰입니다. 다시 로그인해 주세요.");
+        }
+        
+        // 3. 데이터베이스에 적재된 만료예정 시각(LocalDateTime) 최종 대조 검사
+        if (dbToken.getExpiryDate().isBefore(java.time.LocalDateTime.now())) {
+            throw new IllegalArgumentException("만료된 로그인 세션입니다. 다시 로그인해 주세요.");
+        }
+        
+        // 4. 새 액세스 토큰 발행에 필요한 회원 권한(role)을 Member 테이블에서 즉각 조회
+        MemberDTO query = new MemberDTO();
+        query.setUsername(dbToken.getUsername());
+        MemberDTO member = memberMapper.idcheck(query);
+        
+        String role = member != null ? member.getRole() : "MEMBER"; // 기본값 MEMBER 매핑
+        
+        // 5. 모든 검증을 완료했으므로 30분 만료의 새로운 Access Token 단독 발급하여 리턴
+        return jwtUtill.generateToken(dbToken.getUsername().toString(), role);
+    }
+
+    // 로그아웃 시 DB 내 해당 회원 리프레쉬 토큰 삭제
+    public int deleteToken(Long username) throws Exception {
+        // 기존에 선언되어 작동 중인 8자리 변환 헬퍼 메서드 거치기
+        Long formattedUsername = this.formatUsernameToEightDigits(username);
+        return memberMapper.deleteToken(formattedUsername);
     }
 }

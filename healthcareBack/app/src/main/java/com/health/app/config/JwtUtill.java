@@ -20,8 +20,11 @@ public class JwtUtill {
 
     private final Key key;
 
-    //만료시간 30분
+    //엑세스토큰 만료시간 30분
     private final long time = 1000 * 60 * 30;
+
+    //리프레시토큰 만료기간 7일
+    private final long refreshTime = 1000L * 60 * 60 * 24 * 7;
 
     // yml에서 시크릿키를 주입받아 Key 객체 생성
     public JwtUtill(@Value("${jwt.secret}") String secretKey){
@@ -68,8 +71,33 @@ public class JwtUtill {
             return false;
         }
     }
+    
+    // 리프레쉬 토큰 생성 메서드 (7일 유효)
+    public String generateRefreshToken(String username) throws Exception {
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + refreshTime))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
 
+    // 리프레쉬 토큰 만료 예정 시각을 LocalDateTime으로 계산 반환 (DB 저장용)
+    public java.time.LocalDateTime getExpiryDateTime() {
+        return java.time.LocalDateTime.now().plusDays(7);
+    }
 
+    // [추가] 리프레쉬 토큰 자체의 만료 및 서명 위조 유효성 검증
+    public boolean isRefreshTokenValid(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            // 토큰의 만료 시간이 현재 시간보다 이전(before)인지 검사
+            return !claims.getExpiration().before(new Date());
+        } catch (Exception e) {
+            // 서명이 변조되었거나 기한이 지나 에러가 발생한 경우 무효(false) 처리
+            return false;
+        }
+    }
 
 
 
