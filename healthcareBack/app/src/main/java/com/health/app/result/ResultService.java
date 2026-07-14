@@ -48,6 +48,32 @@ public class ResultService {
         return resultMapper.selectStatBreakdown(gymId, mode, period);
     }
 
+    // 이탈 통계 드릴다운: 특정 요인/불만을 가진 위험군 회원 명단
+    public List<ChurnStatMemberDTO> selectStatMembers(Long gymId, String mode, String period,
+                                                      String statType, String statKey) throws Exception {
+        return resultMapper.selectStatMembers(gymId, mode, period, statType, statKey);
+    }
+
+    // 이탈 통계: 특정 기간 위험군 회원 전체 명단 + 이탈이유(top1~3)
+    public List<ChurnRiskMemberDTO> selectRiskMembers(Long gymId, String mode, String period) throws Exception {
+        return resultMapper.selectRiskMembers(gymId, mode, period);
+    }
+
+    // 프로모션 발송용: 그 헬스장 회원 전체를 이탈율 높은 순으로
+    public List<ChurnStatMemberDTO> selectMembersByChurn(Long gymId) throws Exception {
+        return resultMapper.selectMembersByChurn(gymId);
+    }
+
+    // 불만 조치 도우미: 그 헬스장 트레이너(직원) 명단
+    public List<Map<String, Object>> selectTrainers(Long gymId) throws Exception {
+        return resultMapper.selectTrainers(gymId);
+    }
+
+    // 불만 조치 도우미: 해당 기간 특정 불만(statKey)이 예측된 회원들의 방문 시간대 분포(최빈 순)
+    public List<Map<String, Object>> selectComplaintVisitSlots(Long gymId, String mode, String period, String statKey) throws Exception {
+        return resultMapper.selectComplaintVisitSlots(gymId, mode, period, statKey);
+    }
+
     // 전체 또는 특정 지점에 대해 일괄 분석 및 저장 수행
     @Transactional
     public int analyzeAndSaveAll(Long gymId) throws Exception {

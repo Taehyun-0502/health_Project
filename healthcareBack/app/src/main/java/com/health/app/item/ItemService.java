@@ -93,6 +93,11 @@ public class ItemService {
         return itemMapper.itemDelete(itemDTO);
     }
 
+    // 특정 gym의 특정 카테고리 아이템 목록 맵퍼 호출 (이탈통계 기구불만 옆 표시용)
+    public List<ItemDTO> selectByCategory(Long gymId, String category) throws Exception {
+        return itemMapper.selectByCategory(gymId, category);
+    }
+
     // 유효기간 임박(D-3) 알림 배치 비즈니스 로직: 대상 조회 후 gym별 사장님에게 알림 발송
     // 알림 발송/조회 실패는 개별 건만 건너뛰고 나머지 건 처리를 막지 않도록 각 건마다 격리
     public int checkExpiringItems() throws Exception {
