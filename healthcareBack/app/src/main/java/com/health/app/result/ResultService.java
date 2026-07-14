@@ -64,14 +64,9 @@ public class ResultService {
         return resultMapper.selectMembersByChurn(gymId);
     }
 
-    // 불만 조치 도우미: 그 헬스장 트레이너(직원) 명단
-    public List<Map<String, Object>> selectTrainers(Long gymId) throws Exception {
-        return resultMapper.selectTrainers(gymId);
-    }
-
-    // 불만 조치 도우미: 해당 기간 특정 불만(statKey)이 예측된 회원들의 방문 시간대 분포(최빈 순)
-    public List<Map<String, Object>> selectComplaintVisitSlots(Long gymId, String mode, String period, String statKey) throws Exception {
-        return resultMapper.selectComplaintVisitSlots(gymId, mode, period, statKey);
+    // 프로모션 발송용: 특정 이탈요인(statKey)을 가진 위험군 회원 (최신 예측 기준)
+    public List<ChurnStatMemberDTO> selectMembersByFactor(Long gymId, String statKey) throws Exception {
+        return resultMapper.selectMembersByFactor(gymId, statKey);
     }
 
     // 전체 또는 특정 지점에 대해 일괄 분석 및 저장 수행
@@ -159,7 +154,7 @@ public class ResultService {
 
         // 4. ResultDTO 생성 및 DB 저장/갱신
         ResultDTO resultDTO = new ResultDTO();
-        resultDTO.setModelId(dataId);
+        resultDTO.setUsername(username);
         resultDTO.setChurnRate(churnRate);
         resultDTO.setTop1Reason(top1Reason);
         resultDTO.setTop2Reason(top2Reason);

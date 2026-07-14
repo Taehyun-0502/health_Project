@@ -643,7 +643,9 @@ def _predict_batch(members):
 
 # ─────────────────────── 전체 회원 이탈 예측 배치 ───────────────────────
 def analyze_and_save_all(days: int = 30, chunk_size: int = 1000) -> dict:
-    """전체 회원 이탈 예측 → h_churn_result UPSERT + gym 통계(이탈요인) 적재 (하루 1회 배치).
+    """전체 회원 이탈 예측 → h_churn_result 일별 INSERT(이력 누적) (하루 1회 배치).
+    username·churn_date(CURRENT_DATE)·churn_rate·top1~3_reason 저장. 같은 날 재실행 시 오늘자 삭제 후 재적재.
+    gym/요인 통계는 별도 테이블 없이 조회 시 이 테이블에서 파생(위험군=churn_rate>=0.45).
     top1~3_reason = 가장 큰 이탈요인 top3(컬럼 이름). 불만 예측(complaint)은 없음."""
     # 0) 출석 있는 신규 회원 skeleton 등록 + churn(실제 이탈) 동기화
     with get_conn() as conn, conn.cursor() as cur:
@@ -674,12 +676,10 @@ def analyze_and_save_all(days: int = 30, chunk_size: int = 1000) -> dict:
     exercise_map = calculate_all_aver_exercise_pandas(inouts)
     last_days_map = calculate_all_last_days()
 
-    upsert_sql = '''
-        INSERT INTO "h_churn_result" (model_id, churn_rate, top1_reason, top2_reason, top3_reason)
-        VALUES (%s, %s, %s, %s, %s)
-        ON CONFLICT (model_id) DO UPDATE SET
-            churn_rate = EXCLUDED.churn_rate, top1_reason = EXCLUDED.top1_reason,
-            top2_reason = EXCLUDED.top2_reason, top3_reason = EXCLUDED.top3_reason
+    # 매일 INSERT(이력 누적) — username + churn_date(CURRENT_DATE) 저장. result_id는 identity 자동 채번.
+    insert_sql = '''
+        INSERT INTO "h_churn_result" (username, churn_rate, top1_reason, top2_reason, top3_reason, churn_date)
+        VALUES (%s, %s, %s, %s, %s, CURRENT_DATE)
     '''
     feature_sql = '''
         UPDATE "h_model_data" SET age=%s, total_month=%s, visit_per_week=%s, aver_exercise=%s,
@@ -687,10 +687,13 @@ def analyze_and_save_all(days: int = 30, chunk_size: int = 1000) -> dict:
     '''
 
     total = 0
+    risk_count = 0
+    gyms_seen = set()
     RISK_TIERS = {"개입", "긴급"}
-    gym_total, gym_churn_sum, gym_risk_total, gym_factor = {}, {}, {}, {}
-    stat_member = []     # (gym_id, 'factor', 피처키, username, churn_rate)
     with get_conn() as conn, conn.cursor() as cur:
+        # 같은 날 재실행 시 중복 방지 — 오늘자(churn_date=CURRENT_DATE) 결과부터 지우고 새로 적재
+        cur.execute('DELETE FROM "h_churn_result" WHERE churn_date = CURRENT_DATE')
+        conn.commit()
         for start in range(0, len(rows), chunk_size):
             chunk = rows[start:start + chunk_size]
             members, metas = [], []
@@ -712,63 +715,35 @@ def analyze_and_save_all(days: int = 30, chunk_size: int = 1000) -> dict:
             result_records, feature_records = [], []
             for (r, vpw, avex, ldays, tcong), (churn_rate, tier, tops) in zip(metas, preds):
                 t = [tops[k] if k < len(tops) else None for k in range(3)]
-                result_records.append((r["model_id"], churn_rate, t[0], t[1], t[2]))
+                result_records.append((r["username"], churn_rate, t[0], t[1], t[2]))
                 feature_records.append((r["age"], r["total_month"], vpw, avex,
                                         r["pt_yn"], tcong, ldays, r["contract_type"], r["model_id"]))
+                if tier in RISK_TIERS:
+                    risk_count += 1
                 gid = r.get("gym_id")
                 if gid is not None:
-                    gym_total[gid] = gym_total.get(gid, 0) + 1
-                    gym_churn_sum[gid] = gym_churn_sum.get(gid, 0.0) + churn_rate
-                    if tier in RISK_TIERS:
-                        gym_risk_total[gid] = gym_risk_total.get(gid, 0) + 1
-                        for key in tops:
-                            gym_factor[(gid, key)] = gym_factor.get((gid, key), 0) + 1
-                            stat_member.append((gid, 'factor', key, r["username"], churn_rate))
+                    gyms_seen.add(gid)
 
             cur.executemany(feature_sql, feature_records)
-            cur.executemany(upsert_sql, result_records)
+            cur.executemany(insert_sql, result_records)
             conn.commit()
             total += len(result_records)
 
-    # gym 일별 통계 적재 (이탈요인만)
-    with get_conn() as conn, conn.cursor() as cur:
-        cur.execute('DELETE FROM "h_churn_stat_daily" WHERE stat_date = CURRENT_DATE')
-        cur.execute('DELETE FROM "h_churn_stat_member" WHERE stat_date = CURRENT_DATE')
-        gym_daily_records = [
-            (gid, cnt, round(gym_churn_sum.get(gid, 0.0) / cnt, 4) if cnt else None, gym_risk_total.get(gid, 0))
-            for gid, cnt in gym_total.items()
-        ]
-        cur.executemany('''
-            INSERT INTO "h_churn_gym_daily" (gym_id, stat_date, total_members, avg_churn_rate, risk_members)
-            VALUES (%s, CURRENT_DATE, %s, %s, %s)
-            ON CONFLICT (gym_id, stat_date) DO UPDATE SET
-                total_members = EXCLUDED.total_members, avg_churn_rate = EXCLUDED.avg_churn_rate,
-                risk_members = EXCLUDED.risk_members
-        ''', gym_daily_records)
-        stat_records = [(gid, 'factor', key, cnt) for (gid, key), cnt in gym_factor.items()]
-        cur.executemany('''
-            INSERT INTO "h_churn_stat_daily" (gym_id, stat_date, stat_type, stat_key, member_count)
-            VALUES (%s, CURRENT_DATE, %s, %s, %s)
-        ''', stat_records)
-        cur.executemany('''
-            INSERT INTO "h_churn_stat_member" (gym_id, stat_date, stat_type, stat_key, username, churn_rate)
-            VALUES (%s, CURRENT_DATE, %s, %s, %s, %s)
-        ''', stat_member)
-        conn.commit()
+    # gym/요인 통계는 별도 테이블 없이 조회 시 h_churn_result(username·churn_rate·top1~3_reason·churn_date)에서 파생.
+    # (위험군 = churn_rate >= 0.45, tier_edges[45]/100 과 일치)
 
     # 출석 없어진 회원의 낡은 결과 정리
     with get_conn() as conn, conn.cursor() as cur:
         cur.execute('''
-            DELETE FROM "h_churn_result" WHERE model_id IN (
-                SELECT m.model_id FROM "h_model_data" m
+            DELETE FROM "h_churn_result" WHERE username IN (
+                SELECT m.username FROM "h_model_data" m
                 WHERE NOT EXISTS (SELECT 1 FROM "h_check_inout" c WHERE c.username = m.username))
         ''')
         deleted = cur.rowcount
         conn.commit()
 
     return {"신규등록": inserted, "이탈제외": excluded_churned, "처리": total, "회원수": len(rows),
-            "정리삭제": deleted, "통계_gym수": len(gym_total),
-            "위험군수": sum(gym_risk_total.values()), "통계_요인key수": len(gym_factor)}
+            "정리삭제": deleted, "gym수": len(gyms_seen), "위험군수": risk_count}
 
 
 @app.post("/churn/batch")

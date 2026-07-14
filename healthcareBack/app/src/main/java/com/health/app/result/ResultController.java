@@ -1,7 +1,6 @@
 package com.health.app.result;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -104,21 +103,12 @@ public class ResultController {
         return ResponseEntity.ok(resultService.selectMembersByChurn(gymId));
     }
 
-    // 불만 조치 도우미 — 그 헬스장 트레이너(직원) 명단 (직원불만: 전문성부족/과도한영업 옆)
-    @GetMapping("/stats/helper/trainers")
-    public ResponseEntity<List<Map<String, Object>>> helperTrainers(@RequestParam Long gymId) throws Exception {
-        return ResponseEntity.ok(resultService.selectTrainers(gymId));
-    }
-
-    // 불만 조치 도우미 — 해당 기간 특정 불만(statKey)이 예측된 회원들의 방문 시간대 분포(최빈 순)
-    // (예: 서비스불만_비매너회원, 직원불만_과도한영업)
-    @GetMapping("/stats/helper/complaintVisitTimes")
-    public ResponseEntity<List<Map<String, Object>>> helperComplaintVisitTimes(
+    // 프로모션 발송용 — 특정 이탈요인(statKey, 예: 가격불만)을 가진 위험군 회원 명단
+    @GetMapping("/members/byFactor")
+    public ResponseEntity<List<ChurnStatMemberDTO>> membersByFactor(
             @RequestParam Long gymId,
-            @RequestParam(defaultValue = "daily") String mode,
-            @RequestParam String period,
             @RequestParam String statKey) throws Exception {
-        return ResponseEntity.ok(resultService.selectComplaintVisitSlots(gymId, mode, period, statKey));
+        return ResponseEntity.ok(resultService.selectMembersByFactor(gymId, statKey));
     }
 
 }

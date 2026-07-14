@@ -4,38 +4,44 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.health.app.result.ResultMapper">
 
-    <!-- 분석 결과 저장 -->
+    <!-- 분석 결과 저장 (이력 누적 — username + churn_date) -->
     <insert id="insert" parameterType="com.health.app.result.ResultDTO" useGeneratedKeys="true" keyProperty="resultId" keyColumn="result_id">
         insert into "h_churn_result"
-        (model_id, churn_rate, top1_reason, top2_reason, top3_reason)
+        (username, churn_rate, top1_reason, top2_reason, top3_reason, churn_date)
         values
-        (#{modelId}, #{churnRate}, #{top1Reason}, #{top2Reason}, #{top3Reason})
+        (#{username}, #{churnRate}, #{top1Reason}, #{top2Reason}, #{top3Reason}, CURRENT_DATE)
     </insert>
 
-    <!-- 분석 결과 수정 -->
+    <!-- 분석 결과 수정 (PK 기준 — 특정 result_id 1건) -->
     <update id="update" parameterType="com.health.app.result.ResultDTO">
         update "h_churn_result"
         set churn_rate = #{churnRate},
             top1_reason = #{top1Reason},
             top2_reason = #{top2Reason},
             top3_reason = #{top3Reason}
-        where model_id = #{modelId}
+        where result_id = #{resultId}
     </update>
 
-    <!-- data_id로 분석 결과 조회 -->
+    <!-- data_id(model_id)로 분석 결과 조회 (이력 누적 → 그 회원의 가장 최근 churn_date 1건) -->
     <select id="selectByDataId" parameterType="long" resultType="com.health.app.result.ResultDTO">
-        select result_id, model_id, churn_rate, top1_reason, top2_reason, top3_reason
-        from "h_churn_result"
-        where model_id = #{dataId}
+        select r.result_id, r.username, r.churn_rate, r.top1_reason, r.top2_reason, r.top3_reason, r.churn_date
+        from "h_churn_result" r
+        join "h_model_data" m on r.username = m.username
+        where m.model_id = #{dataId}
+        order by r.churn_date desc nulls last, r.result_id desc
+        limit 1
     </select>
 
-    <!-- 전체 분석 결과 조회 (지점 필터링 지원) -->
+    <!-- 전체 분석 결과 조회 (지점 필터링 지원) — 회원당 가장 최근 churn_date 1건 -->
     <select id="selectAll" resultType="com.health.app.result.ResultDTO">
-        select r.result_id, r.model_id, r.churn_rate, r.top1_reason, r.top2_reason, r.top3_reason
-        from "h_churn_result" r
+        select r.result_id, r.username, r.churn_rate, r.top1_reason, r.top2_reason, r.top3_reason, r.churn_date
+        from (
+            select distinct on (username) result_id, username, churn_rate, top1_reason, top2_reason, top3_reason, churn_date
+            from "h_churn_result"
+            order by username, churn_date desc nulls last, result_id desc
+        ) r
         <if test="gymId != null">
-            join "h_model_data" m ON r.model_id = m.model_id
-            join "h_member" mem ON m.username = mem.username
+            join "h_member" mem ON r.username = mem.username
             where mem.gym_id = #{gymId}
         </if>
     </select>
@@ -54,155 +60,209 @@
         where username = #{username}
     </select>
 
-    <!-- 이탈 통계: 기간(일별/월별) 목록 + 기간별 이탈율/회원수 -->
+    <!-- 이탈 통계: 기간(일별/월별) 목록 + 기간별 이탈율/회원수 (h_churn_result 파생, 위험군=churn_rate>=0.45) -->
     <select id="selectStatPeriods" resultType="com.health.app.result.ChurnStatPeriodDTO">
         <choose>
             <when test="mode == 'monthly'">
-                select to_char(stat_date, 'YYYY-MM')            as period,
-                       cast(round(avg(total_members)) as int)   as totalMembers,
-                       cast(round(avg(risk_members)) as int)    as riskMembers,
-                       avg(avg_churn_rate)                      as avgChurnRate
-                from "h_churn_gym_daily"
-                where gym_id = #{gymId}
-                group by to_char(stat_date, 'YYYY-MM')
+                <!-- 월별 = 그 달 일별 스냅샷의 평균 -->
+                select to_char(d.churn_date, 'YYYY-MM')      as period,
+                       cast(round(avg(d.total)) as int)      as totalMembers,
+                       cast(round(avg(d.risk)) as int)       as riskMembers,
+                       avg(d.avg_rate)                       as avgChurnRate
+                from (
+                    select r.churn_date,
+                           count(*)                                          as total,
+                           count(*) filter (where r.churn_rate >= 0.45)      as risk,
+                           avg(r.churn_rate)                                  as avg_rate
+                    from "h_churn_result" r
+                    join "h_member" mem on r.username = mem.username
+                    where mem.gym_id = #{gymId} and r.churn_date is not null
+                    group by r.churn_date
+                ) d
+                group by to_char(d.churn_date, 'YYYY-MM')
                 order by period desc
             </when>
             <otherwise>
-                <!-- 일별은 '가장 최근 달'의 일자만 표시 (이전 달 월말 스냅샷 등은 월별 뷰에서만 집계) -->
-                select to_char(stat_date, 'YYYY-MM-DD') as period,
-                       total_members                    as totalMembers,
-                       risk_members                     as riskMembers,
-                       avg_churn_rate                   as avgChurnRate
-                from "h_churn_gym_daily"
-                where gym_id = #{gymId}
-                  and to_char(stat_date, 'YYYY-MM') = (
-                      select to_char(max(stat_date), 'YYYY-MM')
-                      from "h_churn_gym_daily" where gym_id = #{gymId}
+                <!-- 일별은 '가장 최근 달'의 일자만 표시 -->
+                select to_char(r.churn_date, 'YYYY-MM-DD')                 as period,
+                       count(*)                                            as totalMembers,
+                       count(*) filter (where r.churn_rate >= 0.45)        as riskMembers,
+                       avg(r.churn_rate)                                   as avgChurnRate
+                from "h_churn_result" r
+                join "h_member" mem on r.username = mem.username
+                where mem.gym_id = #{gymId}
+                  and r.churn_date is not null
+                  and to_char(r.churn_date, 'YYYY-MM') = (
+                      select to_char(max(r2.churn_date), 'YYYY-MM')
+                      from "h_churn_result" r2
+                      join "h_member" m2 on r2.username = m2.username
+                      where m2.gym_id = #{gymId} and r2.churn_date is not null
                   )
-                order by stat_date desc
+                group by r.churn_date
+                order by r.churn_date desc
             </otherwise>
         </choose>
     </select>
 
-    <!-- 이탈 통계: 특정 기간의 요인/불만 항목별 비율 (%는 조회 시 계산) -->
+    <!-- 이탈 통계: 특정 기간의 요인 항목별 비율 (h_churn_result top1~3_reason 파생, 위험군=churn_rate>=0.45) -->
     <select id="selectStatBreakdown" resultType="com.health.app.result.ChurnStatItemDTO">
         <choose>
             <when test="mode == 'monthly'">
-                select s.stat_type                                          as statType,
-                       s.stat_key                                           as statKey,
-                       cast(sum(s.member_count) as int)                     as memberCount,
-                       round(avg(s.member_count * 100.0 / nullif(g.risk_members,0)), 1) as pct
-                from "h_churn_stat_daily" s
-                join "h_churn_gym_daily" g
-                     on s.gym_id = g.gym_id and s.stat_date = g.stat_date
-                where g.gym_id = #{gymId}
-                  and to_char(g.stat_date, 'YYYY-MM') = #{period}
-                group by s.stat_type, s.stat_key
-                order by s.stat_type, pct desc
+                <!-- 월별 = 그 달 일별 (요인별 회원수 / 일별 위험군수) 의 평균 pct, 회원수는 일별 합 -->
+                with daily_risk as (
+                    select r.churn_date, r.username, r.top1_reason, r.top2_reason, r.top3_reason
+                    from "h_churn_result" r
+                    join "h_member" mem on r.username = mem.username
+                    where mem.gym_id = #{gymId} and r.churn_date is not null
+                      and to_char(r.churn_date, 'YYYY-MM') = #{period}
+                      and r.churn_rate >= 0.45
+                ),
+                daily_tot as (
+                    select churn_date, count(*) as risk_members from daily_risk group by churn_date
+                ),
+                daily_factor as (
+                    select dr.churn_date, f.stat_key, count(*) as member_count
+                    from daily_risk dr,
+                         lateral unnest(array[dr.top1_reason, dr.top2_reason, dr.top3_reason]) as f(stat_key)
+                    where f.stat_key is not null
+                    group by dr.churn_date, f.stat_key
+                )
+                select 'factor'                                             as statType,
+                       df.stat_key                                          as statKey,
+                       cast(sum(df.member_count) as int)                    as memberCount,
+                       round(avg(df.member_count * 100.0 / nullif(dt.risk_members,0)), 1) as pct
+                from daily_factor df
+                join daily_tot dt on df.churn_date = dt.churn_date
+                group by df.stat_key
+                order by pct desc
             </when>
             <otherwise>
-                select s.stat_type                                      as statType,
-                       s.stat_key                                       as statKey,
-                       s.member_count                                   as memberCount,
-                       round(s.member_count * 100.0 / nullif(g.risk_members,0), 1) as pct
-                from "h_churn_stat_daily" s
-                join "h_churn_gym_daily" g
-                     on s.gym_id = g.gym_id and s.stat_date = g.stat_date
-                where g.gym_id = #{gymId}
-                  and g.stat_date = cast(#{period} as date)
-                order by s.stat_type, pct desc
+                with risk as (
+                    select r.top1_reason, r.top2_reason, r.top3_reason
+                    from "h_churn_result" r
+                    join "h_member" mem on r.username = mem.username
+                    where mem.gym_id = #{gymId}
+                      and r.churn_date = cast(#{period} as date)
+                      and r.churn_rate >= 0.45
+                ),
+                tot as (select count(*) as risk_members from risk)
+                select 'factor'                                             as statType,
+                       f.stat_key                                           as statKey,
+                       cast(count(*) as int)                                as memberCount,
+                       round(count(*) * 100.0 / nullif((select risk_members from tot),0), 1) as pct
+                from risk,
+                     lateral unnest(array[risk.top1_reason, risk.top2_reason, risk.top3_reason]) as f(stat_key)
+                where f.stat_key is not null
+                group by f.stat_key
+                order by pct desc
             </otherwise>
         </choose>
     </select>
 
-    <!-- 드릴다운: 특정 요인/불만을 가진 위험군 회원 명단(+이탈율) -->
+    <!-- 드릴다운: 특정 요인(statKey)을 top1~3에 가진 위험군 회원 명단(+이탈율) — h_churn_result 파생 -->
+    <!-- statType은 이제 항상 'factor' (별도 통계 테이블 없음) — 파라미터는 무시하고 top1~3_reason 매칭 -->
     <select id="selectStatMembers" resultType="com.health.app.result.ChurnStatMemberDTO">
         <choose>
             <when test="mode == 'monthly'">
-                select sm.username                          as username,
+                select r.username                           as username,
                        mem.name                             as name,
-                       max(sm.churn_rate)                   as churnRate
-                from "h_churn_stat_member" sm
-                join "h_member" mem on sm.username = mem.username
-                where sm.gym_id = #{gymId}
-                  and to_char(sm.stat_date, 'YYYY-MM') = #{period}
-                  and sm.stat_type = #{statType}
-                  and sm.stat_key  = #{statKey}
-                group by sm.username, mem.name
+                       max(r.churn_rate)                    as churnRate
+                from "h_churn_result" r
+                join "h_member" mem on r.username = mem.username
+                where mem.gym_id = #{gymId}
+                  and r.churn_date is not null
+                  and to_char(r.churn_date, 'YYYY-MM') = #{period}
+                  and r.churn_rate >= 0.45
+                  and #{statKey} in (r.top1_reason, r.top2_reason, r.top3_reason)
+                group by r.username, mem.name
                 order by churnRate desc
             </when>
             <otherwise>
-                select sm.username    as username,
+                select r.username     as username,
                        mem.name       as name,
-                       sm.churn_rate  as churnRate
-                from "h_churn_stat_member" sm
-                join "h_member" mem on sm.username = mem.username
-                where sm.gym_id = #{gymId}
-                  and sm.stat_date = cast(#{period} as date)
-                  and sm.stat_type = #{statType}
-                  and sm.stat_key  = #{statKey}
-                order by sm.churn_rate desc
+                       r.churn_rate   as churnRate
+                from "h_churn_result" r
+                join "h_member" mem on r.username = mem.username
+                where mem.gym_id = #{gymId}
+                  and r.churn_date = cast(#{period} as date)
+                  and r.churn_rate >= 0.45
+                  and #{statKey} in (r.top1_reason, r.top2_reason, r.top3_reason)
+                order by r.churn_rate desc
             </otherwise>
         </choose>
     </select>
 
-    <!-- 특정 기간 '새로' 위험군에 진입한 회원 명단 + 이탈이유(h_churn_result top1~3) -->
-    <!-- 위험군 = 그 기간 h_churn_stat_member 에 등장한 회원(개입·긴급 등급). -->
+    <!-- 특정 기간 '새로' 위험군(churn_rate>=0.45)에 진입한 회원 명단 + 이탈이유(top1~3) — h_churn_result 파생 -->
     <!-- 직전 기간(전날/전월)에도 위험군이던 회원은 제외 → 이번에 '늘어난' 회원만. -->
-    <!-- 직전 기간 데이터가 없으면(첫 기간) 전원 신규로 간주. 이유는 h_churn_result 현재 row 에서 조인. -->
+    <!-- 직전 기간 데이터가 없으면(첫 기간) 전원 신규로 간주. -->
     <select id="selectRiskMembers" resultType="com.health.app.result.ChurnRiskMemberDTO">
         <choose>
             <when test="mode == 'monthly'">
                 with cur as (
-                    select distinct username from "h_churn_stat_member"
-                    where gym_id = #{gymId} and to_char(stat_date, 'YYYY-MM') = #{period}
+                    select distinct on (r.username)
+                           r.username, mem.name, r.churn_rate, r.top1_reason, r.top2_reason, r.top3_reason
+                    from "h_churn_result" r
+                    join "h_member" mem on r.username = mem.username
+                    where mem.gym_id = #{gymId} and r.churn_date is not null
+                      and to_char(r.churn_date, 'YYYY-MM') = #{period}
+                      and r.churn_rate >= 0.45
+                    order by r.username, r.churn_date desc, r.result_id desc
                 ),
                 prev as (
-                    select distinct username from "h_churn_stat_member"
-                    where gym_id = #{gymId}
-                      and to_char(stat_date, 'YYYY-MM') = (
-                          select max(to_char(stat_date, 'YYYY-MM')) from "h_churn_stat_member"
-                          where gym_id = #{gymId} and to_char(stat_date, 'YYYY-MM') &lt; #{period}
+                    select distinct r.username
+                    from "h_churn_result" r
+                    join "h_member" mem on r.username = mem.username
+                    where mem.gym_id = #{gymId} and r.churn_date is not null
+                      and r.churn_rate >= 0.45
+                      and to_char(r.churn_date, 'YYYY-MM') = (
+                          select max(to_char(r2.churn_date, 'YYYY-MM'))
+                          from "h_churn_result" r2
+                          join "h_member" m2 on r2.username = m2.username
+                          where m2.gym_id = #{gymId} and r2.churn_date is not null
+                            and to_char(r2.churn_date, 'YYYY-MM') &lt; #{period}
                       )
                 )
-                select c.username              as username,
-                       mem.name               as name,
-                       r.churn_rate           as churnRate,
-                       r.top1_reason          as top1Reason,
-                       r.top2_reason          as top2Reason,
-                       r.top3_reason          as top3Reason
+                select c.username     as username,
+                       c.name         as name,
+                       c.churn_rate   as churnRate,
+                       c.top1_reason  as top1Reason,
+                       c.top2_reason  as top2Reason,
+                       c.top3_reason  as top3Reason
                 from cur c
-                join "h_member" mem     on c.username = mem.username
-                join "h_model_data" md  on c.username = md.username
-                join "h_churn_result" r on md.model_id = r.model_id
                 where c.username not in (select username from prev)
-                order by r.churn_rate desc
+                order by c.churn_rate desc
             </when>
             <otherwise>
                 with cur as (
-                    select distinct username from "h_churn_stat_member"
-                    where gym_id = #{gymId} and stat_date = cast(#{period} as date)
+                    select r.username, mem.name, r.churn_rate, r.top1_reason, r.top2_reason, r.top3_reason
+                    from "h_churn_result" r
+                    join "h_member" mem on r.username = mem.username
+                    where mem.gym_id = #{gymId}
+                      and r.churn_date = cast(#{period} as date)
+                      and r.churn_rate >= 0.45
                 ),
                 prev as (
-                    select distinct username from "h_churn_stat_member"
-                    where gym_id = #{gymId}
-                      and stat_date = (
-                          select max(stat_date) from "h_churn_stat_member"
-                          where gym_id = #{gymId} and stat_date &lt; cast(#{period} as date)
+                    select distinct r.username
+                    from "h_churn_result" r
+                    join "h_member" mem on r.username = mem.username
+                    where mem.gym_id = #{gymId}
+                      and r.churn_rate >= 0.45
+                      and r.churn_date = (
+                          select max(r2.churn_date)
+                          from "h_churn_result" r2
+                          join "h_member" m2 on r2.username = m2.username
+                          where m2.gym_id = #{gymId} and r2.churn_date &lt; cast(#{period} as date)
                       )
                 )
-                select c.username              as username,
-                       mem.name               as name,
-                       r.churn_rate           as churnRate,
-                       r.top1_reason          as top1Reason,
-                       r.top2_reason          as top2Reason,
-                       r.top3_reason          as top3Reason
+                select c.username     as username,
+                       c.name         as name,
+                       c.churn_rate   as churnRate,
+                       c.top1_reason  as top1Reason,
+                       c.top2_reason  as top2Reason,
+                       c.top3_reason  as top3Reason
                 from cur c
-                join "h_member" mem     on c.username = mem.username
-                join "h_model_data" md  on c.username = md.username
-                join "h_churn_result" r on md.model_id = r.model_id
                 where c.username not in (select username from prev)
-                order by r.churn_rate desc
+                order by c.churn_rate desc
             </otherwise>
         </choose>
     </select>
@@ -214,54 +274,28 @@
                mem.name        as name,
                r.churn_rate    as churnRate
         from "h_member" mem
-        join "h_model_data" md   on mem.username = md.username
-        join "h_churn_result" r  on md.model_id = r.model_id
+        join (
+            select distinct on (username) username, churn_rate
+            from "h_churn_result"
+            order by username, churn_date desc nulls last, result_id desc
+        ) r  on mem.username = r.username
         where mem.gym_id = #{gymId}
           and lower(mem.role) = 'member'
         order by r.churn_rate desc
     </select>
 
-    <!-- 불만 조치 도우미: 그 헬스장의 트레이너(직원) 명단 -->
-    <select id="selectTrainers" resultType="map">
-        select username, name, email
-        from "h_member"
-        where gym_id = #{gymId} and role = 'trainer'
-        order by name
-    </select>
-
-    <!-- 불만 조치 도우미: 특정 불만(statKey)이 예측된(위험군 집계) 회원들의 방문 시간대 분포(최빈 순) -->
-    <!-- 전원이 아니라, 해당 기간 그 불만이 예측된 회원만 대상 (예: 비매너회원, 과도한영업) -->
-    <select id="selectComplaintVisitSlots" resultType="map">
-        select slot, count(*) as cnt
-        from (
-            select case
-                when extract(hour from ci.check_in) &lt; 6  then '새벽(00-06)'
-                when extract(hour from ci.check_in) &lt; 11 then '오전(06-11)'
-                when extract(hour from ci.check_in) &lt; 14 then '점심(11-14)'
-                when extract(hour from ci.check_in) &lt; 18 then '오후(14-18)'
-                when extract(hour from ci.check_in) &lt; 22 then '저녁(18-22)'
-                else '야간(22-24)'
-            end as slot
-            from "h_check_inout" ci
-            where ci.gym_id = #{gymId}
-              and ci.username in (
-                  select distinct sm.username
-                  from "h_churn_stat_member" sm
-                  where sm.gym_id = #{gymId}
-                    and sm.stat_type = 'complaint'
-                    and sm.stat_key = #{statKey}
-                    <choose>
-                        <when test="mode == 'monthly'">
-                            and to_char(sm.stat_date, 'YYYY-MM') = #{period}
-                        </when>
-                        <otherwise>
-                            and sm.stat_date = cast(#{period} as date)
-                        </otherwise>
-                    </choose>
-              )
-        ) t
-        group by slot
-        order by cnt desc
+    <!-- 프로모션 발송용: 최신 예측 기준 특정 이탈요인(statKey)을 top1~3에 가진 위험군(>=0.45) 회원 -->
+    <select id="selectMembersByFactor" resultType="com.health.app.result.ChurnStatMemberDTO">
+        select r.username    as username,
+               mem.name      as name,
+               r.churn_rate  as churnRate
+        from "h_churn_result" r
+        join "h_member" mem on r.username = mem.username
+        where mem.gym_id = #{gymId}
+          and r.churn_date = (select max(churn_date) from "h_churn_result" where churn_date is not null)
+          and r.churn_rate >= 0.45
+          and #{statKey} in (r.top1_reason, r.top2_reason, r.top3_reason)
+        order by r.churn_rate desc
     </select>
 
 </mapper>
