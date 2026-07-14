@@ -59,6 +59,42 @@ public class CouponService {
         return result;
     }
 
+    // 이탈위험(PT_가입여부/부상경험 등) 회원 일괄 발송 — 오늘자 h_churn_result status 0→1 claim 성공한 회원만 발송.
+    // 이미 status=1(다른 바에서 발송됨)이거나 오늘 예측 행이 없으면 스킵. 반환: {sent, skipped}.
+    @Transactional
+    public java.util.Map<String, Integer> sendToChurnMembers(Long fromId, Long couponNum, String couponName,
+                                                             java.time.LocalDate date, java.util.List<Long> usernames) throws Exception {
+        int sent = 0, skipped = 0;
+        if (usernames != null) {
+            for (Long toId : usernames) {
+                // 오늘자 행 status 0→1 원자적 claim (이미 1이면 0건 → 스킵)
+                int claimed = couponMapper.claimChurnStatusToday(toId);
+                if (claimed == 0) { skipped++; continue; }
+
+                CouponDTO dto = new CouponDTO();
+                dto.setFromId(fromId);
+                dto.setToId(toId);
+                dto.setCouponNum(couponNum);
+                dto.setCouponName(couponName);
+                dto.setDate(date);
+
+                couponMapper.sendCoupon(dto);          // h_coupon 적재
+                couponMapper.sendCount(couponNum);     // 발송 누적 카운트
+                alarmService.sendAlarm(                // h_alarm 적재 + 실시간 알림
+                    toId, fromId,
+                    "새로운 쿠폰이 도착했습니다: " + couponName,
+                    "/fitc/mypage/coupon",
+                    "COUPON"
+                );
+                sent++;
+            }
+        }
+        java.util.Map<String, Integer> result = new java.util.HashMap<>();
+        result.put("sent", sent);
+        result.put("skipped", skipped);
+        return result;
+    }
+
     // 쿠폰 단건 조회 (결제 시 유효성 검증용)
     public CouponDTO getCouponById(Long couponId) throws Exception {
         return couponMapper.getCouponById(couponId);

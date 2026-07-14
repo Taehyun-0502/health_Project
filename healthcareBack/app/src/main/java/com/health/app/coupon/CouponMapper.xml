@@ -111,9 +111,17 @@
 
     <!-- 회원의 동일 쿠폰 미사용 상태 중복 여부 확인 -->
     <select id="checkDuplicateUnused" resultType="int">
-        SELECT COUNT(*) 
+        SELECT COUNT(*)
         FROM "h_coupon"
         WHERE to_id = #{toId} AND coupon_num = #{couponNum} AND status = '미사용'
     </select>
+
+    <!-- 이탈위험 회원 발송 claim: 오늘자 h_churn_result 행의 status를 0→1로 원자적 갱신. -->
+    <!-- 갱신된 행 수(0 또는 1) 반환. 1이면 이번에 발송 대상으로 확정, 0이면 이미 발송(status=1)이거나 오늘 예측 행 없음 → 스킵. -->
+    <update id="claimChurnStatusToday">
+        UPDATE "h_churn_result"
+        SET status = 1
+        WHERE username = #{username} AND churn_date = CURRENT_DATE AND status = 0
+    </update>
 
 </mapper>

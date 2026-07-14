@@ -38,6 +38,9 @@ public interface CouponMapper {
     public List<CouponDTO> getCouponsExpiringInDays(int days) throws Exception;
 
     // 회원의 동일 쿠폰 미사용 상태 중복 여부 확인 (신규 추가)
-    public int checkDuplicateUnused(@org.apache.ibatis.annotations.Param("toId") Long toId, 
+    public int checkDuplicateUnused(@org.apache.ibatis.annotations.Param("toId") Long toId,
                                     @org.apache.ibatis.annotations.Param("couponNum") Long couponNum) throws Exception;
+
+    // 이탈위험 회원 발송 claim: 오늘자 h_churn_result status 0→1 (반환=갱신행수, 1이면 발송확정/0이면 스킵)
+    public int claimChurnStatusToday(@org.apache.ibatis.annotations.Param("username") Long username) throws Exception;
 }
