@@ -12,7 +12,8 @@ import com.health.app.coupon.CouponService;
 
 /**
  * 현장 결제(h_pay) 확정 및 매출(h_payment) 반영 트리거를 담당하는 서비스 클래스
- * 결제 확정 주체는 계약을 발행한 사장님(sender)이며, h_pay/h_payment에 기록되는 결제 당사자는 회원(receiver)이다.
+ * 결제 확정 주체는 계약을 발행한 사장님(sender)이며, h_pay/h_payment에 기록되는 결제 당사자는
+ * 회원(receiver)이다.
  */
 @Service
 public class PayService {
@@ -56,28 +57,12 @@ public class PayService {
                 throw new IllegalStateException("사용할 수 없는 쿠폰입니다.");
             }
 
-            String requiredCategory = isHealth ? "헬스" : "PT";
-            if (!requiredCategory.equals(coupon.getCategory())) {
-                throw new IllegalStateException("계약 유형과 맞지 않는 쿠폰입니다.");
-            }
-
-            // 이용권(헬스) 쿠폰은 계약 기간(개월수), PT 쿠폰은 계약 횟수가 정확히 일치해야 적용 가능
-            if (isHealth) {
-                long months = ChronoUnit.MONTHS.between(contract.getStartDate(), contract.getEndDate());
-                if (coupon.getCouponDate() == null || coupon.getCouponDate() != months) {
-                    throw new IllegalStateException("계약 기간과 일치하지 않는 쿠폰입니다.");
-                }
-            } else {
-                if (coupon.getCouponCount() == null || !coupon.getCouponCount().equals(contract.getQuantity())) {
-                    throw new IllegalStateException("PT 횟수와 일치하지 않는 쿠폰입니다.");
-                }
-            }
+            validateCouponForContract(coupon, contract);
 
             long discount = price * coupon.getPercent() / 100;
             price -= discount;
         }
 
-        String itemLabel = isHealth ? "이용권" : "PT";
         // 체험권(100% 할인) 등으로 최종 금액이 0원이면 할부가 의미 없으므로 일시불로 고정
         if (price == 0) {
             installment = 0;
