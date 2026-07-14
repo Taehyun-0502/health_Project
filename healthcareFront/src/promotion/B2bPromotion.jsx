@@ -37,6 +37,24 @@ function B2bPromotion() {
     }
   };
 
+  // 이탈위험(가격불만) 회원만 선택 — 최신 예측 기준 위험군 중 '가격불만' 이탈요인 보유자
+  const handleSelectChurnRisk = async () => {
+    if (!user.gymId) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/result/members/byFactor`
+        + `?gymId=${user.gymId}&statKey=${encodeURIComponent('가격불만')}`);
+      if (!res.ok) { alert('이탈위험 회원 조회에 실패했습니다.'); return; }
+      const data = await res.json();
+      const riskSet = new Set((Array.isArray(data) ? data : []).map(d => String(d.username)));
+      const picked = members.filter(m => riskSet.has(String(m.username))).map(m => m.username);
+      setSelectedMembers(picked);
+      if (picked.length === 0) alert('가격불만 이탈위험 회원이 없습니다.');
+    } catch (err) {
+      console.error('이탈위험 회원 선택 오류:', err);
+      alert('이탈위험 회원 조회 중 오류가 발생했습니다.');
+    }
+  };
+
   // 지점의 등록된 쿠폰 종류 목록 백엔드 로드
   const fetchCouponTypes = async () => {
     const token = localStorage.getItem('accessToken');
@@ -386,18 +404,26 @@ function B2bPromotion() {
                   수신 회원 선택 ({selectedMembers.length}명 선택됨)
                 </label>
                 
-                {/* 전체 선택 체크박스 */}
-                <div style={{ marginBottom: '10px', paddingBottom: '8px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center' }}>
-                  <input 
-                    type="checkbox" 
+                {/* 전체 선택 체크박스 + 이탈위험(가격불만) 회원 선택 */}
+                <div style={{ marginBottom: '10px', paddingBottom: '8px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
                     id="checkAll"
                     checked={selectedMembers.length === members.length && members.length > 0}
-                    onChange={(e) => handleCheckAll(e.target.checked)} 
+                    onChange={(e) => handleCheckAll(e.target.checked)}
                     style={{ cursor: 'pointer' }}
                   />
                   <label htmlFor="checkAll" style={{ marginLeft: '6px', fontSize: '12px', fontWeight: 'bold', color: '#111827', cursor: 'pointer' }}>
                     전체 회원 선택
                   </label>
+                  <button
+                    type="button"
+                    onClick={handleSelectChurnRisk}
+                    style={{ marginLeft: 'auto', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer',
+                             border: '1px solid #ef6c00', borderRadius: '4px', backgroundColor: '#fff', color: '#ef6c00' }}
+                  >
+                    이탈위험 회원 선택 (가격불만)
+                  </button>
                 </div>
 
                 {/* 회원 목록 개별 체크박스 스크롤 리스트 */}
@@ -432,7 +458,7 @@ function B2bPromotion() {
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px', justifyContent: 'flex-end' }}>
                 <button 
                   type="button" 
-                  onClick={() => { setSelectedType(null); setReceiverId(''); setExpiryDate(''); }}
+                  onClick={() => { setSelectedType(null); setSelectedMembers([]); setExpiryDate(''); }}
                   style={{ padding: '6px 12px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}
                 >
                   취소

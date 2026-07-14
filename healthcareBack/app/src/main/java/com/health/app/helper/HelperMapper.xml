@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.health.app.helper.HelperMapper">
+
+    <!-- 불만 조치 도우미: 그 헬스장의 트레이너(직원) 명단 -->
+    <select id="selectTrainers" resultType="map">
+        select username, name, email
+        from "h_member"
+        where gym_id = #{gymId} and role = 'trainer'
+        order by name
+    </select>
+
+    <!-- 불만 조치 도우미: 특정 불만(statKey)이 예측된(위험군 집계) 회원들의 방문 시간대 분포(최빈 순) -->
+    <!-- 방문 집계 윈도우: 일별=조회날짜 기준 최근 30일, 월별=그 달 전체 (설문 주기 30일과 정합) -->
+    <select id="selectComplaintVisitSlots" resultType="map">
+        select slot, count(*) as cnt
+        from (
+            select case
+                when extract(hour from ci.check_in) &lt; 6  then '새벽(00-06)'
+                when extract(hour from ci.check_in) &lt; 11 then '오전(06-11)'
+                when extract(hour from ci.check_in) &lt; 14 then '점심(11-14)'
+                when extract(hour from ci.check_in) &lt; 18 then '오후(14-18)'
+                when extract(hour from ci.check_in) &lt; 22 then '저녁(18-22)'
+                else '야간(22-24)'
+            end as slot
+            from "h_check_inout" ci
+            where ci.gym_id = #{gymId}
+              <choose>
+                  <when test="mode == 'monthly'">
+                      and to_char(ci.check_in, 'YYYY-MM') = #{period}
+                  </when>
+                  <otherwise>
+                      and ci.check_in &gt;= cast(#{period} as date) - interval '30 days'
+                      and ci.check_in &lt;  cast(#{period} as date) + interval '1 day'
+                  </otherwise>
+              </choose>
+              and ci.username in (
+                  select distinct r.username
+                  from "h_churn_result" r
+                  join "h_member" m on r.username = m.username
+                  where m.gym_id = #{gymId}
+                    and r.churn_rate >= 0.45
+                    and #{statKey} in (r.top1_reason, r.top2_reason, r.top3_reason)
+                    <choose>
+                        <when test="mode == 'monthly'">
+                            and r.churn_date is not null and to_char(r.churn_date, 'YYYY-MM') = #{period}
+                        </when>
+                        <otherwise>
+                            and r.churn_date = cast(#{period} as date)
+                        </otherwise>
+                    </choose>
+              )
+        ) t
+        group by slot
+        order by cnt desc
+    </select>
+
+    <!-- 불만 조치 도우미: 특정 불만(statKey)이 예측된 위험군 회원들의 담당자(h_contract_data.manager_id) -->
+    <!-- 회원별 최신 계약의 manager_id(있는 경우만) → 트레이너 이름. 담당자 없는 회원은 제외(inner join). -->
+    <select id="selectComplaintManagers" resultType="map">
+        select r.username        as "username",
+               mem.name          as "memberName",
+               mgr.username       as "managerId",
+               mgr.name           as "managerName",
+               r.churn_rate       as "churnRate"
+        from "h_churn_result" r
+        join "h_member" mem on r.username = mem.username
+        join lateral (
+            select cd.manager_id
+            from "h_contract_data" cd
+            where cd.receiver_id = r.username and cd.manager_id is not null and cd.gym_id = #{gymId}
+            order by cd.signed_at desc nulls last, cd.data_id desc
+            limit 1
+        ) latest on true
+        join "h_member" mgr on mgr.username = latest.manager_id
+        where mem.gym_id = #{gymId}
+          and r.churn_rate >= 0.45
+          and #{statKey} in (r.top1_reason, r.top2_reason, r.top3_reason)
+          <choose>
+              <when test="mode == 'monthly'">
+                  and r.churn_date is not null and to_char(r.churn_date, 'YYYY-MM') = #{period}
+              </when>
+              <otherwise>
+                  and r.churn_date = cast(#{period} as date)
+              </otherwise>
+          </choose>
+        order by r.churn_rate desc
+    </select>
+
+    <!-- 불만 조치 도우미: 서비스센터 전체 목록 (기구상태불만 옆 표시용) -->
+    <select id="selectServiceCenters" resultType="map">
+        select center_id            as "centerId",
+               center_name          as "centerName",
+               brand_name           as "brandName",
+               center_phone         as "centerPhone",
+               operating_hours      as "operatingHours",
+               onsite_repair_status as "onsiteRepair",
+               service_center_url   as "url"
+        from "h_service_center"
+        order by center_name
+    </select>
+
+    <!-- 헬퍼 요청 등록 (환경불편 → 헬퍼): title/status/date 서버 고정 -->
+    <insert id="insertHelperRequest">
+        insert into "h_helper" (username, title, contents, date, status)
+        values (#{username}, '헬퍼 요청', #{contents}, CURRENT_DATE, '처리대기')
+    </insert>
+
+</mapper>
