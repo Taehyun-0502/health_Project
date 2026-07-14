@@ -123,16 +123,58 @@ public class MemberController {
     public ResponseEntity<?> login(@RequestBody MemberDTO memberDTO) throws Exception {
         MemberDTO loginMember = memberService.login(memberDTO);
         if (loginMember != null) {
-            String token = jwtUtill.generateToken(String.valueOf(loginMember.getUsername()),
-            loginMember.getRole()
-        );
-            Map<String,Object> responseData = new HashMap<>();
-            responseData.put("member", loginMember);
-            responseData.put("token", token);
+             Map<String, String> tokenMap = memberService.generateLoginTokens(loginMember);
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("member", loginMember);
+                responseData.put("token", tokenMap.get("accessToken")); // 기존 Axios 호환용
+                responseData.put("refreshToken", tokenMap.get("refreshToken")); // 리프레쉬 토큰
 
             return ResponseEntity.ok(responseData); // 로그인 성공 (회원정보 전달)
         } else {
             return ResponseEntity.badRequest().body("아이디 또는 비밀번호가 올바르지 않습니다.");
+        }
+    }
+
+    // 리프레쉬 토큰 검증 후 엑세스 토큰 단독 재발급 API
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody Map<String, String> request) {
+        try {
+            String refreshToken = request.get("refreshToken");
+            if (refreshToken == null || refreshToken.isEmpty()) {
+                return ResponseEntity.badRequest().body("리프레쉬 토큰이 누락되었습니다.");
+            }
+            
+            // 4단계 서비스의 토큰 재발급 로직 실행
+            String newAccessToken = memberService.refreshAccessToken(refreshToken);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("accessToken", newAccessToken);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            // 토큰 위조/만료 시 401 Unauthorized 리턴하여 재로그인 흐름 유도
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("서버 갱신 처리 실패");
+        }
+    }
+
+    // 로그아웃 시 DB 토큰 세션 무효화 소거 API
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        try {
+            // 1. JWT Authorization 헤더 검증 및 사용자 username 획득
+            if (authorization == null || !authorization.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+            }
+            Claims claims = jwtUtill.extractAllClaims(authorization.substring(7));
+            Long username = Long.parseLong(claims.getSubject());
+            
+            // 2. 4단계 서비스의 토큰 삭제 처리 가동
+            memberService.deleteToken(username);
+            return ResponseEntity.ok("정상적으로 로그아웃 처리가 완료되었습니다.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("로그아웃 처리 실패");
         }
     }
 }

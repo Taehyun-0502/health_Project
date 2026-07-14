@@ -109,7 +109,7 @@ function B2bPromotion() {
       couponName,
       gymId: user.gymId,
       maxAmount: category !== '체험권' ? Number(maxAmount) : null, // ◀ couponDate 대신 maxAmount 기입
-      couponCount: (category === 'PT' || category === '체험권') ? Number(couponCount) : null
+      couponCount: category === '체험권' ? Number(couponCount) : null // ◀ 오직 체험권일 때만 횟수 지정
     };
 
     try {
@@ -324,8 +324,8 @@ function B2bPromotion() {
             </div>
           )}
 
-          {/* PT 및 PT체험권 계열인 경우 할인 횟수를 입력하도록 노출 */}
-          {(category === 'PT' || category === '체험권') && (
+          {/* 오직 PT체험권 계열인 경우에만 할인 횟수를 입력하도록 노출 */}
+          {category === '체험권' && (
             <div>
               <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>할인 적용 횟수 (PT)</label>
               <input 

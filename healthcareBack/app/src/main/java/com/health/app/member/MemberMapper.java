@@ -24,4 +24,13 @@ public interface MemberMapper {
 
     // gym_id 기준 지점별 소속 일반 회원 목록 조회 메서드
     public List<MemberDTO> findMembersByGymId(Long gymId) throws Exception;
+
+    // 리프레쉬토큰 저장,갱신 메서드
+    public int updateToken(RefreshTokenDTO refreshTokenDTO) throws Exception;
+
+    // 2. 리프레쉬 토큰 대조 조회 (토큰 갱신 API용)
+    public RefreshTokenDTO getRefreshToken(String refreshToken) throws Exception;
+    
+    // 3. 리프레쉬 토큰 영구 소거 (로그아웃 API용)
+    public int deleteToken(Long username) throws Exception;
 }

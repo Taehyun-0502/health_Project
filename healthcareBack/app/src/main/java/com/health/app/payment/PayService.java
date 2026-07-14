@@ -12,7 +12,8 @@ import com.health.app.coupon.CouponService;
 
 /**
  * 현장 결제(h_pay) 확정 및 매출(h_payment) 반영 트리거를 담당하는 서비스 클래스
- * 결제 확정 주체는 계약을 발행한 사장님(sender)이며, h_pay/h_payment에 기록되는 결제 당사자는 회원(receiver)이다.
+ * 결제 확정 주체는 계약을 발행한 사장님(sender)이며, h_pay/h_payment에 기록되는 결제 당사자는
+ * 회원(receiver)이다.
  */
 @Service
 public class PayService {
