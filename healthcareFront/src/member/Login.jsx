@@ -35,6 +35,7 @@ function Login() {
        const result = await response.json()
 
        localStorage.setItem('accessToken',result.token)
+       localStorage.setItem('refreshToken',result.refreshToken) // ◀ 리프레쉬 토큰 추가 보관
        localStorage.setItem('user',JSON.stringify(result.member))
 
        alert(`${result.member.name}님 환영합니다.`)

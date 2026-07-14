@@ -20,6 +20,8 @@ import ContractLayout from './contract/ContractLayout.jsx';
 import RosterPage from './contract/RosterPage.jsx';
 import JobSeekerPage from './contract/JobSeekerPage.jsx';
 import Payment from './payment/Payment.jsx';
+import Attendance from './attendance/Attendance.jsx';               // 출석 키오스크 (무로그인)
+import AttendanceConfirm from './attendance/AttendanceConfirm.jsx'; // PT 출석 트레이너 확인
 
 
 import Settlepage from './settle/settlepage.jsx'
@@ -44,7 +46,8 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/join" element={<Join />} />
 
-
+      {/* 출석 키오스크 - 헬스장 입구 공용 태블릿 용도라 로그인 헤더(FitcLayout) 없이 단독 노출 */}
+      <Route path="/fitc/attendance" element={<Attendance />} />
 
 
 
@@ -89,6 +92,8 @@ function App() {
 
         <Route path="Settlepage" element={<Settlepage />} />
         <Route path="dashboard" element={<Dashboard />} />
+        {/* PT 출석 트레이너 확인 (당일 접수 건 확인 시 잔여횟수 차감) */}
+        <Route path="attendance" element={<AttendanceConfirm />} />
       </Route>
 
 

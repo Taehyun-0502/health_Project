@@ -38,6 +38,20 @@ function AdminMain() {
             신규 회원 가입/추가
           </Link>
         )}
+
+        {/* [권한 제약] 트레이너 전용 - 담당 회원 PT 출석 확인(잔여횟수 차감) 페이지 이동 */}
+        {user.role === 'trainer' && (
+          <Link to="/fitb/attendance" style={{ padding: '8px 16px', backgroundColor: '#7c3aed', color: '#fff', textDecoration: 'none', borderRadius: '4px' }}>
+            PT 출석 확인
+          </Link>
+        )}
+
+        {/* [권한 제약] 사장님/관리자 - 입구 태블릿에 띄울 출석 키오스크 새 창 열기 */}
+        {(user.role === 'admin' || user.role === 'owner') && (
+          <a href="/fitc/attendance" target="_blank" rel="noreferrer" style={{ padding: '8px 16px', backgroundColor: '#0284c7', color: '#fff', textDecoration: 'none', borderRadius: '4px' }}>
+            출석 키오스크 열기
+          </a>
+        )}
       </div>
 
       <hr />

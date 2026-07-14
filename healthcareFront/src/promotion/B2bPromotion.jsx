@@ -11,7 +11,7 @@ function B2bPromotion() {
   const [category, setCategory] = useState('헬스');
   const [percent, setPercent] = useState('');
   const [couponName, setCouponName] = useState('');
-  const [couponDate, setCouponDate] = useState('');
+  const [maxAmount, setMaxAmount] = useState(''); // ◀ couponDate를 maxAmount(최대적용금액) 상태로 변경
   const [couponCount, setCouponCount] = useState('');
 
   // 발송 폼용 상태 관리
@@ -126,8 +126,8 @@ function B2bPromotion() {
       percent: Number(percent),
       couponName,
       gymId: user.gymId,
-      couponDate: category === '헬스' ? Number(couponDate) : null,
-      couponCount: (category === 'PT' || category === '체험권') ? Number(couponCount) : null // ◀ 체험권일 때도 횟수 지정
+      maxAmount: category !== '체험권' ? Number(maxAmount) : null, // ◀ couponDate 대신 maxAmount 기입
+      couponCount: category === '체험권' ? Number(couponCount) : null // ◀ 오직 체험권일 때만 횟수 지정
     };
 
     try {
@@ -144,7 +144,7 @@ function B2bPromotion() {
         alert('할인 쿠폰 종류가 정상 등록되었습니다.');
         setCouponName('');
         setPercent('');
-        setCouponDate('');
+        setMaxAmount(''); // ◀ 입력 초기화
         setCouponCount('');
         fetchCouponTypes(); // ◀ 추가: 쿠폰 종류 목록 실시간 갱신 트리거
       } else {
@@ -191,9 +191,21 @@ function B2bPromotion() {
 
     try {
       const responses = await Promise.all(sendPromises);
-      const allSuccess = responses.every(res => res.ok);
+      
+      // 개별 실패 결과 파싱 및 수집
+      const failedResults = [];
+      for (let i = 0; i < responses.length; i++) {
+        const res = responses[i];
+        if (!res.ok) {
+          const username = selectedMembers[i];
+          const memberObj = members.find(m => m.username === username);
+          const name = memberObj ? memberObj.name : username;
+          const errText = await res.text();
+          failedResults.push(`${name}님: ${errText}`);
+        }
+      }
 
-      if (allSuccess) {
+      if (failedResults.length === 0) {
         alert(`선택된 회원 ${selectedMembers.length}명에게 쿠폰이 정상적으로 일괄 발송되었습니다.`);
         setSelectedMembers([]); // 복수 선택 리셋
         setExpiryDate('');
@@ -201,7 +213,13 @@ function B2bPromotion() {
         fetchCouponTypes(); // 발송 수(sendCount) 업데이트를 위해 목록 갱신
         fetchSentCoupons();  // 통계 카운트 실시간 동기화
       } else {
-        alert('일부 회원에게 쿠폰을 전송하는 과정에서 오류가 발생했습니다.');
+        // 실패 건수가 있는 경우 일괄 실패 명세 경고 알림
+        alert(`일부 회원에게 쿠폰 발송을 실패했습니다.\n\n[실패 내역]\n${failedResults.join('\n')}`);
+        setSelectedMembers([]); // 선택 배열 비우기
+        setExpiryDate('');
+        setSelectedType(null); // 모달 닫기
+        fetchCouponTypes();
+        fetchSentCoupons();
       }
     } catch (err) {
       console.error('쿠폰 일괄 발송 중 오류:', err);
@@ -309,19 +327,23 @@ function B2bPromotion() {
             />
           </div>
 
-          {category === '헬스' ? (
+          {/* 헬스, PT인 경우에만 최대 할인 한도금액(maxAmount)을 기입하도록 노출 */}
+          {category !== '체험권' && (
             <div>
-              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>적용 개월수</label>
+              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>최대 할인 금액 (원)</label>
               <input 
                 type="number" 
-                value={couponDate} 
-                onChange={(e) => setCouponDate(e.target.value)} 
+                value={maxAmount} 
+                onChange={(e) => setMaxAmount(e.target.value)} 
                 required 
-                placeholder="3" 
-                style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', width: '80px' }} 
+                placeholder="10000" 
+                style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', width: '120px' }} 
               />
             </div>
-          ) : (
+          )}
+
+          {/* 오직 PT체험권 계열인 경우에만 할인 횟수를 입력하도록 노출 */}
+          {category === '체험권' && (
             <div>
               <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>할인 적용 횟수 (PT)</label>
               <input 
@@ -365,8 +387,8 @@ function B2bPromotion() {
                   <td style={{ padding: '10px', color: '#333' }}>{type.category}</td>
                   <td style={{ padding: '10px', color: '#2563eb', fontWeight: 'bold' }}>{type.percent}%</td>
                   <td style={{ padding: '10px', color: '#333' }}>
-                    {type.category === '헬스' && `${type.couponDate}개월 이용권 적용`}
-                    {type.category === 'PT' && `${type.couponCount}회 PT 할인`}
+                    {type.category === '헬스' && `헬스권 ${type.percent}% 할인 (최대 ${type.maxAmount}원)`}
+                    {type.category === 'PT' && `PT ${type.percent}% 할인 (최대 ${type.maxAmount}원)`}
                     {type.category === '체험권' && `${type.couponCount}회 PT 무료체험`}
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center', color: '#e11d48', fontWeight: 'bold' }}>

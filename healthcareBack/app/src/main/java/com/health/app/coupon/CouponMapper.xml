@@ -6,8 +6,18 @@
 
     <select id="toList" parameterType="Long" resultType="CouponDTO">
         SELECT 
-            c.*,
-            t.*,
+            c.coupon_id as couponId,
+            c.from_id as fromId,
+            c.to_id as toId,
+            c.date,
+            c.status,
+            c.coupon_num as couponNum,
+            t.category,
+            t.percent,
+            t.coupon_name as couponName,
+            t.max_amount as maxAmount, -- ◀ 명시적 별칭 매핑
+            t.coupon_count as couponCount,
+            t.gym_id as gymId,
             m.name as from_name
         FROM "h_coupon" c
         INNER JOIN "h_coupon_type" t ON c.coupon_num = t.coupon_num
@@ -21,20 +31,29 @@
         VALUES (#{fromId}, #{toId}, #{couponNum}, #{date}, '미사용')
     </insert>
 
-      <!-- 사장님의 새로운 쿠폰 종류 생성 SQL (초기 send_count는 0으로 지정) -->
+    <!-- 사장님의 새로운 쿠폰 종류 생성 SQL (초기 send_count는 0으로 지정) -->
     <insert id="createCoupon" parameterType="CouponTypeDTO">
-        INSERT INTO "h_coupon_type" (category, percent, coupon_name, gym_id, coupon_date, coupon_count, send_count)
-        VALUES (#{category}, #{percent}, #{couponName}, #{gymId}, #{couponDate, jdbcType=INTEGER}, #{couponCount, jdbcType=INTEGER}, 0)
+        INSERT INTO "h_coupon_type" (category, percent, coupon_name, gym_id, max_amount, coupon_count, send_count)
+        VALUES (#{category}, #{percent}, #{couponName}, #{gymId}, #{maxAmount, jdbcType=INTEGER}, #{couponCount, jdbcType=INTEGER}, 0) -- ◀ 변수 대입 순서 정정
     </insert>
 
-        <!-- 해당 헬스장의 등록된 쿠폰 종류 목록 조회 SQL -->
+    <!-- 해당 헬스장의 등록된 쿠폰 종류 목록 조회 SQL -->
     <select id="couponTypeList" parameterType="Long" resultType="CouponTypeDTO">
-        SELECT * FROM "h_coupon_type" 
+        SELECT 
+            coupon_num as couponNum,
+            category,
+            percent,
+            coupon_name as couponName,
+            gym_id as gymId,
+            max_amount as maxAmount, -- ◀ 명시적 별칭 매핑
+            coupon_count as couponCount,
+            send_count as sendCount
+        FROM "h_coupon_type" 
         WHERE gym_id = #{gymId} 
         ORDER BY coupon_num DESC
     </select>
 
-        <!-- 누적 발송 횟수 1 증가 SQL 추가 -->
+    <!-- 누적 발송 횟수 1 증가 SQL 추가 -->
     <update id="sendCount" parameterType="Long">
         UPDATE "h_coupon_type"
         SET send_count = send_count + 1
@@ -43,7 +62,19 @@
 
     <!-- 쿠폰 단건 조회 (결제 시 유효성 검증용) -->
     <select id="getCouponById" parameterType="Long" resultType="CouponDTO">
-        SELECT c.*, t.*
+        SELECT 
+            c.coupon_id as couponId,
+            c.from_id as fromId,
+            c.to_id as toId,
+            c.date,
+            c.status,
+            c.coupon_num as couponNum,
+            t.category,
+            t.percent,
+            t.coupon_name as couponName,
+            t.max_amount as maxAmount, -- ◀ 명시적 별칭 매핑
+            t.coupon_count as couponCount,
+            t.gym_id as gymId
         FROM "h_coupon" c
         INNER JOIN "h_coupon_type" t ON c.coupon_num = t.coupon_num
         WHERE c.coupon_id = #{couponId}
@@ -76,6 +107,13 @@
         FROM "h_coupon" c
         INNER JOIN "h_coupon_type" t ON c.coupon_num = t.coupon_num
         WHERE c.status = '미사용' AND c.date = CURRENT_DATE + #{days}
+    </select>
+
+    <!-- 회원의 동일 쿠폰 미사용 상태 중복 여부 확인 -->
+    <select id="checkDuplicateUnused" resultType="int">
+        SELECT COUNT(*) 
+        FROM "h_coupon"
+        WHERE to_id = #{toId} AND coupon_num = #{couponNum} AND status = '미사용'
     </select>
 
 </mapper>

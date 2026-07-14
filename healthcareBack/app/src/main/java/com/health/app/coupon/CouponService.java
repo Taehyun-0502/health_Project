@@ -34,6 +34,12 @@ public class CouponService {
     // 사장님의 회원 쿠폰 발송 및 카운팅 증가 트랜잭션 비즈니스 로직
          @Transactional
     public int sendCoupon(CouponDTO couponDTO) throws Exception {
+        // [신규] 동일 쿠폰의 미사용 상태 중복 발송 차단 가드
+        int dupCount = couponMapper.checkDuplicateUnused(couponDTO.getToId(), couponDTO.getCouponNum());
+        if (dupCount > 0) {
+            throw new IllegalArgumentException("이미 사용하지 않은 동일한 쿠폰을 보유하고 있는 회원입니다.");
+        }
+
         // 1. 회원 쿠폰함에 발송 기입
         int result = couponMapper.sendCoupon(couponDTO);
         
@@ -46,7 +52,7 @@ public class CouponService {
                 couponDTO.getToId(),                                     // 1) 수신 회원 (receiver)
                 couponDTO.getFromId(),                                   // 2) 발송 사장님 (sender)
                 "새로운 쿠폰이 도착했습니다: " + couponDTO.getCouponName(),   // 3) 메시지 (message)
-                "/mypage/coupon",                                        // 4) 클릭 시 이동할 경로 (link)
+                "/fitc/mypage/coupon",                                        // 4) 클릭 시 이동할 경로 (link)
                 "COUPON"                                                 // 5) 알림 종류 구분 (category)
             );
         }

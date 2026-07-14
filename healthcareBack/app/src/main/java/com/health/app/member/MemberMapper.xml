@@ -39,4 +39,24 @@
   select username, name, gym_id, role from "h_member" where gym_id = #{gymId} and upper(role) = 'MEMBER' order by name asc
   </select>
 
+  <insert id="updateToken">
+  insert into "h_refresh_token"
+  values(#{username},#{refreshToken},#{expiryDate})
+  on conflict (username)
+  do update set refresh_token = #{refreshToken}, expiry_date = #{expiryDate}
+  </insert>
+
+  <!-- 1. 리프레쉬 토큰 대조 조회 쿼리 -->
+<select id="getRefreshToken" parameterType="String" resultType="RefreshTokenDTO">
+    SELECT username, refresh_token as refreshToken, expiry_date as expiryDate
+    FROM "h_refresh_token"
+    WHERE refresh_token = #{refreshToken}
+</select>
+
+<!-- 2. 로그아웃 시 토큰 영구 소거 쿼리 -->
+<delete id="deleteToken" parameterType="Long">
+    DELETE FROM "h_refresh_token"
+    WHERE username = #{username}
+</delete>
+
 </mapper>

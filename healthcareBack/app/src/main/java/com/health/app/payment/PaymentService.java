@@ -63,7 +63,8 @@ public class PaymentService {
             return new PaymentDeleteResult(false, false);
         }
 
-        boolean alreadyPaidWarning = settleService.recalcCommissionAfterPaymentDeleted(pay.getGymId(), pay.getPayDate());
+        boolean alreadyPaidWarning = settleService.recalcCommissionAfterPaymentDeleted(pay.getGymId(),
+                pay.getPayDate());
         return new PaymentDeleteResult(true, alreadyPaidWarning);
     }
 
