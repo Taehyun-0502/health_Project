@@ -60,6 +60,10 @@ public class PayService {
             validateCouponForContract(coupon, contract);
 
             long discount = price * coupon.getPercent() / 100;
+            // 쿠폰 종류에 최대 할인 금액(max_amount)이 설정된 경우 할인액을 그 금액까지만 적용
+            if (coupon.getMaxAmount() != null && discount > coupon.getMaxAmount()) {
+                discount = coupon.getMaxAmount();
+            }
             price -= discount;
         }
 

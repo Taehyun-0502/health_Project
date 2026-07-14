@@ -8,4 +8,93 @@
 select * from "h_check_inout" where username=#{username} order by check_in desc
 </select>
 
+<!-- 회원의 유효 계약 1건 조회 - status=ACTIVE + 기간 내 계약 중 최신 1건 (3=이용권, 4=PT)
+     h_contract_data는 조회 전용 - 차감/갱신은 출석 도메인 소유의 h_pt_manage에서만 수행 -->
+<select id="findActiveContract" resultType="com.health.app.contract.ContractDTO">
+select d.data_id, d.contract, d.gym_id, d.receiver_id, d.manager_id,
+       d.quantity, d.start_date, d.end_date
+  from "h_contract_data" d
+ where d.receiver_id = #{username}
+   and d.contract = #{contractType}
+   and d.status = 'ACTIVE'
+   and d.start_date &lt;= current_date
+   and (d.end_date is null or d.end_date &gt;= current_date)
+ order by d.data_id desc
+ limit 1
+</select>
+
+<!-- 당일 동일 유형 출석 카운트 (하루 1회 제한) -->
+<select id="countToday" resultType="int">
+select count(*) from "h_check_inout"
+ where username = #{username}
+   and inout_type = #{inoutType}
+   and check_in &gt;= current_date
+</select>
+
+<!-- 출석 기록 등록 - 헬스장(1)은 trainer_id null, PT(2)는 계약의 manager_id 저장 -->
+<insert id="insertAttendance" parameterType="com.health.app.checkInout.CheckInoutDTO">
+insert into "h_check_inout" (username, check_in, gym_id, inout_type, trainer_id)
+values (#{username}, now(), #{gymId}, #{inoutType}, #{trainerId})
+</insert>
+
+<!-- 트레이너 본인 담당 당일 미확인 PT 출석 대기 목록 (회원 이름 + 현재 잔여횟수 표시용 조인)
+     잔여횟수 = 계약 총 횟수(quantity) - h_pt_manage 사용 횟수 -->
+<select id="pendingList" parameterType="Long" resultType="com.health.app.checkInout.CheckInoutDTO">
+select c.id, c.username, c.check_in, c.gym_id, c.inout_type, c.trainer_id, c.trainer_confirm,
+       m.name as member_name, d.remaining_count
+  from "h_check_inout" c
+  left join "h_member" m on m.username = c.username
+  left join lateral (
+       select d.quantity - coalesce(p.used_count, 0) as remaining_count
+         from "h_contract_data" d
+         left join "h_pt_manage" p on p.data_id = d.data_id
+        where d.receiver_id = c.username and d.contract = 4 and d.status = 'ACTIVE'
+        order by d.data_id desc limit 1
+  ) d on true
+ where c.trainer_id = #{trainerId}
+   and c.inout_type = 2
+   and c.trainer_confirm is null
+   and c.check_in &gt;= current_date
+ order by c.check_in desc
+</select>
+
+<!-- 출석 단건 조회 (트레이너 확인 검증용) -->
+<select id="findAttendance" parameterType="Long" resultType="com.health.app.checkInout.CheckInoutDTO">
+select * from "h_check_inout" where id = #{inoutId}
+</select>
+
+<!-- 트레이너 확인 처리 - 당일 + 본인 담당 + 미확인 건만 갱신되도록 조건 가드 -->
+<update id="confirmAttendance">
+update "h_check_inout"
+   set trainer_confirm = now()
+ where id = #{inoutId}
+   and trainer_id = #{trainerId}
+   and inout_type = 2
+   and trainer_confirm is null
+   and check_in &gt;= current_date
+</update>
+
+<!-- PT 이용 관리(h_pt_manage) 행 생성 - 계약(data_id)당 1행, 총 횟수는 계약 quantity 스냅샷
+     h_contract_data를 갱신하지 않기 위한 출석 도메인 독자 차감 원장 -->
+<insert id="upsertPtManage">
+insert into "h_pt_manage" (data_id, username, total_count)
+values (#{dataId}, #{username}, #{totalCount})
+on conflict (data_id) do nothing
+</insert>
+
+<!-- PT 사용 횟수 +1 및 완료 여부 갱신 - 총 횟수 초과 방지 가드 (갱신 0건이면 서비스에서 롤백)
+     completed=true 행이 팀원의 계약 중지 로직 소비 대상 -->
+<update id="usePtCount" parameterType="Long">
+update "h_pt_manage"
+   set used_count = used_count + 1,
+       completed = (used_count + 1 &gt;= total_count)
+ where data_id = #{dataId}
+   and used_count &lt; total_count
+</update>
+
+<!-- 계약별 현재 사용 횟수 조회 (행이 아직 없으면 0) -->
+<select id="findUsedCount" parameterType="Long" resultType="int">
+select coalesce((select used_count from "h_pt_manage" where data_id = #{dataId}), 0)
+</select>
+
 </mapper>

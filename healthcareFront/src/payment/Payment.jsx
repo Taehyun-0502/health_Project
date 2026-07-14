@@ -85,7 +85,10 @@ function Payment() {
   })();
 
   const selectedCoupon = applicableCoupons.find((c) => c.couponId === selectedCouponId) || null;
-  const discount = selectedCoupon ? Math.floor((detail?.amount || 0) * selectedCoupon.percent / 100) : 0;
+  // 할인율 적용액이 쿠폰의 최대 할인 금액(maxAmount)을 넘으면 최대 금액까지만 할인 (백엔드 PayService.checkout과 동일)
+  const rawDiscount = selectedCoupon ? Math.floor((detail?.amount || 0) * selectedCoupon.percent / 100) : 0;
+  const isCapped = selectedCoupon?.maxAmount != null && rawDiscount > selectedCoupon.maxAmount;
+  const discount = isCapped ? selectedCoupon.maxAmount : rawDiscount;
   const finalPrice = (detail?.amount || 0) - discount;
   // 체험권(100% 할인) 등으로 최종 0원이면 할부가 의미 없으므로 일시불 고정 (백엔드도 동일하게 강제)
   const effectiveInstallment = finalPrice === 0 ? 0 : installment;
@@ -164,7 +167,7 @@ function Payment() {
                   checked={selectedCouponId === c.couponId}
                   onChange={() => setSelectedCouponId(c.couponId)}
                 />
-                [{c.category}] {c.couponName} ({c.category === '체험권' ? '무료체험' : `${c.percent}% 할인`}, {c.fromName} 발송, ~{c.date} 까지)
+                [{c.category}] {c.couponName} ({c.category === '체험권' ? '무료체험' : `${c.percent}% 할인`}{c.maxAmount != null ? `, 최대 ${money(c.maxAmount)}원` : ''}, {c.fromName} 발송, ~{c.date} 까지)
               </label>
             </div>
           ))}
@@ -190,7 +193,10 @@ function Payment() {
       <h2>결제 요약</h2>
       <p>기본 금액: {money(detail.amount)}원</p>
       {selectedCoupon && (
-        <p>쿠폰 할인{selectedCoupon.category === '체험권' ? ' (무료체험 적용)' : ''}: -{money(discount)}원</p>
+        <p>
+          쿠폰 할인{selectedCoupon.category === '체험권' ? ' (무료체험 적용)' : ''}
+          {isCapped ? ` (최대 할인 금액 ${money(selectedCoupon.maxAmount)}원 적용)` : ''}: -{money(discount)}원
+        </p>
       )}
       <p>결제 방법: {effectiveInstallment === 0 ? '일시불' : `${effectiveInstallment}개월 할부`}</p>
       <p><strong>최종 결제 금액: {money(finalPrice)}원</strong></p>
