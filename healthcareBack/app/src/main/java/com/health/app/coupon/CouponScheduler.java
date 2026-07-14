@@ -17,7 +17,7 @@ public class CouponScheduler {
     @Autowired
     private AlarmService alarmService; // 알림 서비스 주입
 
-    // 매일 자정(00:00:00)에 자동으로 실행되어 3일 전 알림 및 당일 만료 쿠폰을 일괄 처리하는 메서드
+    //매일 자정(00:00:00)에 자동으로 실행되어 3일 전 알림 및 당일 만료 쿠폰을 일괄 처리하는 메서드
     //     @PostConstruct
     // public void runOnStartup() {
     //     System.out.println("[쿠폰배치] 서버 구동 감지로 즉시 쿠폰 배치를 1회 초기 가동합니다.");

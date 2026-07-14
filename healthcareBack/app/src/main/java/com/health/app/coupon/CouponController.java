@@ -99,6 +99,10 @@ public class CouponController {
             }
             return ResponseEntity.badRequest().body("쿠폰 발송 실패");
         } catch (IllegalArgumentException e) {
+            // 중복 보유 가드로 던져진 예외인 경우 400 Bad Request로 리턴
+            if (e.getMessage().contains("이미 사용하지 않은")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }
