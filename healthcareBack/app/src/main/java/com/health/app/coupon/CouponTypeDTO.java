@@ -14,7 +14,7 @@ public class CouponTypeDTO {
     private Integer percent;     // 할인률% (0~100)
     private String couponName;   // 쿠폰 이름
     private Long gymId;          // 적용 헬스장 ID
-    private Integer couponDate;  // 적용가능한 개월수 (null 허용)
+    private Integer maxAmount;   // 적용가능한 최대 할인 금액 (null 허용)
     private Integer couponCount; // PT 횟수 (null 허용)
     private Integer sendCount;   // 누적 발송 횟수    
 
