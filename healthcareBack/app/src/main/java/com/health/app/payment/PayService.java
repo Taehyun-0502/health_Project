@@ -1,7 +1,6 @@
 package com.health.app.payment;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,7 +44,6 @@ public class PayService {
 
         Long memberUsername = contract.getReceiverId();
         long price = contract.getAmount();
-        boolean isHealth = contract.getContract() == 3;
 
         if (couponId != null) {
             CouponDTO coupon = couponService.getCouponById(couponId);
@@ -80,6 +78,12 @@ public class PayService {
         }
 
         String itemLabel = isHealth ? "이용권" : "PT";
+        // 체험권(100% 할인) 등으로 최종 금액이 0원이면 할부가 의미 없으므로 일시불로 고정
+        if (price == 0) {
+            installment = 0;
+        }
+
+        String itemLabel = contract.getContract() == 3 ? "이용권" : "PT";
         String pName = String.format("[계약 #%d] %s - %s", dataId, itemLabel, contract.getReceiverName());
 
         PayDTO pay = new PayDTO();
@@ -108,6 +112,27 @@ public class PayService {
         paymentService.paymentAdd(payment);
 
         return pay;
+    }
+
+    // 쿠폰 카테고리별 적용 가능 계약 유형 검증 (새 카테고리 추가 시 case만 확장)
+    // 헬스: 이용권 계약(3) / PT·체험권: PT 계약(4)
+    // 개월수(couponDate)/횟수(couponCount) 일치 제약은 정책 결정으로 제거됨 — 카테고리만 맞으면 사용 가능
+    private void validateCouponForContract(CouponDTO coupon, ContractDTO contract) {
+        String category = coupon.getCategory() == null ? "" : coupon.getCategory();
+
+        switch (category) {
+            case "헬스" -> {
+                if (contract.getContract() != 3) {
+                    throw new IllegalStateException("계약 유형과 맞지 않는 쿠폰입니다.");
+                }
+            }
+            case "PT", "체험권" -> {
+                if (contract.getContract() != 4) {
+                    throw new IllegalStateException("계약 유형과 맞지 않는 쿠폰입니다.");
+                }
+            }
+            default -> throw new IllegalStateException("지원하지 않는 쿠폰 카테고리입니다.");
+        }
     }
 
 }
