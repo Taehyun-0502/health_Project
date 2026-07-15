@@ -24,6 +24,7 @@ public class CheckInoutDTO {
 
     // 조회 표시용 조인 필드 (h_member / h_contract_data)
     private String memberName; // 회원 이름
+    private String trainerName; // 트레이너 이름 (사장님 지점 캘린더용)
     private Integer remainingCount; // PT 잔여횟수
 
 }
