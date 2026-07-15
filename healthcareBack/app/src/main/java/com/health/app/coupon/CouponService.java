@@ -110,4 +110,8 @@ public class CouponService {
         return couponMapper.couponStatus(fromId);
     }
 
+    // 지점별 체험권 발송 및 상태 전체 목록 조회 (신규 추가)
+    public List<CouponDTO> trialList(Long gymId) throws Exception {
+        return couponMapper.trialList(gymId);
+    }
 }

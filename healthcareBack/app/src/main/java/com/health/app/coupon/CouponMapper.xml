@@ -111,9 +111,34 @@
 
     <!-- 회원의 동일 쿠폰 미사용 상태 중복 여부 확인 -->
     <select id="checkDuplicateUnused" resultType="int">
-        SELECT COUNT(*)
+        SELECT COUNT(*) 
         FROM "h_coupon"
         WHERE to_id = #{toId} AND coupon_num = #{couponNum} AND status = '미사용'
+    </select>
+
+    <!-- 특정 지점(gym_id) 내에서 '체험권'을 발송받은 전체 회원과 쿠폰 상태 목록 조회 -->
+    <select id="trialList" parameterType="Long" resultType="CouponDTO">
+        SELECT 
+            c.coupon_id as couponId,
+            c.to_id as toId,
+            c.from_id as fromId,
+            c.date,
+            c.status,
+            c.coupon_num as couponNum,
+            t.category,
+            t.percent,
+            t.coupon_name as couponName,
+            t.coupon_count as couponCount,
+            t.gym_id as gymId,
+            m.name as toName,
+            COALESCE(cr.status, 0) as churnStatus -- ◀ 이탈방지대책 체험권 수혜 여부 (1: 대상자, 0: 일반)
+        FROM "h_coupon" c
+        INNER JOIN "h_coupon_type" t ON c.coupon_num = t.coupon_num
+        INNER JOIN "h_member" m ON c.to_id = m.username
+        LEFT JOIN "h_churn_result" cr ON c.to_id = cr.username AND cr.predict_date = CURRENT_DATE -- ◀ 당일 예측 기준 조인
+        WHERE t.category = '체험권'
+          AND t.gym_id = #{gymId}
+        ORDER BY c.coupon_id DESC
     </select>
 
     <!-- 이탈위험 회원 발송 claim: 오늘자 h_churn_result 행의 status를 0→1로 원자적 갱신. -->

@@ -151,6 +151,21 @@ public class CouponController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }
+
+    // 지점별 체험권 발송 및 상태 전체 목록 조회 API (신규 추가)
+    // GET /coupon/trial/list?gymId=1
+    @GetMapping("trial/list")
+    public ResponseEntity<?> trialList(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam("gymId") Long gymId) throws Exception {
+        try {
+            validateAndGetUsername(authorization); // 토큰 검증 수행
+            List<CouponDTO> list = couponService.trialList(gymId);
+            return ResponseEntity.ok(list);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
+    }
 }
 
 

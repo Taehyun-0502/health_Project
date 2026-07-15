@@ -28,4 +28,6 @@ public class CouponDTO {
     
     // 3. h_member 조인 컬럼 매핑 (화면 표시용)
     private String fromName;     // 보낸 사장님 한글 이름
+    private String toName;       // 받는 일반회원 한글 이름 (신규 추가)
+    private Integer churnStatus; // 이탈방지대책 체험권 수혜 여부 (1: 대상자, 0: 일반) (신규 추가)
 }

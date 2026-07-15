@@ -37,6 +37,9 @@ public interface CouponMapper {
     //유효기간 3일전인 쿠폰조회
     public List<CouponDTO> getCouponsExpiringInDays(int days) throws Exception;
 
+    // 지점별 체험권 발송 및 상태 전체 목록 조회 (신규 추가)
+    public List<CouponDTO> trialList(Long gymId) throws Exception;
+
     // 회원의 동일 쿠폰 미사용 상태 중복 여부 확인 (신규 추가)
     public int checkDuplicateUnused(@org.apache.ibatis.annotations.Param("toId") Long toId,
                                     @org.apache.ibatis.annotations.Param("couponNum") Long couponNum) throws Exception;
