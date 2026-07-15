@@ -16,12 +16,20 @@ function AdminMain() {
 
 
   // 관리 대시보드 4대 메뉴 상수 정의
-  const tabs = [
+  const allTabs = [
     { id: 'dashboard', label: '대시보드', title: '운영 현황 대시보드', desc: '오늘의 운영 현황을 간편하게 모니터링합니다.' },
     { id: 'settlement', label: '정산관리', title: '매출 및 정산 통계', desc: '이용권 결제 내역 분석 및 정산 자료입니다.' },
     { id: 'inventory', label: '물품관리', title: '라커룸 및 기자재 인벤토리', desc: '센터 내부 물품 재고 수량을 기록 관리합니다.' },
     { id: 'promotion', label: '프로모션', title: '이벤트 및 쿠폰 발행', desc: '할인 프로모션 생성 및 이벤트 업무를 수행합니다.' }
   ];
+
+  // admin 권한일 경우 물품관리와 프로모션 탭 제외
+  const tabs = allTabs.filter(tab => {
+    if (user.role === 'admin' && (tab.id === 'inventory' || tab.id === 'promotion')) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <div style={{ padding: '20px', position: 'relative' }}>
@@ -46,8 +54,8 @@ function AdminMain() {
           </Link>
         )}
 
-        {/* [권한 제약] 사장님/관리자 - 입구 태블릿에 띄울 출석 키오스크 새 창 열기 */}
-        {(user.role === 'admin' || user.role === 'owner') && (
+        {/* [권한 제약] 사장님(owner) 전용 - 입구 태블릿에 띄울 출석 키오스크 새 창 열기 */}
+        {user.role === 'owner' && (
           <a href="/fitc/attendance" target="_blank" rel="noreferrer" style={{ padding: '8px 16px', backgroundColor: '#0284c7', color: '#fff', textDecoration: 'none', borderRadius: '4px' }}>
             출석 키오스크 열기
           </a>

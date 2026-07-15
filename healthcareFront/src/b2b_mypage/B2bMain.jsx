@@ -6,12 +6,14 @@ function B2bMain() {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h2>B2B 관리자 마이페이지 ({user.name} 사장님)</h2>
+      <h2>B2B 관리자 마이페이지 ({user.name})</h2>
       
       {/* 관리자 전용 서브 링크 영역 (건의사항 및 계정설정 보존) */}
       <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-        {/* 회원 건의사항 접수함 링크 */}
-        <Link to="b2bcomplaint" style={{ textDecoration: 'none', fontWeight: 'bold', color: 'blue' }}>회원건의 접수현황</Link>
+        {/* 회원 건의사항 접수함 링크 (admin 계정 제외) */}
+        {user.role !== 'admin' && (
+          <Link to="b2bcomplaint" style={{ textDecoration: 'none', fontWeight: 'bold', color: 'blue' }}>회원건의 접수현황</Link>
+        )}
 
         {/* 알림 내역 링크 */}
         <Link to="notification" style={{ textDecoration: 'none' }}>알림 내역</Link>

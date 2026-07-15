@@ -109,7 +109,7 @@ function Header() {
       <h3 style={{ margin: 0, color: '#333' }}>
         {user.role === 'admin' || user.role === 'owner' ? '🏢 사장님 관리 포털' : '🏋️ 회원 포털'}
         <span style={{ fontSize: '13px', fontWeight: 'normal', color: '#666', marginLeft: '10px' }}>
-          ({user.name} {user.role === 'admin' || user.role === 'owner' ? '사장님' : '회원님'} - 지점: {user.gymId})
+          ({user.name} {user.role === 'admin' || user.role === 'owner' ? '' : '회원님'} - 지점: {user.gymId})
         </span>
       </h3>
 
