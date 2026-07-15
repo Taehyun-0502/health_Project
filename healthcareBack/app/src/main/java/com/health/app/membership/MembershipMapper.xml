@@ -4,7 +4,7 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.health.app.membership.MembershipMapper">
 
-    <!-- receiver_id 기준으로 SIGNED(서명완료)된 본인 계약 리스트 조회 (UserDTO -> ContractDTO 변경) -->
+    <!-- receiver_id 기준으로 활성화된 본인 계약 리스트 조회 (UserDTO -> ContractDTO 변경) -->
     <select id="list" parameterType="Long" resultType="com.health.app.contract.ContractDTO">
     select * from "h_contract_data" where receiver_id = #{username} and status = 'ACTIVE' order by start_date desc
     </select>

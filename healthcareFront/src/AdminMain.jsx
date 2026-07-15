@@ -1,11 +1,18 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import B2bPromotion from './promotion/B2bPromotion.jsx';
 import AttendanceConfirm from './attendance/AttendanceConfirm.jsx';
 
+const TAB_IDS = ['dashboard', 'settlement', 'inventory', 'promotion'];
+
 // 사장님/트레이너 전용 메인 포털 컴포넌트
 function AdminMain() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchParams] = useSearchParams();
+  // 다른 화면에서 ?tab=promotion 처럼 진입하면 해당 탭이 켜진 채로 시작 (예: 이탈통계 가격불만 → 쿠폰)
+  const [activeTab, setActiveTab] = useState(() => {
+    const t = searchParams.get('tab');
+    return TAB_IDS.includes(t) ? t : 'dashboard';
+  });
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
 

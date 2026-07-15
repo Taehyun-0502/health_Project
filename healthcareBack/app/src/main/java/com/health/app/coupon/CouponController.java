@@ -107,6 +107,37 @@ public class CouponController {
         }
     }
 
+    // 이탈위험 회원 일괄 발송 API (B2bList PT체험권 발송 등) — body: {couponNum, couponName, date, usernames[]}
+    // 오늘자 h_churn_result status 0→1 claim 성공 회원만 발송(이미 1이면 스킵). from_id는 토큰의 사장님.
+    @PostMapping("sendChurnTargets")
+    public ResponseEntity<?> sendChurnTargets(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody java.util.Map<String, Object> body) throws Exception {
+        try {
+            Long ownerId = validateAndGetUsername(authorization);
+            if (body.get("couponNum") == null || body.get("date") == null) {
+                return ResponseEntity.badRequest().body("couponNum, date는 필수입니다.");
+            }
+            Long couponNum = Long.valueOf(String.valueOf(body.get("couponNum")));
+            String couponName = body.get("couponName") == null ? null : String.valueOf(body.get("couponName"));
+            java.time.LocalDate date = java.time.LocalDate.parse(String.valueOf(body.get("date")));
+
+            java.util.List<Long> usernames = new java.util.ArrayList<>();
+            Object raw = body.get("usernames");
+            if (raw instanceof java.util.List<?> list) {
+                for (Object o : list) usernames.add(Long.valueOf(String.valueOf(o)));
+            }
+            if (usernames.isEmpty()) {
+                return ResponseEntity.badRequest().body("발송 대상 회원이 없습니다.");
+            }
+
+            java.util.Map<String, Integer> result = couponService.sendToChurnMembers(ownerId, couponNum, couponName, date, usernames);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
+    }
+
     @GetMapping("status")
     public ResponseEntity<?> couponStatus(@RequestHeader(value="Authorization", required=false)String authorization)throws Exception{
         try{
@@ -117,6 +148,21 @@ public class CouponController {
         }
         catch(IllegalArgumentException e){
             // 3. 토큰이 비었거나 위조된 경우 401 에러 리턴
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
+    }
+
+    // 지점별 체험권 발송 및 상태 전체 목록 조회 API (신규 추가)
+    // GET /coupon/trial/list?gymId=1
+    @GetMapping("trial/list")
+    public ResponseEntity<?> trialList(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam("gymId") Long gymId) throws Exception {
+        try {
+            validateAndGetUsername(authorization); // 토큰 검증 수행
+            List<CouponDTO> list = couponService.trialList(gymId);
+            return ResponseEntity.ok(list);
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }
