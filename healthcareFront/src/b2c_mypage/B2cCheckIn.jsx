@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 // B2C 일반 회원 마이페이지용 순수 캘린더 기반 출석 기록 조회 컴포넌트
 function B2cCheckIn() {
   const [checkInList, setCheckInList] = useState([]);
+  const [ptSchedules, setPtSchedules] = useState([]); // 다가오는 PT 일정 (트레이너가 등록, 조회 전용)
   const [currentDate, setCurrentDate] = useState(new Date()); // 현재 달력의 조회 기준일 상태
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -30,8 +31,30 @@ function B2cCheckIn() {
     }
   };
 
+  // 본인의 다가오는 PT 일정 조회 (담당 트레이너가 등록한 예정 수업)
+  const fetchPtSchedules = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitc/attendance/schedule`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPtSchedules(data);
+      } else {
+        const errorText = await response.text();
+        console.error('PT 일정 로드 실패:', errorText);
+      }
+    } catch (error) {
+      console.error('PT 일정 조회 실패:', error);
+    }
+  };
+
   useEffect(() => {
     fetchCheckIn();
+    fetchPtSchedules();
   }, []);
 
   // 조회 기준일의 연도와 월 획득
@@ -62,6 +85,24 @@ function B2cCheckIn() {
     <div style={{ maxWidth: '450px', margin: '0 auto', padding: '10px' }}>
       <h3>출석 일지 (달력 보기)</h3>
       <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>최근 30일 이내에 출석 완료된 날짜에 체크 표시가 찍힙니다.</p>
+
+      {/* 다가오는 PT 일정 안내 (담당 트레이너가 등록한 예정 수업, 조회 전용) */}
+      {ptSchedules.length > 0 && (
+        <div style={{ marginBottom: '20px', padding: '12px', border: '1px solid #bbf7d0', borderRadius: '8px', backgroundColor: '#f0fdf4' }}>
+          <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#15803d' }}>🗓️ 다가오는 PT 일정</h4>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {ptSchedules.map((schedule) => (
+              <li key={schedule.scheduleId} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 4px', borderBottom: '1px solid #dcfce7', fontSize: '13px' }}>
+                <span>
+                  <b>{schedule.scheduleAt ? `${schedule.scheduleAt.substring(0, 10).replaceAll('-', '.')} ${schedule.scheduleAt.substring(11, 16)}` : '-'}</b>
+                  {schedule.memo && <span style={{ color: '#888' }}> — {schedule.memo}</span>}
+                </span>
+                <span style={{ color: '#666' }}>{schedule.trainerName ? `${schedule.trainerName} 트레이너` : ''}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* 달력 컨트롤러 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>

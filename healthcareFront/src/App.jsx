@@ -21,7 +21,6 @@ import RosterPage from './contract/RosterPage.jsx';
 import JobSeekerPage from './contract/JobSeekerPage.jsx';
 import Payment from './payment/Payment.jsx';
 import Attendance from './attendance/Attendance.jsx';               // 출석 키오스크 (무로그인)
-import AttendanceConfirm from './attendance/AttendanceConfirm.jsx'; // PT 출석 트레이너 확인
 
 
 import Settlepage from './settle/settlepage.jsx'
@@ -90,8 +89,7 @@ function App() {
 
         <Route path="Settlepage" element={<Settlepage />} />
         <Route path="dashboard" element={<Dashboard />} />
-        {/* PT 출석 트레이너 확인 (당일 접수 건 확인 시 잔여횟수 차감) */}
-        <Route path="attendance" element={<AttendanceConfirm />} />
+        {/* PT 출석 트레이너 확인은 AdminMain의 회원/직원 관리 탭에 내장 (별도 라우트 없음) */}
       </Route>
 
 

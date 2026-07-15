@@ -70,7 +70,7 @@ function Membership() {
                 <td>{item.startDate}</td>
                 <td>{item.endDate}</td>
                 <td>{item.amount ? `${item.amount.toLocaleString()}만원` : '0만원'}</td>
-                <td>{item.memberId || '미지정'}</td>
+                <td>{item.managerId || '미지정'}</td>
               </tr>
             ))}
           </tbody>

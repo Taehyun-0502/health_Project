@@ -6,7 +6,7 @@
 
     <!-- receiver_id 기준으로 SIGNED(서명완료)된 본인 계약 리스트 조회 (UserDTO -> ContractDTO 변경) -->
     <select id="list" parameterType="Long" resultType="com.health.app.contract.ContractDTO">
-    select * from "h_contract_data" where receiver_id = #{username} and status = 'SIGNED' order by start_date desc
+    select * from "h_contract_data" where receiver_id = #{username} and status = 'ACTIVE' order by start_date desc
     </select>
     
 </mapper>

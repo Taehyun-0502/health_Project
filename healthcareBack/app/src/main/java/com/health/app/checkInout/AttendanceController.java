@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -67,6 +68,21 @@ public class AttendanceController {
         return ResponseEntity.ok(li);
     }
 
+    // 트레이너 본인 PT 수업 이력 조회 API (TRAINER용) - 확인 완료 건 전체, 캘린더 표시용
+    @GetMapping("/fitb/attendance/history")
+    public ResponseEntity<?> historyList(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+
+        Claims claims = extractTrainerClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("트레이너 로그인이 필요합니다.");
+        }
+
+        Long trainerUsername = Long.parseLong(claims.getSubject());
+        List<CheckInoutDTO> li = checkInoutService.historyList(trainerUsername);
+        return ResponseEntity.ok(li);
+    }
+
     // PT 출석 트레이너 확인 API (TRAINER용) - 확인 처리 + 잔여횟수 1 차감 (단일 트랜잭션)
     @PostMapping("/fitb/attendance/confirm/{inoutId}")
     public ResponseEntity<?> confirmPt(
@@ -87,6 +103,96 @@ public class AttendanceController {
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    // ===== PT 수업 일정 API (트레이너 주도 등록, 회원은 조회 전용) =====
+
+    // 트레이너 본인 담당 회원 목록 API (TRAINER용) - 일정 등록 폼의 회원 선택용
+    @GetMapping("/fitb/attendance/members")
+    public ResponseEntity<?> myMembers(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+
+        Claims claims = extractTrainerClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("트레이너 로그인이 필요합니다.");
+        }
+        return ResponseEntity.ok(checkInoutService.myMembers(Long.parseLong(claims.getSubject())));
+    }
+
+    // 트레이너 담당 회원 현황 API (TRAINER용) - 유효 PT 계약별 총횟수/사용/잔여, 잔여 적은 순
+    @GetMapping("/fitb/attendance/members/status")
+    public ResponseEntity<?> memberStatusList(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+
+        Claims claims = extractTrainerClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("트레이너 로그인이 필요합니다.");
+        }
+        return ResponseEntity.ok(checkInoutService.memberStatusList(Long.parseLong(claims.getSubject())));
+    }
+
+    // 트레이너 본인 일정 전체 조회 API (TRAINER용, 캘린더 표시용)
+    @GetMapping("/fitb/attendance/schedule")
+    public ResponseEntity<?> trainerScheduleList(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+
+        Claims claims = extractTrainerClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("트레이너 로그인이 필요합니다.");
+        }
+        return ResponseEntity.ok(checkInoutService.trainerScheduleList(Long.parseLong(claims.getSubject())));
+    }
+
+    // 일정 등록 API (TRAINER용) - 본인 담당 회원만 등록 가능
+    @PostMapping("/fitb/attendance/schedule")
+    public ResponseEntity<?> scheduleAdd(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody PtScheduleDTO schedule) throws Exception {
+
+        Claims claims = extractTrainerClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("트레이너 로그인이 필요합니다.");
+        }
+        try {
+            return ResponseEntity.ok(checkInoutService.scheduleAdd(Long.parseLong(claims.getSubject()), schedule));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // 일정 삭제 API (TRAINER용) - 본인 등록 건만
+    @DeleteMapping("/fitb/attendance/schedule/{scheduleId}")
+    public ResponseEntity<?> scheduleDelete(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("scheduleId") Long scheduleId) throws Exception {
+
+        Claims claims = extractTrainerClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("트레이너 로그인이 필요합니다.");
+        }
+        try {
+            checkInoutService.scheduleDelete(scheduleId, Long.parseLong(claims.getSubject()));
+            return ResponseEntity.ok("일정이 삭제되었습니다.");
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // 회원 본인의 다가오는 PT 일정 조회 API (일반 회원용, JWT 필요)
+    @GetMapping("/fitc/attendance/schedule")
+    public ResponseEntity<?> memberScheduleList(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+        Claims claims;
+        try {
+            claims = jwtUtill.extractAllClaims(authorization.substring(7));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        }
+        return ResponseEntity.ok(checkInoutService.memberScheduleList(Long.parseLong(claims.getSubject())));
     }
 
     // JWT 검증 + TRAINER 권한 확인 공통 메서드 (실패 시 null 반환)

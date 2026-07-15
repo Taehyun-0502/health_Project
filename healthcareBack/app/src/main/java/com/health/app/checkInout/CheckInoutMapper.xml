@@ -23,6 +23,25 @@ select d.data_id, d.contract, d.gym_id, d.receiver_id, d.manager_id,
  limit 1
 </select>
 
+<!-- 현재 소진 대상 PT 계약 조회 - 유효 PT형 계약(일반 PT·체험권 모두 contract=4) 중
+     잔여(quantity - h_pt_manage.used_count)가 남은 가장 오래된 계약 1건
+     팀 정책: 먼저 계약한 건 전부 소진 후 다음 계약(체험권 등) 이용 가능 (data_id 오름차순 = 계약 생성 순서) -->
+<select id="findConsumablePtContract" parameterType="Long" resultType="com.health.app.contract.ContractDTO">
+select d.data_id, d.contract, d.gym_id, d.receiver_id, d.manager_id,
+       d.quantity, d.start_date, d.end_date,
+       d.quantity - coalesce(p.used_count, 0) as remaining_count
+  from "h_contract_data" d
+  left join "h_pt_manage" p on p.data_id = d.data_id
+ where d.receiver_id = #{username}
+   and d.contract = 4
+   and d.status = 'ACTIVE'
+   and d.start_date &lt;= current_date
+   and (d.end_date is null or d.end_date &gt;= current_date)
+   and d.quantity - coalesce(p.used_count, 0) &gt; 0
+ order by d.data_id asc
+ limit 1
+</select>
+
 <!-- 당일 동일 유형 출석 카운트 (하루 1회 제한) -->
 <select id="countToday" resultType="int">
 select count(*) from "h_check_inout"
@@ -49,12 +68,25 @@ select c.id, c.username, c.check_in, c.gym_id, c.inout_type, c.trainer_id, c.tra
          from "h_contract_data" d
          left join "h_pt_manage" p on p.data_id = d.data_id
         where d.receiver_id = c.username and d.contract = 4 and d.status = 'ACTIVE'
-        order by d.data_id desc limit 1
+          and d.quantity - coalesce(p.used_count, 0) &gt; 0
+        order by d.data_id asc limit 1
   ) d on true
  where c.trainer_id = #{trainerId}
    and c.inout_type = 2
    and c.trainer_confirm is null
    and c.check_in &gt;= current_date
+ order by c.check_in desc
+</select>
+
+<!-- 트레이너 본인이 확인 완료한 PT 수업 이력 전체 (캘린더 표시용 - 회원 이름 조인) -->
+<select id="historyList" parameterType="Long" resultType="com.health.app.checkInout.CheckInoutDTO">
+select c.id, c.username, c.check_in, c.gym_id, c.inout_type, c.trainer_id, c.trainer_confirm,
+       m.name as member_name
+  from "h_check_inout" c
+  left join "h_member" m on m.username = c.username
+ where c.trainer_id = #{trainerId}
+   and c.inout_type = 2
+   and c.trainer_confirm is not null
  order by c.check_in desc
 </select>
 
@@ -96,5 +128,90 @@ update "h_pt_manage"
 <select id="findUsedCount" parameterType="Long" resultType="int">
 select coalesce((select used_count from "h_pt_manage" where data_id = #{dataId}), 0)
 </select>
+
+<!-- ===== PT 수업 일정(h_pt_schedule) - 트레이너 주도 등록, h_contract_data는 검증용 조회만 ===== -->
+
+<!-- 트레이너 본인 담당 회원 목록 - 유효(ACTIVE·기간 내) PT 계약(4) 기준, 일정 등록 폼의 회원 선택용 -->
+<select id="myMembers" parameterType="Long" resultType="com.health.app.member.MemberDTO">
+select m.username, m.name
+  from "h_contract_data" d
+  join "h_member" m on m.username = d.receiver_id
+ where d.contract = 4
+   and d.status = 'ACTIVE'
+   and d.manager_id = #{trainerId}
+   and d.start_date &lt;= current_date
+   and (d.end_date is null or d.end_date &gt;= current_date)
+ group by m.username, m.name
+ order by m.name
+</select>
+
+<!-- 트레이너 담당 회원 현황 - 유효(ACTIVE·기간 내) PT 계약별 총횟수/사용/잔여
+     잔여 0(완료됐지만 아직 중지 전) 계약도 포함해 노출, 잔여 적은 순 정렬 (재등록 제안 대상이 위로) -->
+<select id="memberStatusList" parameterType="Long" resultType="com.health.app.checkInout.PtMemberStatusDTO">
+select d.data_id, d.receiver_id as username, m.name as member_name,
+       d.quantity as total_count,
+       coalesce(p.used_count, 0) as used_count,
+       d.quantity - coalesce(p.used_count, 0) as remaining_count,
+       d.start_date, d.end_date
+  from "h_contract_data" d
+  join "h_member" m on m.username = d.receiver_id
+  left join "h_pt_manage" p on p.data_id = d.data_id
+ where d.contract = 4
+   and d.status = 'ACTIVE'
+   and d.manager_id = #{trainerId}
+   and d.start_date &lt;= current_date
+   and (d.end_date is null or d.end_date &gt;= current_date)
+ order by remaining_count asc, m.name
+</select>
+
+<!-- 회원+트레이너 조합의 유효 PT 계약 조회 - 일정 등록 검증용
+     회원이 유효 PT 계약을 여러 개 가진 경우에도 담당 조합이 있으면 통과되도록 manager_id를 조건에 포함 -->
+<select id="findActivePtByTrainer" resultType="com.health.app.contract.ContractDTO">
+select d.data_id, d.contract, d.gym_id, d.receiver_id, d.manager_id,
+       d.quantity, d.start_date, d.end_date
+  from "h_contract_data" d
+ where d.receiver_id = #{username}
+   and d.contract = 4
+   and d.status = 'ACTIVE'
+   and d.manager_id = #{trainerId}
+   and d.start_date &lt;= current_date
+   and (d.end_date is null or d.end_date &gt;= current_date)
+ order by d.data_id desc
+ limit 1
+</select>
+
+<!-- 일정 등록 -->
+<insert id="insertSchedule" parameterType="com.health.app.checkInout.PtScheduleDTO">
+insert into "h_pt_schedule" (trainer_id, username, gym_id, schedule_at, memo)
+values (#{trainerId}, #{username}, #{gymId}, #{scheduleAt}, #{memo})
+</insert>
+
+<!-- 트레이너 본인 일정 전체 (회원 이름 조인, 캘린더 표시용) -->
+<select id="trainerScheduleList" parameterType="Long" resultType="com.health.app.checkInout.PtScheduleDTO">
+select s.schedule_id, s.trainer_id, s.username, s.gym_id, s.schedule_at, s.memo, s.created_at,
+       m.name as member_name
+  from "h_pt_schedule" s
+  left join "h_member" m on m.username = s.username
+ where s.trainer_id = #{trainerId}
+ order by s.schedule_at
+</select>
+
+<!-- 회원 본인의 다가오는 일정 (오늘 이후, 트레이너 이름 조인) -->
+<select id="memberScheduleList" parameterType="Long" resultType="com.health.app.checkInout.PtScheduleDTO">
+select s.schedule_id, s.trainer_id, s.username, s.gym_id, s.schedule_at, s.memo, s.created_at,
+       t.name as trainer_name
+  from "h_pt_schedule" s
+  left join "h_member" t on t.username = s.trainer_id
+ where s.username = #{username}
+   and s.schedule_at &gt;= current_date
+ order by s.schedule_at
+</select>
+
+<!-- 일정 삭제 - 본인(트레이너) 등록 건만 삭제되도록 조건 가드 -->
+<delete id="deleteSchedule">
+delete from "h_pt_schedule"
+ where schedule_id = #{scheduleId}
+   and trainer_id = #{trainerId}
+</delete>
 
 </mapper>
