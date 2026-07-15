@@ -13,6 +13,7 @@ function AttendanceConfirm() {
   const [loading, setLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date()); // 캘린더 조회 기준일
   const [selectedDate, setSelectedDate] = useState(null); // 클릭으로 선택한 날짜 (YYYY-MM-DD)
+  const [selectedMember, setSelectedMember] = useState(null); // 현황에서 클릭한 회원 (드릴다운용, username 문자열)
   const scheduleFormRef = useRef(null);
 
   const token = localStorage.getItem('accessToken');
@@ -190,6 +191,52 @@ function AttendanceConfirm() {
 
   const selected = selectedDate ? matchDay(selectedDate) : null;
 
+  // ===== 1단계 부가 지표 연산 (전부 이미 로드된 목록에서 파생 - 추가 API 없음) =====
+
+  // 회원별 마지막 수업일 (본인이 확인 완료한 수업 기준)
+  const lastSessionByMember = historyList.reduce((acc, session) => {
+    if (!session.checkIn) return acc;
+    const key = String(session.username);
+    if (!acc[key] || session.checkIn > acc[key]) acc[key] = session.checkIn;
+    return acc;
+  }, {});
+
+  // 마지막 수업으로부터 경과일 계산
+  const daysSince = (dateTimeStr) => Math.floor((new Date(todayStr) - new Date(dateTimeStr.substring(0, 10))) / 86400000);
+
+  // 특정 일정이 미수행(날짜 경과 + 매칭 출석 없음)인지 판정
+  const isMissedSchedule = (schedule) => {
+    if (!schedule.scheduleAt) return false;
+    const dateStr = schedule.scheduleAt.substring(0, 10);
+    if (dateStr >= todayStr) return false;
+    const sessions = sessionsByDate[dateStr] || [];
+    return !sessions.some((s) => String(s.username) === String(schedule.username));
+  };
+
+  // 캘린더 표시 월 기준 실적 집계 (수업 건수 / 미수행 / 수행률 / 전월 대비)
+  const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const prevMonthDate = new Date(year, month - 1, 1);
+  const prevMonthPrefix = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}`;
+
+  const monthDone = historyList.filter((s) => s.checkIn && s.checkIn.startsWith(monthPrefix)).length;
+  const prevMonthDone = historyList.filter((s) => s.checkIn && s.checkIn.startsWith(prevMonthPrefix)).length;
+  const monthMissed = scheduleList.filter((sc) => sc.scheduleAt && sc.scheduleAt.startsWith(monthPrefix) && isMissedSchedule(sc)).length;
+  const performRate = monthDone + monthMissed > 0 ? Math.round((monthDone / (monthDone + monthMissed)) * 100) : null;
+  const diffFromPrev = monthDone - prevMonthDone;
+
+  // 드릴다운 대상 회원의 데이터 모음
+  const drill = selectedMember ? {
+    contracts: memberStatus.filter((r) => String(r.username) === selectedMember),
+    sessions: historyList.filter((s) => String(s.username) === selectedMember),
+    upcoming: scheduleList
+      .filter((sc) => String(sc.username) === selectedMember && sc.scheduleAt && sc.scheduleAt.substring(0, 10) >= todayStr)
+      .sort((a, b) => (a.scheduleAt > b.scheduleAt ? 1 : -1)),
+    missed: scheduleList.filter((sc) => String(sc.username) === selectedMember && isMissedSchedule(sc)),
+  } : null;
+  const drillName = drill
+    ? (drill.contracts[0]?.memberName || drill.sessions[0]?.memberName || selectedMember)
+    : null;
+
   // 일정 상태별 표기 상수
   const statusMeta = {
     done: { label: '✅ 완료', color: '#6d28d9', bg: '#f3e8ff', border: '#e9d5ff' },
@@ -267,6 +314,7 @@ function AttendanceConfirm() {
               <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>전화번호</th>
               <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>진행 현황</th>
               <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>잔여</th>
+              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>최근 수업</th>
               <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>계약 기간</th>
               <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>상태</th>
             </tr>
@@ -280,9 +328,21 @@ function AttendanceConfirm() {
               const isLow = remaining > 0 && remaining <= 3; // 재등록 제안 대상
               const isDone = remaining <= 0; // 전부 소진 (계약 중지 대기)
 
+              // 최근 수업일 및 경과일 - 14일 이상이면 관리 필요 회원으로 강조
+              const lastSession = lastSessionByMember[String(row.username)];
+              const elapsed = lastSession ? daysSince(lastSession) : null;
+              const needCare = !isDone && (elapsed == null ? false : elapsed >= 14);
+
               return (
                 <tr key={row.dataId}>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontWeight: 'bold' }}>{row.memberName || '-'}</td>
+                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                    {/* 회원명 클릭 시 하단에 상세 드릴다운 패널 표시 */}
+                    <button
+                      onClick={() => setSelectedMember(selectedMember === String(row.username) ? null : String(row.username))}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', color: '#2563eb', textDecoration: 'underline', padding: 0 }}>
+                      {row.memberName || '-'}
+                    </button>
+                  </td>
                   <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{row.username}</td>
                   <td style={{ padding: '10px', border: '1px solid #e5e7eb' }}>
                     {/* 사용/총 진행 바 */}
@@ -295,6 +355,21 @@ function AttendanceConfirm() {
                   </td>
                   <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontWeight: 'bold', color: isDone ? '#9ca3af' : isLow ? '#d97706' : '#6d28d9' }}>
                     {remaining}회
+                  </td>
+                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontSize: '12px', color: needCare ? '#b91c1c' : '#666' }}>
+                    {lastSession ? (
+                      <>
+                        {lastSession.substring(0, 10)}<br />
+                        <b>({elapsed === 0 ? '오늘' : `${elapsed}일 전`})</b>
+                        {needCare && (
+                          <span style={{ display: 'inline-block', marginLeft: '4px', fontSize: '10px', backgroundColor: '#dc2626', color: '#fff', padding: '1px 6px', borderRadius: '8px', fontWeight: 'bold' }}>
+                            관리 필요
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span style={{ color: '#999' }}>수업 이력 없음</span>
+                    )}
                   </td>
                   <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontSize: '12px', color: '#666' }}>
                     {row.startDate || '-'} ~ {row.endDate || '무기한'}
@@ -315,6 +390,77 @@ function AttendanceConfirm() {
         </table>
       )}
 
+      {/* 회원 상세 드릴다운 패널 - 현황에서 회원명 클릭 시 표시 */}
+      {drill && (
+        <div style={{ marginTop: '15px', padding: '15px', border: '2px solid #bfdbfe', borderRadius: '8px', backgroundColor: '#eff6ff' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h4 style={{ margin: 0, color: '#1d4ed8' }}>🔍 {drillName}님 상세</h4>
+            <button onClick={() => setSelectedMember(null)}
+              style={{ padding: '3px 10px', fontSize: '12px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>
+              닫기 ✕
+            </button>
+          </div>
+
+          {/* 계약별 진행 현황 */}
+          <div style={{ marginBottom: '12px' }}>
+            <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#374151' }}>📋 계약 진행</h5>
+            {drill.contracts.map((contract) => {
+              const total = contract.totalCount || 0;
+              const used = contract.usedCount || 0;
+              return (
+                <p key={contract.dataId} style={{ margin: '2px 0', fontSize: '13px', color: '#444' }}>
+                  계약 #{contract.dataId} — {used} / {total}회 사용, <b>잔여 {contract.remainingCount}회</b>
+                  <span style={{ color: '#888', fontSize: '12px' }}> ({contract.startDate || '-'} ~ {contract.endDate || '무기한'})</span>
+                </p>
+              );
+            })}
+          </div>
+
+          {/* 예정 일정 */}
+          <div style={{ marginBottom: '12px' }}>
+            <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#15803d' }}>🕒 예정 일정 ({drill.upcoming.length}건)</h5>
+            {drill.upcoming.length === 0 ? (
+              <p style={{ margin: 0, fontSize: '13px', color: '#999' }}>예정된 일정이 없습니다. 캘린더에서 다음 수업을 잡아주세요.</p>
+            ) : (
+              drill.upcoming.map((schedule) => (
+                <p key={schedule.scheduleId} style={{ margin: '2px 0', fontSize: '13px', color: '#444' }}>
+                  {schedule.scheduleAt.substring(0, 10).replaceAll('-', '.')} {schedule.scheduleAt.substring(11, 16)}
+                  {schedule.memo && <span style={{ color: '#888', fontSize: '12px' }}> — {schedule.memo}</span>}
+                </p>
+              ))
+            )}
+          </div>
+
+          {/* 노쇼(미수행) 이력 */}
+          {drill.missed.length > 0 && (
+            <div style={{ marginBottom: '12px' }}>
+              <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#b91c1c' }}>❌ 미수행 일정 ({drill.missed.length}건)</h5>
+              {drill.missed.map((schedule) => (
+                <p key={schedule.scheduleId} style={{ margin: '2px 0', fontSize: '13px', color: '#b91c1c' }}>
+                  {schedule.scheduleAt.substring(0, 10).replaceAll('-', '.')} {schedule.scheduleAt.substring(11, 16)}
+                  {schedule.memo && <span style={{ fontSize: '12px' }}> — {schedule.memo}</span>}
+                </p>
+              ))}
+            </div>
+          )}
+
+          {/* 수업 이력 타임라인 (최근 10건) */}
+          <div>
+            <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#6d28d9' }}>✅ 수업 이력 (최근 {Math.min(drill.sessions.length, 10)}건 / 총 {drill.sessions.length}건)</h5>
+            {drill.sessions.length === 0 ? (
+              <p style={{ margin: 0, fontSize: '13px', color: '#999' }}>아직 진행한 수업이 없습니다.</p>
+            ) : (
+              drill.sessions.slice(0, 10).map((session) => (
+                <p key={session.id} style={{ margin: '2px 0', fontSize: '13px', color: '#444' }}>
+                  {session.checkIn.substring(0, 10).replaceAll('-', '.')} — 출석 {session.checkIn.substring(11, 16)}
+                  {session.trainerConfirm ? ` / 확인 ${session.trainerConfirm.substring(11, 16)}` : ''}
+                </p>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ===== 3. PT 캘린더 (일정 + 수행 결과 통합) 섹션 ===== */}
       <hr style={{ margin: '30px 0', border: 'none', borderTop: '1px solid #eee' }} />
       <h3>📅 내 PT 캘린더</h3>
@@ -323,6 +469,27 @@ function AttendanceConfirm() {
         지나간 일정에 출석이 없으면 <span style={{ color: '#b91c1c', fontWeight: 'bold' }}>미수행</span>으로 표시됩니다.
         날짜를 클릭하면 상세 확인 및 일정 등록이 가능합니다.
       </p>
+
+      {/* 월간 실적 요약 카드 - 캘린더 표시 월 기준 (달 이동 시 함께 갱신) */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+        <div style={{ flex: 1, padding: '12px', border: '1px solid #e9d5ff', borderRadius: '8px', backgroundColor: '#faf5ff', textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 'bold' }}>이번 달 수업</div>
+          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#6d28d9' }}>{monthDone}건</div>
+          <div style={{ fontSize: '11px', color: diffFromPrev > 0 ? '#15803d' : diffFromPrev < 0 ? '#b91c1c' : '#888' }}>
+            지난달 대비 {diffFromPrev > 0 ? `+${diffFromPrev}` : diffFromPrev}건
+          </div>
+        </div>
+        <div style={{ flex: 1, padding: '12px', border: '1px solid #bbf7d0', borderRadius: '8px', backgroundColor: '#f0fdf4', textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', color: '#15803d', fontWeight: 'bold' }}>수행률</div>
+          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#15803d' }}>{performRate != null ? `${performRate}%` : '-'}</div>
+          <div style={{ fontSize: '11px', color: '#888' }}>완료 {monthDone} / 미수행 {monthMissed}</div>
+        </div>
+        <div style={{ flex: 1, padding: '12px', border: '1px solid #dbeafe', borderRadius: '8px', backgroundColor: '#eff6ff', textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', color: '#1d4ed8', fontWeight: 'bold' }}>담당 회원</div>
+          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#1d4ed8' }}>{myMembers.length}명</div>
+          <div style={{ fontSize: '11px', color: '#888' }}>유효 계약 {memberStatus.length}건</div>
+        </div>
+      </div>
 
       {/* 달력 컨트롤러 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>

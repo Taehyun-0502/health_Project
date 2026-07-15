@@ -72,4 +72,7 @@ public interface CheckInoutMapper {
     // 일정 삭제 (본인 등록 건만)
     public int deleteSchedule(@Param("scheduleId") Long scheduleId, @Param("trainerId") Long trainerId) throws Exception;
 
+    // 내일 예정된 전체 일정 (전날 리마인드 알림 배치용 - 회원/트레이너 이름 조인)
+    public List<PtScheduleDTO> tomorrowSchedules() throws Exception;
+
 }

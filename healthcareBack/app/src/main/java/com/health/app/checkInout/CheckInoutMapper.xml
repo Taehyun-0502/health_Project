@@ -90,9 +90,12 @@ select c.id, c.username, c.check_in, c.gym_id, c.inout_type, c.trainer_id, c.tra
  order by c.check_in desc
 </select>
 
-<!-- 출석 단건 조회 (트레이너 확인 검증용) -->
+<!-- 출석 단건 조회 (트레이너 확인 검증용 + 알림 메시지의 회원 이름 조인) -->
 <select id="findAttendance" parameterType="Long" resultType="com.health.app.checkInout.CheckInoutDTO">
-select * from "h_check_inout" where id = #{inoutId}
+select c.*, m.name as member_name
+  from "h_check_inout" c
+  left join "h_member" m on m.username = c.username
+ where c.id = #{inoutId}
 </select>
 
 <!-- 트레이너 확인 처리 - 당일 + 본인 담당 + 미확인 건만 갱신되도록 조건 가드 -->
@@ -213,5 +216,17 @@ delete from "h_pt_schedule"
  where schedule_id = #{scheduleId}
    and trainer_id = #{trainerId}
 </delete>
+
+<!-- 내일 예정된 전체 일정 - 전날 리마인드 알림 배치용 (회원/트레이너 이름 조인) -->
+<select id="tomorrowSchedules" resultType="com.health.app.checkInout.PtScheduleDTO">
+select s.schedule_id, s.trainer_id, s.username, s.gym_id, s.schedule_at, s.memo,
+       m.name as member_name, t.name as trainer_name
+  from "h_pt_schedule" s
+  left join "h_member" m on m.username = s.username
+  left join "h_member" t on t.username = s.trainer_id
+ where s.schedule_at &gt;= current_date + 1
+   and s.schedule_at &lt; current_date + 2
+ order by s.schedule_at
+</select>
 
 </mapper>

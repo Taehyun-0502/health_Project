@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import B2bPromotion from './promotion/B2bPromotion.jsx';
 import AttendanceConfirm from './attendance/AttendanceConfirm.jsx';
 
-const TAB_IDS = ['dashboard', 'settlement', 'inventory', 'promotion'];
+const TAB_IDS = ['dashboard', 'settlement', 'inventory', 'promotion', 'management'];
 
 // 사장님/트레이너 전용 메인 포털 컴포넌트
 function AdminMain() {

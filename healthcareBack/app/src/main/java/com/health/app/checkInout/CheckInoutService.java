@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.health.app.alarm.AlarmService;
 import com.health.app.contract.ContractDTO;
 import com.health.app.member.MemberDTO;
 import com.health.app.member.MemberService;
@@ -13,12 +14,19 @@ import com.health.app.member.MemberService;
 @Service
 public class CheckInoutService {
 
+    // 재등록 제안 알림을 보내는 잔여 횟수 기준 (이 값에 도달하는 순간 1회 발송)
+    private static final int REBOOK_THRESHOLD = 3;
+
     @Autowired
     private CheckInoutMapper checkInoutMapper;
 
     // 키오스크 출석 시 전화번호+비밀번호 본인 확인을 위해 로그인 검증 로직 재사용
     @Autowired
     private MemberService memberService;
+
+    // PT 접수/재등록 타이밍 알림 발송용
+    @Autowired
+    private AlarmService alarmService;
 
     public List<CheckInoutDTO> list(Long username)throws Exception{
         return checkInoutMapper.list(username);
@@ -72,6 +80,11 @@ public class CheckInoutService {
         row.setTrainerId(contract.getManagerId());
         checkInoutMapper.insertAttendance(row);
 
+        // 담당 트레이너에게 접수 실시간 알림 (확인 누락 방지)
+        sendAlarmSafely(contract.getManagerId(), member.getUsername(),
+                member.getName() + "님이 PT 출석을 접수했습니다. 출석 확인 시 잔여 횟수가 차감됩니다.",
+                "/fitb?tab=management", "PT_CHECKIN");
+
         row.setMemberName(member.getName());
         row.setRemainingCount(contract.getRemainingCount()); // 차감 전 잔여횟수 (확인 후 -1)
         return row;
@@ -120,7 +133,24 @@ public class CheckInoutService {
             throw new IllegalStateException("잔여 PT 횟수가 없어 차감할 수 없습니다.");
         }
 
-        return contract.getQuantity() - checkInoutMapper.findUsedCount(contract.getDataId()); // 차감 후 잔여횟수 반환
+        int remaining = contract.getQuantity() - checkInoutMapper.findUsedCount(contract.getDataId());
+
+        // 잔여가 기준(3회)에 도달하는 순간 재등록 타이밍 알림 - 트레이너(제안) + 사장님(프로모션 검토)
+        if (remaining == REBOOK_THRESHOLD) {
+            String memberLabel = row.getMemberName() != null ? row.getMemberName() : String.valueOf(row.getUsername());
+            sendAlarmSafely(trainerUsername, null,
+                    memberLabel + "님의 잔여 PT가 " + remaining + "회 남았습니다. 재등록 제안을 고려해 보세요.",
+                    "/fitb?tab=management", "PT_REBOOK");
+
+            MemberDTO owner = memberService.findOwnerByGymId(contract.getGymId());
+            if (owner != null) {
+                sendAlarmSafely(owner.getUsername(), null,
+                        memberLabel + "님의 잔여 PT가 " + remaining + "회 남았습니다. 재등록 프로모션을 검토해 보세요.",
+                        "/fitb?tab=promotion", "PT_REBOOK");
+            }
+        }
+
+        return remaining; // 차감 후 잔여횟수 반환
     }
 
     // ===== PT 수업 일정 (트레이너 주도 등록, 회원은 조회 전용) =====
@@ -167,6 +197,25 @@ public class CheckInoutService {
         }
     }
 
+    // 내일 예정된 PT 일정 리마인드 발송 (전날 저녁 배치) - 회원/트레이너 양쪽에 알림, 발송 건수 반환
+    public int sendTomorrowReminders() throws Exception {
+        List<PtScheduleDTO> schedules = checkInoutMapper.tomorrowSchedules();
+        for (PtScheduleDTO schedule : schedules) {
+            String time = schedule.getScheduleAt().toLocalTime().toString().substring(0, 5);
+
+            String trainerLabel = schedule.getTrainerName() != null ? schedule.getTrainerName() + " 트레이너" : "담당 트레이너";
+            sendAlarmSafely(schedule.getUsername(), null,
+                    "내일 " + time + " PT 수업이 예정되어 있습니다. (" + trainerLabel + ")",
+                    "/fitc/mypage/checkin", "PT_REMIND");
+
+            String memberLabel = schedule.getMemberName() != null ? schedule.getMemberName() : String.valueOf(schedule.getUsername());
+            sendAlarmSafely(schedule.getTrainerId(), null,
+                    "내일 " + time + " " + memberLabel + "님 PT 수업이 예정되어 있습니다.",
+                    "/fitb?tab=management", "PT_REMIND");
+        }
+        return schedules.size();
+    }
+
     // 키오스크 입력 계정(전화번호+비밀번호) 본인 확인 공통 메서드
     private MemberDTO verifyMember(MemberDTO credential) throws Exception {
         MemberDTO member = memberService.login(credential);
@@ -174,5 +223,15 @@ public class CheckInoutService {
             throw new IllegalStateException("전화번호 또는 비밀번호가 올바르지 않습니다.");
         }
         return member;
+    }
+
+    // 알림 발송 실패가 출석/차감 핵심 트랜잭션을 롤백시키지 않도록 격리하는 헬퍼 메서드 (SettleService 패턴)
+    private void sendAlarmSafely(Long receiver, Long sender, String message, String link, String category) {
+        if (receiver == null) return;
+        try {
+            alarmService.sendAlarm(receiver, sender, message, link, category);
+        } catch (Exception e) {
+            System.err.println("알림 발송 실패 (receiver=" + receiver + ", category=" + category + "): " + e.getMessage());
+        }
     }
 }
