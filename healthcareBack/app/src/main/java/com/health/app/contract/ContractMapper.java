@@ -19,8 +19,29 @@ public interface ContractMapper {
     // 계약서 서명 처리 메서드 (ISSUED -> 이용권·PT는 ACTIVE, 그 외 SIGNED)
     public int contractSign(ContractDTO contractDTO) throws Exception;
 
-    // 계약 만료 일괄 갱신 메서드 (end_date 경과 시 status로 만료 전이)
+    // 계약 만료 일괄 갱신 메서드 (end_date 경과 시 TERMINATED로 통합 전이)
     public int contractExpireSweep() throws Exception;
+
+    // 계약 활성화 일괄 갱신 메서드 (SIGNED + 시작일 도래 시 ACTIVE 전이, 3·4·5는 결제 완료분만)
+    public int contractActivateSweep() throws Exception;
+
+    // 결제 완료 직후 계약 활성화 메서드 (SIGNED -> ACTIVE + PT(4·5) 잔여횟수 초기화)
+    public int contractActivate(ContractDTO contractDTO) throws Exception;
+
+    // 체험권 계약 대상 목록 조회 메서드 (OWNER 전용, PT 체험 발행폼 진입용)
+    public List<TrialTargetDTO> trialTargetList(ContractDTO contractDTO) throws Exception;
+
+    // 회원의 유효한 기본 계약(3·4) 조회 메서드 (중복·병행 검증용)
+    public ContractDTO activeBaseContractFind(ContractDTO contractDTO) throws Exception;
+
+    // 회원의 유효한 PT 체험 계약(5) 조회 메서드 (중복 발행 차단용)
+    public ContractDTO activeTrialContractFind(ContractDTO contractDTO) throws Exception;
+
+    // PT 체험(5) 발행 근거 체험권 재검증 메서드 (OWNER 발급·동일 센터·대상 MEMBER 일치 시 1)
+    public int trialCouponValidate(ContractDTO contractDTO) throws Exception;
+
+    // 계약 종료 처리 메서드 (교체 갱신/체험 전환 시 기존 계약 TERMINATED 전이)
+    public int contractTerminate(ContractDTO contractDTO) throws Exception;
 
     // 기존 임금 계약(2) 조회 메서드 (사장님-트레이너 조합 기준, 재작성=UPDATE 판단용)
     public ContractDTO wageContractFind(ContractDTO contractDTO) throws Exception;

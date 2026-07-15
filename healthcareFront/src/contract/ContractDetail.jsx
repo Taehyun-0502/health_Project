@@ -1,16 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-// 계약 유형은 contract FK로 판별 (1=제휴, 2=임금, 3=이용권, 4=PT)
+// 계약 유형은 contract FK로 판별 (1=제휴, 2=임금, 3=이용권, 4=PT, 5=PT 체험)
 // 유형별 라벨 (헬스장_계약서_서명폼.html TYPES 참고)
 const TYPE_INFO = {
   1: { title: '관리자–헬스장 제휴 계약서', senderLabel: '관리자(플랫폼)', receiverLabel: '헬스장(Owner)' },
   2: { title: '헬스장–트레이너 임금 계약서', senderLabel: '헬스장(Owner)', receiverLabel: '트레이너' },
   3: { title: '헬스장–회원 이용권 계약서', senderLabel: '헬스장(Owner)', receiverLabel: '회원' },
   4: { title: '헬스장–회원 PT 이용권 계약서', senderLabel: '헬스장(Owner)', receiverLabel: '회원' },
+  5: { title: '헬스장–회원 PT 체험 계약서', senderLabel: '헬스장(Owner)', receiverLabel: '회원' },
 };
 
 const money = (v) => (v == null ? '-' : Number(v).toLocaleString('ko-KR'));
+
+// 갱신·연계 이력 테이블의 유형 표기
+const HISTORY_LABEL = {
+  1: '제휴',
+  2: '임금',
+  3: '이용권',
+  4: 'PT',
+  5: 'PT 체험',
+};
 
 // 계약 유형별 조항 본문 (서명폼.html bodyFor 참고)
 function ContractBody({ d }) {
@@ -67,8 +77,8 @@ function ContractBody({ d }) {
 
   return (
     <div>
-      <h3>제1조 (PT 이용 내용)</h3>
-      <p>{gym}(이하 "센터")은 {rcv}(생년월일: {d.birthDate ?? '-'}, 이하 "회원")에게 개인 트레이닝(PT)을 제공한다. 총 {d.quantity ?? '-'}회, 총 이용금액 {money(d.amount)}만원으로 한다.</p>
+      <h3>제1조 ({d.contract === 5 ? 'PT 체험' : 'PT'} 이용 내용)</h3>
+      <p>{gym}(이하 "센터")은 {rcv}(생년월일: {d.birthDate ?? '-'}, 이하 "회원")에게 {d.contract === 5 ? '체험용 개인 트레이닝(PT 체험)' : '개인 트레이닝(PT)'}을 제공한다. 총 {d.quantity ?? '-'}회, 총 이용금액 {money(d.amount)}만원으로 한다.</p>
       <h3>제2조 (유효기간)</h3>
       <p>유효기간은 {d.startDate ?? '-'}부터 {d.endDate ?? '-'}까지로 하며, 기간 경과 시 잔여 횟수는 소멸될 수 있다.</p>
       <h3>제3조 (예약 및 취소)</h3>
@@ -91,12 +101,12 @@ function Activation({ d }) {
         <li>이용 금액: {money(d.amount)}만원</li>
       </ul>
     );
-  if (d.contract === 4)
+  if (d.contract === 4 || d.contract === 5)
     return (
       <ul>
-        <li>✓ PT 잔여 횟수 지급</li>
+        <li>✓ {d.contract === 5 ? 'PT 체험' : 'PT'} 잔여 횟수 지급</li>
         <li>지급 횟수: {d.quantity ?? '-'}회</li>
-        <li>잔여 횟수: {d.remainingCount ?? '-'}회 (체결 시 자동 생성)</li>
+        <li>잔여 횟수: {d.remainingCount ?? '-'}회 (결제 완료·활성화 시 자동 생성)</li>
         <li>유효기간: {d.startDate ?? '-'} ~ {d.endDate ?? '-'}</li>
       </ul>
     );
@@ -166,6 +176,45 @@ function ContractDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataId]);
 
+  // 갱신·연계 이력 (상세 화면 이력 테이블: 유형 | 금액 | 발행일)
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    if (!detail) return;
+
+    // previous_data_id(교체 갱신) 체인을 따라가며 이전 계약들을 수집하고,
+    // related_data_id(PT 체험의 기본 계약 연계)는 갱신이 아니라 연계 이력으로 표시
+    const buildHistory = async () => {
+      const token = localStorage.getItem('accessToken');
+      const rows = [];
+      const fetchOne = async (id) => {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/contract/detail/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        return res.ok ? res.json() : null;
+      };
+
+      let prevId = detail.previousDataId;
+      let guard = 0; // 순환/과다 조회 방지
+      while (prevId && guard < 5) {
+        const prev = await fetchOne(prevId);
+        if (!prev) break;
+        rows.push({ kind: '갱신(이전 계약)', row: prev });
+        prevId = prev.previousDataId;
+        guard += 1;
+      }
+
+      if (detail.relatedDataId) {
+        const related = await fetchOne(detail.relatedDataId);
+        if (related) rows.push({ kind: '연계(기본 계약)', row: related });
+      }
+
+      setHistory(rows);
+    };
+
+    buildHistory();
+  }, [detail]);
+
   // 서명 패드 그리기 (마우스/터치 지원 - 서명폼.html 캔버스 패드 참고)
   const getPos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -200,8 +249,8 @@ function ContractDetail() {
     setHasInk(false);
   };
 
-  // 이용권(3)/PT(4) 계약은 환불 규정 동의 필수 (서명폼.html consentOk 참고)
-  const needRefund = detail?.contract === 3 || detail?.contract === 4;
+  // 이용권(3)/PT(4)/PT 체험(5) 계약은 환불 규정 동의 필수 (서명폼.html consentOk 참고)
+  const needRefund = detail?.contract === 3 || detail?.contract === 4 || detail?.contract === 5;
   const canSign =
     signerName.trim() !== '' && agreeTerms && agreeSign && (!needRefund || agreeRefund) && hasInk;
 
@@ -215,8 +264,8 @@ function ContractDetail() {
       );
       if (response.ok) {
         alert('서명이 완료되어 계약이 체결되었습니다. (상태: SIGNED)');
-        // 이용권(3)/PT(4) 계약은 결제 페이지로 자동 이동, 그 외(제휴/임금)는 상태만 갱신
-        if (detail?.contract === 3 || detail?.contract === 4) {
+        // 이용권(3)/PT(4)/PT 체험(5) 계약은 결제 페이지로 자동 이동, 그 외(제휴/임금)는 상태만 갱신
+        if (detail?.contract === 3 || detail?.contract === 4 || detail?.contract === 5) {
           navigate(`/fitb/payment/${dataId}`);
         } else {
           fetchDetail(); // 상태 갱신 재조회
@@ -251,15 +300,12 @@ function ContractDetail() {
         <button onClick={() => navigate('/fitb/contractpage')}>← 리스트로</button>
         <p>{message}</p>
 
-        {/* 상태 흐름 표시 - 이용권(3)/PT(4)는 서명 시 ACTIVE, 만료 시 TERMINATED */}
+        {/* 상태 흐름 표시 - 전 유형 통합: DRAFT › ISSUED › SIGNED › ACTIVE › TERMINATED (EXPIRED 미사용) */}
         <p>
           상태: <b>{detail.status}</b>
           {' '}
           (
-          {(detail.contract === 3 || detail.contract === 4
-            ? ['DRAFT', 'ISSUED', 'ACTIVE', 'TERMINATED']
-            : ['DRAFT', 'ISSUED', 'SIGNED', 'EXPIRED']
-          ).map((s, i) => (
+          {['DRAFT', 'ISSUED', 'SIGNED', 'ACTIVE', 'TERMINATED'].map((s, i) => (
             <span key={s}>
               {i > 0 && ' › '}
               {s === detail.status ? <b>[{s}]</b> : s}
@@ -267,6 +313,37 @@ function ContractDetail() {
           ))}
           )
         </p>
+
+        {/* 갱신·연계 이력 테이블 (유형 | 금액 | 발행일) - PT 체험은 갱신이 아니라 연계 이력으로 표시 */}
+        {history.length > 0 && (
+          <div>
+            <h3>갱신·연계 이력</h3>
+            <table border="1">
+              <thead>
+                <tr>
+                  <th>구분</th>
+                  <th>유형</th>
+                  <th>금액(만원)</th>
+                  <th>발행일</th>
+                  <th>이동</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map(({ kind, row }) => (
+                  <tr key={row.dataId}>
+                    <td>{kind}</td>
+                    <td>{HISTORY_LABEL[row.contract] ?? row.contract}</td>
+                    <td>{row.contract === 1 ? (row.contractRate != null ? `${row.contractRate}%` : '') : row.amount}</td>
+                    <td>{row.issueDate}</td>
+                    <td>
+                      <button onClick={() => navigate(`/fitb/contract/${row.dataId}`)}>#{row.dataId}</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* 계약서 본문 (읽기 전용) */}
@@ -373,6 +450,15 @@ function ContractDetail() {
         <div className="no-print">
           <h2>계약 체결 완료</h2>
           <p>서명일시: {detail.signedAt?.replace('T', ' ') ?? '-'}</p>
+          {/* 이용권·PT·PT 체험은 결제 완료 후 ACTIVE - SIGNED 상태면 결제 대기 안내 */}
+          {detail.status === 'SIGNED' && (detail.contract === 3 || detail.contract === 4 || detail.contract === 5) && (
+            <p>
+              결제 대기 중입니다.{' '}
+              <button type="button" onClick={() => navigate(`/fitb/payment/${detail.dataId}`)}>
+                결제 페이지로 이동
+              </button>
+            </p>
+          )}
           <Activation d={detail} />
 
           {/* 서명 완료된 계약서 보관 - 브라우저 인쇄로 서명본을 PDF 파일로 저장 */}
@@ -383,8 +469,7 @@ function ContractDetail() {
       )}
 
       {detail.status === 'DRAFT' && <p className="no-print">아직 발행되지 않은 초안(DRAFT) 상태로, 서명할 수 없습니다.</p>}
-      {detail.status === 'EXPIRED' && <p className="no-print">만료(EXPIRED)된 계약서로, 서명할 수 없습니다.</p>}
-      {detail.status === 'TERMINATED' && <p className="no-print">이용 기간이 종료(TERMINATED)된 계약서입니다.</p>}
+      {detail.status === 'TERMINATED' && <p className="no-print">종료(TERMINATED)된 계약서입니다.</p>}
     </div>
   );
 }
