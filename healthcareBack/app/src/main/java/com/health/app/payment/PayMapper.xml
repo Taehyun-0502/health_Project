@@ -21,7 +21,7 @@
         WHERE d.data_id = #{dataId}
           AND d.sender_id = #{username}
           AND d.status = 'SIGNED'
-          AND d.contract IN (3, 4)
+          AND d.contract IN (3, 4, 5)
           AND d.data_id NOT IN (
               SELECT data_id FROM "h_payment" WHERE data_id IS NOT NULL
           )

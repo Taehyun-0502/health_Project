@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.health.app.contract.ContractDTO;
+import com.health.app.contract.ContractService;
 import com.health.app.coupon.CouponDTO;
 import com.health.app.coupon.CouponService;
 
@@ -27,6 +28,10 @@ public class PayService {
 
     @Autowired
     private CouponService couponService;
+
+    // 결제 완료 후 계약 활성화(SIGNED -> ACTIVE + PT 잔여횟수 초기화) 협력 호출
+    @Autowired
+    private ContractService contractService;
 
     // 사장님 계정의 결제 확정 처리
     // 1. 계약 검증(본인이 발행한 계약/서명완료/미결제) -> 2. (쿠폰 있으면) 쿠폰 검증 및 할인 적용
@@ -72,7 +77,8 @@ public class PayService {
             installment = 0;
         }
 
-        String itemLabel = contract.getContract() == 3 ? "이용권" : "PT";
+        String itemLabel = contract.getContract() == 3 ? "이용권"
+                : contract.getContract() == 5 ? "PT 체험" : "PT";
         String pName = String.format("[계약 #%d] %s - %s", dataId, itemLabel, contract.getReceiverName());
 
         PayDTO pay = new PayDTO();
@@ -100,6 +106,16 @@ public class PayService {
         payment.setDataId(dataId);
         paymentService.paymentAdd(payment);
 
+        // 결제 완료 후 계약 활성화 - 시작일 도래 시 ACTIVE 전이 + PT(4·5) 잔여횟수 초기화,
+        // 미래 시작일이면 SIGNED 유지(시작일 도래 시 sweep이 전이). 실패 시 결제 전체 롤백
+        ContractDTO activate = new ContractDTO();
+        activate.setDataId(dataId);
+        activate.setUsername(ownerUsername);
+        int activateResult = contractService.contractActivate(activate);
+        if (activateResult <= 0) {
+            throw new IllegalStateException("계약 활성화에 실패하여 결제를 취소했습니다.");
+        }
+
         return pay;
     }
 
@@ -115,8 +131,14 @@ public class PayService {
                     throw new IllegalStateException("계약 유형과 맞지 않는 쿠폰입니다.");
                 }
             }
-            case "PT", "체험권" -> {
+            case "PT" -> {
                 if (contract.getContract() != 4) {
+                    throw new IllegalStateException("계약 유형과 맞지 않는 쿠폰입니다.");
+                }
+            }
+            // 체험권 쿠폰은 PT 체험 계약(5) 결제에 사용 (기존 PT(4) 사용도 하위 호환 허용)
+            case "체험권" -> {
+                if (contract.getContract() != 4 && contract.getContract() != 5) {
                     throw new IllegalStateException("계약 유형과 맞지 않는 쿠폰입니다.");
                 }
             }

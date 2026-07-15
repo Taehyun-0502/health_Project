@@ -17,6 +17,7 @@ import Itempage from './item/Itempage.jsx';
 import B2bAccount from './b2b_mypage/B2bAccount.jsx';
 import Contractpage from './contract/Contractpage.jsx';
 import ContractLayout from './contract/ContractLayout.jsx';
+import TrialTargetPage from './contract/TrialTargetPage.jsx';
 import RosterPage from './contract/RosterPage.jsx';
 import JobSeekerPage from './contract/JobSeekerPage.jsx';
 import Payment from './payment/Payment.jsx';
@@ -88,6 +89,8 @@ function App() {
           <Route index element={<Contractpage />} />
           <Route path="member" element={<RosterPage />} />
           <Route path="jobseekers" element={<JobSeekerPage />} />
+          {/* 체험권 계약 대상 목록 (OWNER 전용) - PT 체험(5) 발행폼 진입 */}
+          <Route path="trial" element={<TrialTargetPage />} />
         </Route>
 
         <Route path="Settlepage" element={<Settlepage />} />
