@@ -197,6 +197,42 @@ public class CheckInoutService {
         }
     }
 
+    // ===== 사장님용 지점 집계 (회원/직원 관리 탭 owner 뷰) =====
+
+    // 사장님 계정의 지점(gym_id) 판별 - 지점 정보가 없으면 조회 불가
+    public Long resolveGymId(Long username) throws Exception {
+        Long gymId = checkInoutMapper.findGymIdByUsername(username);
+        if (gymId == null) {
+            throw new IllegalStateException("계정에 지점 정보가 없습니다.");
+        }
+        return gymId;
+    }
+
+    // 지점 트레이너별 성과 지표
+    public List<TrainerPerfDTO> ownerTrainerPerf(Long gymId) throws Exception {
+        return checkInoutMapper.ownerTrainerPerf(gymId);
+    }
+
+    // 지점 재등록 임박 리스트 (PT 잔여 3회 이하 + 이용권 종료 7일 이내)
+    public List<RebookDTO> ownerRebookList(Long gymId) throws Exception {
+        return checkInoutMapper.ownerRebookList(gymId);
+    }
+
+    // 지점 전체 PT 일정 (읽기 전용 캘린더)
+    public List<PtScheduleDTO> ownerScheduleList(Long gymId) throws Exception {
+        return checkInoutMapper.ownerScheduleList(gymId);
+    }
+
+    // 지점 전체 확인 완료 PT 수업 이력 (읽기 전용 캘린더)
+    public List<CheckInoutDTO> ownerHistoryList(Long gymId) throws Exception {
+        return checkInoutMapper.ownerHistoryList(gymId);
+    }
+
+    // 총괄 관리자용 매장별 비교 지표 (전 매장)
+    public List<GymPerfDTO> adminGymOverview() throws Exception {
+        return checkInoutMapper.adminGymOverview();
+    }
+
     // 내일 예정된 PT 일정 리마인드 발송 (전날 저녁 배치) - 회원/트레이너 양쪽에 알림, 발송 건수 반환
     public int sendTomorrowReminders() throws Exception {
         List<PtScheduleDTO> schedules = checkInoutMapper.tomorrowSchedules();

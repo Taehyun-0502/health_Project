@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import B2bPromotion from './promotion/B2bPromotion.jsx';
 import AttendanceConfirm from './attendance/AttendanceConfirm.jsx';
+import OwnerManagement from './attendance/OwnerManagement.jsx';
+import AdminManagement from './attendance/AdminManagement.jsx';
 
 const TAB_IDS = ['dashboard', 'settlement', 'inventory', 'promotion', 'management'];
 
@@ -22,7 +24,12 @@ function AdminMain() {
     { id: 'settlement', label: '정산관리', title: '매출 및 정산 통계', desc: '이용권 결제 내역 분석 및 정산 자료입니다.' },
     { id: 'inventory', label: '물품관리', title: '라커룸 및 기자재 인벤토리', desc: '센터 내부 물품 재고 수량을 기록 관리합니다.' },
     { id: 'promotion', label: '프로모션', title: '이벤트 및 쿠폰 발행', desc: '할인 프로모션 생성 및 이벤트 업무를 수행합니다.' },
-    { id: 'management', label: '회원/직원 관리', title: '회원 및 직원 관리', desc: '역할에 따라 회원·직원 관리 업무를 수행합니다.' }
+    {
+      id: 'management',
+      label: user.role === 'admin' ? '헬스장 계약 관리' : '회원/직원 관리',
+      title: user.role === 'admin' ? '헬스장 제휴 계약 관리' : '회원 및 직원 관리',
+      desc: user.role === 'admin' ? '헬스장별 제휴 계약 기간과 만료 여부를 확인합니다.' : '역할에 따라 회원·직원 관리 업무를 수행합니다.',
+    }
   ];
 
   return (
@@ -70,18 +77,20 @@ function AdminMain() {
             return <B2bPromotion key={tab.id} />;
           }
 
-          // 회원/직원 관리 탭 - 접속 역할에 따라 내용 분기
-          // 트레이너: 담당 회원 PT 출석 확인(잔여횟수 차감) / 사장님·관리자: 추후 회원·직원 관리 기능 예정
+          // 회원/직원 관리 탭 - 접속 역할에 따라 내용 3분기
+          // 트레이너: 담당 회원 PT 출석 확인/일정 관리
+          // 사장님(owner): 지점 트레이너 성과·재등록 임박·지점 일정 열람
+          // 총괄 관리자(admin): 헬스장별 제휴 계약 기간·만료 현황
           if (tab.id === 'management') {
             if (user.role === 'trainer') {
               return <AttendanceConfirm key={tab.id} />;
             }
-            return (
-              <div key={tab.id}>
-                <h3>{tab.title}</h3>
-                <p>사장님용 회원·직원 관리 기능은 준비 중입니다.</p>
-              </div>
-            );
+            if (user.role === 'owner') {
+              // 재등록 리스트에서 쿠폰 발행 동선을 위해 프로모션 탭 전환 콜백 전달
+              return <OwnerManagement key={tab.id} onGoPromotion={() => setActiveTab('promotion')} />;
+            }
+            // 총괄 관리자(admin): 매장 상세 없이 제휴 계약 기간만 관리
+            return <AdminManagement key={tab.id} />;
           }
 
           return (

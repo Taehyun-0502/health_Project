@@ -229,4 +229,123 @@ select s.schedule_id, s.trainer_id, s.username, s.gym_id, s.schedule_at, s.memo,
  order by s.schedule_at
 </select>
 
+<!-- ===== 사장님용 지점 집계 (회원/직원 관리 탭 owner 뷰, 전부 SELECT 전용) ===== -->
+
+<!-- 회원의 지점(gym_id) 조회 - 사장님 계정의 지점 판별용 -->
+<select id="findGymIdByUsername" parameterType="Long" resultType="Long">
+select gym_id from "h_member" where username = #{username}
+</select>
+
+<!-- 지점 트레이너별 성과 지표 - 담당 회원 수 / 이번 달 확인 수업 / 이번 달 미수행 / 재등록 임박(잔여 3회 이하) -->
+<select id="ownerTrainerPerf" parameterType="Long" resultType="com.health.app.checkInout.TrainerPerfDTO">
+select t.username, t.name,
+       (select count(distinct d.receiver_id)
+          from "h_contract_data" d
+         where d.contract = 4 and d.status = 'ACTIVE' and d.manager_id = t.username
+           and d.start_date &lt;= current_date and (d.end_date is null or d.end_date &gt;= current_date)) as member_count,
+       (select count(*)
+          from "h_check_inout" c
+         where c.trainer_id = t.username and c.inout_type = 2 and c.trainer_confirm is not null
+           and c.check_in &gt;= date_trunc('month', current_date)) as month_done,
+       (select count(*)
+          from "h_pt_schedule" s
+         where s.trainer_id = t.username
+           and s.schedule_at &gt;= date_trunc('month', current_date)
+           and s.schedule_at &lt; current_date
+           and not exists (select 1 from "h_check_inout" c2
+                            where c2.username = s.username and c2.inout_type = 2
+                              and c2.trainer_confirm is not null
+                              and c2.check_in::date = s.schedule_at::date)) as month_missed,
+       (select count(*)
+          from "h_contract_data" d
+          left join "h_pt_manage" p on p.data_id = d.data_id
+         where d.contract = 4 and d.status = 'ACTIVE' and d.manager_id = t.username
+           and d.start_date &lt;= current_date and (d.end_date is null or d.end_date &gt;= current_date)
+           and d.quantity - coalesce(p.used_count, 0) &lt;= 3) as rebook_count
+  from "h_member" t
+ where t.gym_id = #{gymId}
+   and lower(t.role) = 'trainer'
+ order by t.name
+</select>
+
+<!-- 지점 재등록 임박 리스트 - PT(잔여 3회 이하) + 이용권(종료 7일 이내) 통합, 임박한 순 -->
+<select id="ownerRebookList" parameterType="Long" resultType="com.health.app.checkInout.RebookDTO">
+select 'PT' as category, d.data_id, d.receiver_id as username, m.name as member_name,
+       tr.name as trainer_name,
+       d.quantity - coalesce(p.used_count, 0) as remaining_count,
+       d.end_date
+  from "h_contract_data" d
+  join "h_member" m on m.username = d.receiver_id
+  left join "h_member" tr on tr.username = d.manager_id
+  left join "h_pt_manage" p on p.data_id = d.data_id
+ where d.gym_id = #{gymId} and d.contract = 4 and d.status = 'ACTIVE'
+   and d.start_date &lt;= current_date and (d.end_date is null or d.end_date &gt;= current_date)
+   and d.quantity - coalesce(p.used_count, 0) &lt;= 3
+union all
+select '이용권' as category, d.data_id, d.receiver_id as username, m.name as member_name,
+       null as trainer_name,
+       null as remaining_count,
+       d.end_date
+  from "h_contract_data" d
+  join "h_member" m on m.username = d.receiver_id
+ where d.gym_id = #{gymId} and d.contract = 3 and d.status = 'ACTIVE'
+   and d.end_date is not null
+   and d.end_date &gt;= current_date
+   and d.end_date &lt;= current_date + 7
+order by remaining_count asc nulls last, end_date asc nulls last
+</select>
+
+<!-- 지점 전체 PT 일정 (사장님 읽기 전용 캘린더) -->
+<select id="ownerScheduleList" parameterType="Long" resultType="com.health.app.checkInout.PtScheduleDTO">
+select s.schedule_id, s.trainer_id, s.username, s.gym_id, s.schedule_at, s.memo,
+       m.name as member_name, t.name as trainer_name
+  from "h_pt_schedule" s
+  left join "h_member" m on m.username = s.username
+  left join "h_member" t on t.username = s.trainer_id
+ where s.gym_id = #{gymId}
+ order by s.schedule_at
+</select>
+
+<!-- 총괄 관리자용 매장별 비교 지표 - 전 매장의 트레이너 수/이번 달 수업·미수행/재등록·만료 임박 -->
+<select id="adminGymOverview" resultType="com.health.app.checkInout.GymPerfDTO">
+select g.gym_id, g.gym_name,
+       (select count(*) from "h_member" t
+         where t.gym_id = g.gym_id and lower(t.role) = 'trainer') as trainer_count,
+       (select count(*) from "h_check_inout" c
+         where c.gym_id = g.gym_id and c.inout_type = 2 and c.trainer_confirm is not null
+           and c.check_in &gt;= date_trunc('month', current_date)) as month_done,
+       (select count(*) from "h_pt_schedule" s
+         where s.gym_id = g.gym_id
+           and s.schedule_at &gt;= date_trunc('month', current_date)
+           and s.schedule_at &lt; current_date
+           and not exists (select 1 from "h_check_inout" c2
+                            where c2.username = s.username and c2.inout_type = 2
+                              and c2.trainer_confirm is not null
+                              and c2.check_in::date = s.schedule_at::date)) as month_missed,
+       (select count(*) from "h_contract_data" d
+          left join "h_pt_manage" p on p.data_id = d.data_id
+         where d.gym_id = g.gym_id and d.contract = 4 and d.status = 'ACTIVE'
+           and d.start_date &lt;= current_date and (d.end_date is null or d.end_date &gt;= current_date)
+           and d.quantity - coalesce(p.used_count, 0) &lt;= 3) as rebook_count,
+       (select count(*) from "h_contract_data" d
+         where d.gym_id = g.gym_id and d.contract = 3 and d.status = 'ACTIVE'
+           and d.end_date is not null
+           and d.end_date &gt;= current_date and d.end_date &lt;= current_date + 7) as expiring_count
+  from "h_gym" g
+ order by g.gym_name
+</select>
+
+<!-- 지점 전체 확인 완료 PT 수업 이력 (사장님 읽기 전용 캘린더) -->
+<select id="ownerHistoryList" parameterType="Long" resultType="com.health.app.checkInout.CheckInoutDTO">
+select c.id, c.username, c.check_in, c.gym_id, c.inout_type, c.trainer_id, c.trainer_confirm,
+       m.name as member_name, t.name as trainer_name
+  from "h_check_inout" c
+  left join "h_member" m on m.username = c.username
+  left join "h_member" t on t.username = c.trainer_id
+ where c.gym_id = #{gymId}
+   and c.inout_type = 2
+   and c.trainer_confirm is not null
+ order by c.check_in desc
+</select>
+
 </mapper>

@@ -185,7 +185,7 @@
         </association>
     </resultMap>
 
-    <!-- (ADMIN) 제휴 매장 리스트 조회 SQL - 제휴 계약(1) 기준 매장명·수신 사장님·계약 기간
+    <!-- (ADMIN) 제휴 매장 리스트 조회 SQL - 헬스장별 최신 제휴 계약(1) 1건과 계약 기간
          남은 기간(D-Day)은 end_date로 프론트에서 계산, 만료 임박 순 정렬 -->
     <select id="rosterGymList" resultMap="contractUserMap">
     select d.data_id, d.contract, d.gym_id, d.sender_id, d.receiver_id,
@@ -193,10 +193,14 @@
            g.gym_name as j_gym_name,
            m.username as m_username, m.name as m_name, m.email as m_email,
            m.role as m_role, m.gym_id as m_gym_id
-     from "h_contract_data" d
+     from (
+         select distinct on (gym_id) *
+           from "h_contract_data"
+          where contract = 1
+          order by gym_id, data_id desc
+     ) d
      left join "h_gym" g on d.gym_id = g.gym_id
      left join "h_member" m on d.receiver_id = m.username
-     where d.contract = 1
      order by d.end_date asc nulls last, d.data_id desc
     </select>
 

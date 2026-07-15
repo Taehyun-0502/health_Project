@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.health.app.config.JwtUtill;
@@ -193,6 +194,67 @@ public class AttendanceController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
         }
         return ResponseEntity.ok(checkInoutService.memberScheduleList(Long.parseLong(claims.getSubject())));
+    }
+
+    // ===== 사장님용 지점 집계 API (회원/직원 관리 탭 owner 뷰, OWNER/ADMIN 전용) =====
+
+    // 지점 관리 현황 통합 조회 API - 트레이너 성과 / 재등록 임박 / 지점 일정·수업 이력을 한 번에 반환
+    // OWNER는 본인 지점 고정, ADMIN은 gymId 파라미터로 임의 매장 드릴다운 가능
+    @GetMapping("/fitb/attendance/owner/overview")
+    public ResponseEntity<?> ownerOverview(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam(value = "gymId", required = false) Long gymIdParam) throws Exception {
+
+        Claims claims = extractOwnerClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("사장님 로그인이 필요합니다.");
+        }
+
+        try {
+            String role = claims.get("role", String.class);
+            Long gymId = (gymIdParam != null && role.equalsIgnoreCase("ADMIN"))
+                    ? gymIdParam // ADMIN만 타 매장 지정 허용 (OWNER는 본인 지점 강제)
+                    : checkInoutService.resolveGymId(Long.parseLong(claims.getSubject()));
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("trainers", checkInoutService.ownerTrainerPerf(gymId));
+            responseData.put("rebooks", checkInoutService.ownerRebookList(gymId));
+            responseData.put("schedules", checkInoutService.ownerScheduleList(gymId));
+            responseData.put("sessions", checkInoutService.ownerHistoryList(gymId));
+            return ResponseEntity.ok(responseData);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // 총괄 관리자용 매장별 비교 지표 API (ADMIN 전용) - 전 매장의 수업량/수행률/임박 지표
+    @GetMapping("/fitb/attendance/admin/gyms")
+    public ResponseEntity<?> adminGymOverview(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+
+        Claims claims = extractOwnerClaims(authorization);
+        if (claims == null || !"ADMIN".equalsIgnoreCase(claims.get("role", String.class))) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("총괄 관리자 로그인이 필요합니다.");
+        }
+        return ResponseEntity.ok(checkInoutService.adminGymOverview());
+    }
+
+    // JWT 검증 + OWNER/ADMIN 권한 확인 공통 메서드 (실패 시 null 반환)
+    private Claims extractOwnerClaims(String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return null;
+        }
+        Claims claims;
+        try {
+            claims = jwtUtill.extractAllClaims(authorization.substring(7));
+        } catch (Exception e) {
+            return null;
+        }
+        String role = claims.get("role", String.class);
+        if (role == null || !(role.equalsIgnoreCase("OWNER") || role.equalsIgnoreCase("ADMIN"))) {
+            return null;
+        }
+        return claims;
     }
 
     // JWT 검증 + TRAINER 권한 확인 공통 메서드 (실패 시 null 반환)
