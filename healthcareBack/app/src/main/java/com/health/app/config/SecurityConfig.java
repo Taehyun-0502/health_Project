@@ -35,6 +35,12 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // BCrypt 패스워드 암호화 인코더 빈 등록 (신규 추가)
+    @Bean
+    public org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder passwordEncoder() {
+        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+    }
+
     // CORS 정책 설정
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

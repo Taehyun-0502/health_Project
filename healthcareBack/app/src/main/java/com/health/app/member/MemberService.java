@@ -16,6 +16,9 @@ public class MemberService {
     private MemberMapper memberMapper;
 
     @Autowired
+    private org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder passwordEncoder; // ◀ 인코더 주입 (신규 추가)
+
+    @Autowired
     private JwtUtill jwtUtill;
 
     // 권한(role) 기준 회원 목록 조회 메서드
@@ -66,6 +69,10 @@ public class MemberService {
             return -1;
         }
 
+        // [BCrypt 암호화] 가입 비밀번호를 해시 암호문으로 치환
+        String hashedPassword = passwordEncoder.encode(memberDTO.getPassword());
+        memberDTO.setPassword(hashedPassword);
+
         // 전화번호 뒷 8자리 변환 전처리 수행
         Long formattedUsername = this.formatUsernameToEightDigits(memberDTO.getUsername());
         memberDTO.setUsername(formattedUsername);
@@ -97,8 +104,12 @@ public class MemberService {
         // 회원가입 전용 DTO 바인딩 조립
         MemberDTO newMember = new MemberDTO();
         newMember.setUsername(username);
-        newMember.setPassword(username.toString());
-        newMember.setPasswordCheck(username.toString());
+        
+        // [BCrypt 암호화] 기본 비밀번호(전화번호 뒷 8자리)를 해시 암호문으로 자동 치환 주입
+        String hashedDefaultPw = passwordEncoder.encode(username.toString());
+        newMember.setPassword(hashedDefaultPw);
+        newMember.setPasswordCheck(hashedDefaultPw);
+        
         newMember.setName(contractDTO.getReceiverName());
         newMember.setGymId(contractDTO.getGymId());
         newMember.setBirth(contractDTO.getBirthDate());
@@ -141,10 +152,12 @@ public class MemberService {
         if (existMember == null) {
             return null; // 가입되지 않은 전화번호
         }
-        // 입력 비밀번호와 가입된 비밀번호 비교
-        if (!existMember.getPassword().equals(memberDTO.getPassword())) {
+        
+        // [BCrypt 비교 처리] 비밀번호 인코더의 matches 함수를 통해 암호문 매칭 검증
+        if (!passwordEncoder.matches(memberDTO.getPassword(), existMember.getPassword())) {
             return null; // 비밀번호 불일치
         }
+        
         // 보안상 비밀번호 필드는 지우고 반환
         existMember.setPassword(null);
         return existMember;
