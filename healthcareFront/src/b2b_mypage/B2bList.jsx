@@ -450,13 +450,18 @@ function MemberListRow({ loading, members, statKey, gymId, mode, period }) {
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>발송할 쿠폰</label>
               <select value={selectedCouponNum} onChange={(e) => setSelectedCouponNum(e.target.value)}
                       style={{ width: '100%', boxSizing: 'border-box', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', marginBottom: '14px' }}>
-                <option value="">-- 쿠폰 선택 --</option>
-                {couponTypes.map((c) => (
+                <option value="">-- 체험권 선택 --</option>
+                {couponTypes.filter((c) => c.category === '체험권').map((c) => (
                   <option key={c.couponNum} value={c.couponNum}>
-                    {c.couponName} ({c.category} {c.percent}%)
+                    {c.couponName} ({c.percent}% / {c.couponCount}회)
                   </option>
                 ))}
               </select>
+              {couponTypes.filter((c) => c.category === '체험권').length === 0 && (
+                <p style={{ fontSize: '12px', color: '#c62828', margin: '-8px 0 14px' }}>
+                  등록된 체험권 쿠폰이 없습니다. 프로모션에서 먼저 체험권을 만들어 주세요.
+                </p>
+              )}
 
               {/* 대상 회원 (바 드릴다운 회원 자동 포함, 읽기전용) */}
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
