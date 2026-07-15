@@ -43,7 +43,8 @@ public class ContractController {
     @GetMapping("/list")
     public ResponseEntity<?> contractUserList(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestParam(required = false) Long contract) throws Exception {
+            @RequestParam(required = false) Long contract,
+            @RequestParam(required = false) String keyword) throws Exception {
 
         Claims claims = extractClaims(authorization);
         if (claims == null) {
@@ -54,6 +55,7 @@ public class ContractController {
         contractDTO.setUsername(Long.parseLong(claims.getSubject()));
         contractDTO.setRole(claims.get("role", String.class));
         contractDTO.setContract(contract);
+        contractDTO.setKeyword(keyword);
 
         List<ContractDTO> userList = contractService.contractUserList(contractDTO);
 
@@ -61,6 +63,29 @@ public class ContractController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
         return ResponseEntity.ok(userList);
+    }
+
+    // 체험권 계약 대상 목록 조회 API 메서드 (OWNER 전용)
+    // PT 체험(5) 발행폼 진입용 - 본인이 발급한 미사용·미만료 체험권의 동일 지점 MEMBER만 반환
+    @GetMapping("/trial-targets")
+    public ResponseEntity<?> trialTargetList(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        ContractDTO contractDTO = new ContractDTO();
+        contractDTO.setUsername(Long.parseLong(claims.getSubject()));
+        contractDTO.setRole(claims.get("role", String.class));
+
+        List<TrialTargetDTO> targets = contractService.trialTargetList(contractDTO);
+
+        if (targets == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
+        }
+        return ResponseEntity.ok(targets);
     }
 
     // 제휴 계약(1) 대상자(사장님) 목록 조회 API 메서드 (ADMIN 전용)
@@ -144,7 +169,13 @@ public class ContractController {
         if (result == -1) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("해당 계약서를 발행할 권한이 없습니다.");
         } else if (result == -2) {
-            return ResponseEntity.badRequest().body("수신자 이름을 입력해 주세요.");
+            return ResponseEntity.badRequest().body("수신자 정보를 입력해 주세요.");
+        } else if (result == -6) {
+            return ResponseEntity.badRequest().body("총 PT 횟수는 0 이상이어야 합니다.");
+        } else if (result == -7) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("이미 유효한 PT 체험 계약이 있어 중복 발행할 수 없습니다.");
+        } else if (result == -8) {
+            return ResponseEntity.badRequest().body("체험권 정보가 없거나 발행 가능한 체험권이 아닙니다.");
         } else if (result > 0) {
             // 발행된 계약서 번호 반환 - 사장님 대면 서명 동선(발행 -> 바로 서명폼 이동)에서 사용
             return ResponseEntity.ok(String.valueOf(contractDTO.getDataId()));
