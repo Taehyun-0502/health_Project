@@ -35,6 +35,9 @@ public class AiController {
     private AiService aiService;
 
     @Autowired
+    private AiBriefingService aiBriefingService;
+
+    @Autowired
     private JwtUtill jwtUtill;
 
     @Autowired
@@ -93,6 +96,25 @@ public class AiController {
         SseEmitter emitter = new SseEmitter(5L * 60 * 1000); // 5분 타임아웃
         executor.execute(() -> aiService.chat(ctx, request, emitter));
         return emitter;
+    }
+
+    // 태스크 브리핑("오늘 처리할 일") 조회 - 결정적 집계(토큰 무소모), OWNER 외 403
+    // 대시보드 진입(마운트)마다 호출되어 건수>0 후보에서 랜덤 3개를 반환한다
+    @GetMapping("/briefing")
+    public ResponseEntity<?> briefing(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        AuthContext ctx = buildContext(claims);
+        if (!"OWNER".equals(ctx.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
+        }
+
+        return ResponseEntity.ok(aiBriefingService.briefing(ctx, false));
     }
 
     // 대화 세션 목록 조회 (본인 것만)

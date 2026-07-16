@@ -1,66 +1,86 @@
-/* AI 비서 챗 패널 (OWNER 전용) - 우측 도킹 리사이저블 사이드 패널 */
+/* AI 비서 챗 (OWNER 전용, 2026-07 개편) - 하단 중앙 플로팅 입력바 + 채팅 팝업 */
 
-/* 닫힘 상태: 우하단 FAB */
-.ai-fab {
+/* 알약형 플로팅 입력바 (인풋박스형 FAB, 하단 중앙 상주) */
+.ai-fabbar {
   position: fixed;
-  right: 24px;
+  left: 50%;
   bottom: 24px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: none;
-  background: #2563eb;
-  color: #fff;
-  font-size: 26px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 40px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 28px;
+  padding: 7px 7px 7px 16px;
+  box-shadow: 0 8px 28px rgba(17, 24, 39, 0.18);
   z-index: 1000;
 }
 
-.ai-fab:hover {
-  background: #1d4ed8;
-}
-
-/* 열림 상태: 본문을 밀어내는 도킹 패널 (오버레이 아님) */
-.ai-panel {
+.ai-fabbar-icon {
+  font-size: 18px;
   flex-shrink: 0;
-  position: relative;
-  border-left: 1px solid #d1d5db;
-  background: #f9fafb;
-  display: flex;
-  color: #1f2937; /* 전역 다크 테마와 무관하게 패널 내 텍스트 색 고정 */
 }
 
-.ai-panel input {
-  background: #fff;
+.ai-fabbar input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13.5px;
   color: #1f2937;
 }
 
-.ai-header-actions button {
-  color: #374151;
+.ai-fabbar input::placeholder {
+  color: #9ca3af;
 }
 
-.ai-panel-inner {
-  position: sticky;
-  top: 0;
+.ai-fabbar button {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ai-fabbar button:hover {
+  background: #1d4ed8;
+}
+
+/* 채팅 팝업 오버레이 (배경 딤, 하단 중앙 정렬) */
+.ai-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 24px 16px;
+  z-index: 1100;
+}
+
+.ai-popup {
+  width: min(600px, 100%);
+  max-height: min(680px, 86vh);
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(17, 24, 39, 0.3);
   display: flex;
   flex-direction: column;
-  width: 100%;
+  overflow: hidden;
+  color: #1f2937; /* 전역 다크 테마와 무관하게 팝업 내 텍스트 색 고정 */
 }
 
-/* 좌측 경계 드래그 핸들 */
-.ai-resizer {
-  position: absolute;
-  left: -3px;
-  top: 0;
-  width: 6px;
-  height: 100%;
-  cursor: col-resize;
-  z-index: 10;
-}
-
-.ai-resizer:hover {
-  background: rgba(37, 99, 235, 0.3);
+.ai-popup input {
+  background: #fff;
+  color: #1f2937;
 }
 
 /* 헤더 */
@@ -71,7 +91,7 @@
   padding: 10px 12px;
   border-bottom: 1px solid #e5e7eb;
   background: #fff;
-  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .ai-header-title {
@@ -82,7 +102,7 @@
 .ai-header-gym {
   font-size: 12px;
   color: #6b7280;
-  max-width: 90px;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -111,8 +131,9 @@
   background: transparent;
   cursor: pointer;
   font-size: 14px;
-  padding: 2px 5px;
+  padding: 2px 6px;
   border-radius: 4px;
+  color: #374151;
 }
 
 .ai-header-actions button:hover {
@@ -122,6 +143,7 @@
 /* 대화 영역 */
 .ai-messages {
   flex: 1;
+  min-height: 240px;
   overflow-y: auto;
   padding: 12px;
   display: flex;
@@ -176,7 +198,109 @@
   font-style: italic;
 }
 
-/* READ 답변 하단: 바로가기 버튼 */
+/* 차트 카드 템플릿 (레지스트리 chartType 메타 주도 고정 컴포넌트) */
+.ai-chart-card {
+  margin-top: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  padding: 10px 12px;
+}
+
+.ai-chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 96px;
+}
+
+.ai-chart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  height: 100%;
+}
+
+.ai-chart-value {
+  font-size: 9.5px;
+  color: #6b7280;
+}
+
+.ai-chart-bar {
+  width: 100%;
+  background: #2563eb;
+  border-radius: 4px 4px 0 0;
+  min-height: 3px;
+}
+
+.ai-chart-month {
+  font-size: 9.5px;
+  color: #9ca3af;
+}
+
+.ai-gauge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-gauge-track {
+  flex: 1;
+  height: 10px;
+  border-radius: 6px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.ai-gauge-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: #2563eb;
+}
+
+.ai-gauge-fill.danger {
+  background: #dc2626;
+}
+
+.ai-gauge-label {
+  font-size: 12px;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.ai-chart-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-chart-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+}
+
+.ai-chip {
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 12px;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ai-chip.danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* READ 답변 하단: 바로가기 버튼 (클릭 시 팝업 닫고 FAB 복귀) */
 .ai-links {
   display: flex;
   flex-wrap: wrap;
@@ -256,15 +380,17 @@
   padding: 6px 0;
   border-top: 1px solid #e5e7eb;
   background: #fff;
+  flex-shrink: 0;
 }
 
-/* 입력바 */
+/* 팝업 내 입력바 */
 .ai-inputbar {
   display: flex;
   gap: 6px;
   padding: 10px 12px;
   background: #fff;
   border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .ai-inputbar input {
@@ -293,4 +419,11 @@
 .ai-inputbar button:disabled {
   background: #9ca3af;
   cursor: default;
+}
+
+/* 차트 카드 집계 범위 캡션 */
+.ai-chart-caption {
+  margin: 6px 0 0;
+  font-size: 10.5px;
+  color: #9ca3af;
 }
