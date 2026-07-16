@@ -39,15 +39,20 @@ public class MemberService {
 
     public int update(MemberDTO memberDTO) throws Exception {
         // 1. 공백 및 필수값 검증
-    if (memberDTO.getPassword() == null || memberDTO.getPassword().trim().isEmpty()) {
+        if (memberDTO.getPassword() == null || memberDTO.getPassword().trim().isEmpty()) {
             return -1; 
-    }
+        }
         
-    // 2. 새로운 비밀번호와 비밀번호 확인 일치 대조 검증
-    if (!memberDTO.getPassword().equals(memberDTO.getPasswordCheck())) {
-        return -2; // 비밀번호 불일치 에러 플래그 리턴
-    }
-    return memberMapper.update(memberDTO);
+        // 2. 새로운 비밀번호와 비밀번호 확인 일치 대조 검증
+        if (!memberDTO.getPassword().equals(memberDTO.getPasswordCheck())) {
+            return -2; // 비밀번호 불일치 에러 플래그 리턴
+        }
+
+        // 3. [BCrypt 암호화] 평문 비밀번호를 해시 암호문으로 치환하여 저장 (누락 버그 픽스)
+        String hashedPassword = passwordEncoder.encode(memberDTO.getPassword());
+        memberDTO.setPassword(hashedPassword);
+
+        return memberMapper.update(memberDTO);
     }
     
     // 입력받은 전화번호(username)를 안전하게 뒷자리 8자리 숫자로 변환하는 헬퍼 메서드
