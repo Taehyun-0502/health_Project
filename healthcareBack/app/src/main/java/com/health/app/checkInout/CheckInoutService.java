@@ -33,13 +33,17 @@ public class CheckInoutService {
     }
 
     // 헬스장 출석 처리 (키오스크)
-    // 1. 계정 검증 -> 2. 유효한 이용권 계약(3) 확인 -> 3. 하루 1회 제한 -> 4. 출석 기록
+    // 1. 계정 검증 -> 2. 유효한 이용권 계약(3) 또는 기간 내 PT 계약(4) 확인 -> 3. 하루 1회 제한 -> 4. 출석 기록
+    // PT 회원(체험권 포함)은 계약 기간 동안 이용권처럼 헬스장 이용 가능 (기간 기준 - 잔여 횟수와 무관)
     public CheckInoutDTO gymCheckIn(MemberDTO credential) throws Exception {
         MemberDTO member = verifyMember(credential);
 
         ContractDTO contract = checkInoutMapper.findActiveContract(member.getUsername(), 3L);
         if (contract == null) {
-            throw new IllegalStateException("이용 가능한 헬스장 이용권 계약이 없습니다.");
+            contract = checkInoutMapper.findActiveContract(member.getUsername(), 4L);
+        }
+        if (contract == null) {
+            throw new IllegalStateException("이용 가능한 헬스장 이용권 또는 PT 계약이 없습니다.");
         }
         if (checkInoutMapper.countToday(member.getUsername(), 1L) > 0) {
             throw new IllegalStateException("오늘은 이미 헬스장 출석을 완료했습니다.");
