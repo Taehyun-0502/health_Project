@@ -43,7 +43,10 @@ function Dashboard() {
 
   const loginUser = JSON.parse(localStorage.getItem('user') || 'null');
   const token = localStorage.getItem('accessToken');
-  const isOwner = String(loginUser?.role || '').toLowerCase() === 'owner';
+  // Phase 1.5(프리뷰 게이트): 대시보드 AI 영역은 ADMIN·OWNER·TRAINER 모두 노출
+  // (ADMIN·TRAINER는 질문 시 고정 문구 응답·브리핑 빈 후보 - 세부 항목은 추후 role별 변경)
+  const aiEligible = ['owner', 'admin', 'trainer']
+    .includes(String(loginUser?.role || '').toLowerCase());
 
   // 위젯 설정 + 활성 위젯 데이터 조회 (GET /dashboard/widgets, /dashboard/data)
   const loadDashboard = useCallback(async () => {
@@ -72,10 +75,10 @@ function Dashboard() {
     loadDashboard();
   }, [loadDashboard]);
 
-  // 태스크 브리핑("오늘 처리할 일") - 결정적 GET /ai/briefing (토큰 무소모, OWNER 전용)
-  // 대시보드 진입(마운트)마다 건수>0 후보에서 랜덤 3개를 새로 받는다
+  // 태스크 브리핑("오늘 처리할 일") - 결정적 GET /ai/briefing (토큰 무소모)
+  // 대시보드 진입(마운트)마다 건수>0 후보에서 랜덤 3개를 새로 받는다 (OWNER 외에는 서버가 빈 후보 반환)
   useEffect(() => {
-    if (!token || !isOwner) return;
+    if (!token || !aiEligible) return;
     fetch(`${import.meta.env.VITE_BACKEND_URL}/ai/briefing`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -281,7 +284,7 @@ function Dashboard() {
 
       {/* AI 영역 (OWNER 전용, 위젯 그리드 아래 좌우 분할)
           왼쪽=질문 카드(클릭 시 AI 팝업 답변·토큰 소모) / 오른쪽=태스크 브리핑(클릭 시 페이지 이동·무소모) */}
-      {isOwner && (
+      {aiEligible && (
         <div className="dash-ai-zone">
           <div className="dash-ai-card">
             <h3>AI 비서에게 물어보기</h3>

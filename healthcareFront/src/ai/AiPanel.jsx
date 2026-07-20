@@ -58,7 +58,10 @@ function extractGaugePercent(data) {
 function AiPanel() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || 'null');
-  const isOwner = !!user && String(user.role || '').toLowerCase() === 'owner';
+  // Phase 1.5(프리뷰 게이트): OWNER 정식 + ADMIN·TRAINER 프리뷰 노출 (MEMBER·비로그인 미노출)
+  // ADMIN·TRAINER의 질문은 서버 게이트가 차단해 고정 문구만 응답한다 (크레딧 소모 0)
+  const aiEligible = !!user
+    && ['owner', 'admin', 'trainer'].includes(String(user.role || '').toLowerCase());
 
   const [open, setOpen] = useState(false);
   const [view, setView] = useState('chat'); // chat | sessions
@@ -74,9 +77,9 @@ function AiPanel() {
   const scrollRef = useRef(null);
   const sendingRef = useRef(false);
 
-  // 헤더 지점명 표시용 - 공개 지점 목록에서 본인 gymId 매칭
+  // 헤더 지점명 표시용 - 공개 지점 목록에서 본인 gymId 매칭 (ADMIN은 gymId가 없어 미표시)
   useEffect(() => {
-    if (!isOwner || !user?.gymId) return;
+    if (!aiEligible || !user?.gymId) return;
     fetch(`${import.meta.env.VITE_BACKEND_URL}/gym/selectid`)
       .then((res) => (res.ok ? res.json() : []))
       .then((gyms) => {
@@ -175,7 +178,7 @@ function AiPanel() {
 
   // 대시보드 질문 카드 등 외부에서 질문 자동 전송 (문구는 발신 측 메타에 고정)
   useEffect(() => {
-    if (!isOwner) return undefined;
+    if (!aiEligible) return undefined;
     const onAsk = (e) => {
       setOpen(true);
       sendText(e.detail);
@@ -183,7 +186,7 @@ function AiPanel() {
     window.addEventListener('ai-ask', onAsk);
     return () => window.removeEventListener('ai-ask', onAsk);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOwner, conversationId]);
+  }, [aiEligible, conversationId]);
 
   // 대화 세션 목록 로드
   const loadSessions = async () => {
@@ -328,8 +331,8 @@ function AiPanel() {
     return null;
   };
 
-  // Phase 1: OWNER 외 역할에는 렌더하지 않음 (훅 호출 이후에 분기)
-  if (!isOwner) return null;
+  // Phase 1.5: ADMIN·OWNER·TRAINER만 렌더, MEMBER·비로그인 미노출 (훅 호출 이후에 분기)
+  if (!aiEligible) return null;
 
   return (
     <>

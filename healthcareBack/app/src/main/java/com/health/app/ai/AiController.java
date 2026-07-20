@@ -58,6 +58,11 @@ public class AiController {
         }
     }
 
+    // AI 비서 이용 가능 role 판정 (Phase 1.5: OWNER 정식 + ADMIN·TRAINER 프리뷰, MEMBER 차단)
+    private boolean allowedRole(String role) {
+        return "ADMIN".equals(role) || "OWNER".equals(role) || "TRAINER".equals(role);
+    }
+
     // JWT claim -> AuthContext 구성 (gymId는 h_member에서 파생, 없으면 -1로 테넌트 차단)
     private AuthContext buildContext(Claims claims) throws Exception {
         Long username = Long.parseLong(claims.getSubject());
@@ -84,9 +89,10 @@ public class AiController {
         }
 
         AuthContext ctx = buildContext(claims);
-        // Phase 1: OWNER만 이용 가능
-        if (!"OWNER".equals(ctx.getRole())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("AI 비서는 현재 사장님(OWNER)만 이용할 수 있습니다.");
+        // Phase 1.5(프리뷰 게이트): ADMIN·OWNER·TRAINER 허용, MEMBER만 403.
+        // ADMIN·TRAINER는 AiService 최상단 프리뷰 게이트가 LLM 호출 전에 차단해 고정 문구만 반환한다.
+        if (!allowedRole(ctx.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("AI 비서를 이용할 수 없는 권한입니다.");
         }
 
         if (request.getMessage() == null || request.getMessage().isBlank()) {
@@ -110,8 +116,14 @@ public class AiController {
         }
 
         AuthContext ctx = buildContext(claims);
-        if (!"OWNER".equals(ctx.getRole())) {
+        if (!allowedRole(ctx.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
+        }
+
+        // Phase 1.5(프리뷰): OWNER 외에는 후보 집계 없이 빈 후보 반환 -> 프론트는 빈 상태 문구 표시.
+        // role별 후보 슬롯 확정 시 이 분기를 role별 집계로 교체한다.
+        if (!"OWNER".equals(ctx.getRole())) {
+            return ResponseEntity.ok(java.util.Map.of("items", List.of()));
         }
 
         return ResponseEntity.ok(aiBriefingService.briefing(ctx, false));
@@ -128,7 +140,8 @@ public class AiController {
         }
 
         AuthContext ctx = buildContext(claims);
-        if (!"OWNER".equals(ctx.getRole())) {
+        // Phase 1.5: ADMIN·TRAINER도 200 허용 (프리뷰 게이트로 저장이 없어 사실상 빈 목록)
+        if (!allowedRole(ctx.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
@@ -147,7 +160,8 @@ public class AiController {
         }
 
         AuthContext ctx = buildContext(claims);
-        if (!"OWNER".equals(ctx.getRole())) {
+        // Phase 1.5: ADMIN·TRAINER도 200 허용 (본인 소유 대화만 - 프리뷰 턴은 저장되지 않음)
+        if (!allowedRole(ctx.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
