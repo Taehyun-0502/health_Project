@@ -38,7 +38,7 @@ function Header() {
       try {
         const alarmData = JSON.parse(event.data);
         setAlarms((prev) => [alarmData, ...prev]);
-      } catch (e) {
+      } catch {
         const tempAlarm = {
           alarmId: Date.now(),
           message: event.data,

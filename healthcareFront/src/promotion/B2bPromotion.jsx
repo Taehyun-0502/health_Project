@@ -290,7 +290,7 @@ function B2bPromotion() {
               onChange={(e) => { 
                 const val = e.target.value;
                 setCategory(val); 
-                setCouponDate(''); 
+                setMaxAmount(''); 
                 setCouponCount(''); 
                 if (val === '체험권') {
                   setPercent('100'); // ◀ 체험권일 때 100% 자동 기입
