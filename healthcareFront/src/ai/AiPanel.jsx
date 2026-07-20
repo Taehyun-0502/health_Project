@@ -359,11 +359,10 @@ function AiPanel() {
           }}
         >
           <div className="ai-popup" role="dialog" aria-label="AI 비서 채팅">
-            {/* 헤더: AI 아이콘 + 타이틀 + 지점명 + role 배지 + 히스토리/최소화/닫기 */}
+            {/* 헤더: AI 아이콘 + 타이틀 + 지점명 + 히스토리/최소화/닫기 */}
             <div className="ai-header">
               <span className="ai-header-title">🤖 AI 비서</span>
               {gymName && <span className="ai-header-gym">{gymName}</span>}
-              <span className="ai-badge ai-badge-role">OWNER</span>
               <div className="ai-header-actions">
                 {view === 'sessions' && (
                   <button type="button" title="대화 추가하기" onClick={newChat}>✚</button>

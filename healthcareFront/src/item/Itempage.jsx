@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import './Itempage.css';
 import { Link } from 'react-router-dom';
 import Pagination from './Pagination';
@@ -53,20 +53,20 @@ function Itempage() {
   const [itemNames, setItemNames] = useState([]);
 
   // 로그인된 유저의 사업장 id (localStorage에서 조회, 없을 시 기본값 1)
-  const [gymId, setGymId] = useState(() => {
+  const gymId = (() => {
     const saved = localStorage.getItem('user');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         return parsed.gymId || 1;
-      } catch (e) {
+      } catch {
         return 1;
       }
     }
     return 1;
-  });
+  })();
 
-  const [loading, setLoading] = useState(false);
+
 
   // 검색어 상태 (서버 사이드 검색: 입력값이 바뀌면 keyword 파라미터로 서버에 재조회 요청)
   const [searchTerm, setSearchTerm] = useState('');
@@ -333,7 +333,6 @@ function Itempage() {
 
   // 선택된 필터 기준 통계 계산 (총 갯수, 구매 갯수, 폐기 갯수)
   const currentStats = useMemo(() => {
-    let totalCount = 0; // 해당 월(또는 전체)의 총 수량 (구매 - 폐기)
     let purchaseCount = 0; // 해당 월(또는 전체)의 총 구매 수량
     let disposalCount = 0; // 해당 월(또는 전체)의 총 폐기 수량
 
@@ -349,8 +348,7 @@ function Itempage() {
       }
     });
 
-    totalCount = purchaseCount - disposalCount;
-
+    const totalCount = purchaseCount - disposalCount;
     return { totalCount, purchaseCount, disposalCount };
   }, [filteredDetails]);
 

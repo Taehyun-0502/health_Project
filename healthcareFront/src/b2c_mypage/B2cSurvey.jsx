@@ -1,37 +1,75 @@
 import { useState } from 'react';
 
-// B2C 회원 만족도 설문 입력 폼 (디자인 제외 Plain 버전)
-// - 만족도 4종(가격/직원/서비스/기구)을 1~5 별점으로 입력
-// - 불편 회원 경험 / 부상 경험 여부(있음·없음), 부상 시 부위 입력
+// B2C 회원 설문 입력 폼 (디자인 제외 Plain 버전)
+// - 불만 7종을 5단계로 평가: 매우좋음(1)·좋음(2)·보통(3)·나쁨(4)·매우나쁨(5).
+//   숫자가 클수록 "나쁨=불만 큼" → 모델의 이탈 위험↑ 방향과 일치(변환 없이 그대로 저장).
+//   서비스(비매너/환경불편) · 기구(상태/부족) · 직원(불친절/전문성부족) · 가격
+// - 부상 경험 여부(있음·없음), 부상 시 부위 입력
 // - 아이디는 원래 로그인 회원 자동 기입 예정이나, 로그인 연동 전이라 직접 입력란 제공
+//
+// 제출 payload는 SurveyDTO 필드명과 1:1 일치해야 h_survey에 정상 저장된다.
+
+// 5단계 척도 라벨 — index 0→1점(매우좋음) … index 4→5점(매우나쁨). 클수록 불만↑.
+const SCALE_LABELS = ['매우좋음', '좋음', '보통', '나쁨', '매우나쁨'];
+const COMPLAINT_GROUPS = [
+  { group: '서비스 불만', items: [
+    { key: 'serviceRate1', label: '비매너 회원' },
+    { key: 'serviceRate2', label: '환경 불편' },
+  ] },
+  { group: '기구 불만', items: [
+    { key: 'equipRate1', label: '기구 상태 불만' },
+    { key: 'equipRate2', label: '기구 부족' },
+  ] },
+  { group: '직원 불만', items: [
+    { key: 'employeeRate1', label: '불친절' },
+    { key: 'employeeRate2', label: '전문성 부족' },
+  ] },
+  { group: '가격 불만', items: [
+    { key: 'costRate', label: '가격 불만' },
+  ] },
+];
+
+const RATE_KEYS = COMPLAINT_GROUPS.flatMap((g) => g.items.map((it) => it.key));
+
 function B2cSurvey() {
   const [username, setUsername] = useState('');
-  const [rates, setRates] = useState({ cost: 0, employee: 0, service: 0, equip: 0 });
-  const [memberIssue, setMemberIssue] = useState(false);
+  const [rates, setRates] = useState(() =>
+    Object.fromEntries(RATE_KEYS.map((k) => [k, 0])),
+  );
   const [injuryIssue, setInjuryIssue] = useState(false);
   const [injuryArea, setInjuryArea] = useState('');
 
   const setRate = (key, v) => setRates((prev) => ({ ...prev, [key]: v }));
 
-  // 별점 1~5 렌더 헬퍼
-  const renderStars = (value, onChange) =>
+  // 원 5개(매우좋음 ~ 매우나쁨) 선택 렌더 헬퍼. 저장값 = 1~5 (클수록 나쁨=불만↑).
+  const renderScale = (value, onChange) =>
     [1, 2, 3, 4, 5].map((n) => (
-      <span
-        key={n}
-        onClick={() => onChange(n)}
-        style={{ cursor: 'pointer', fontSize: '26px', color: n <= value ? '#f5b301' : '#ccc' }}
-      >
-        ★
+      <span key={n} style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', marginRight: '10px' }}>
+        <button
+          type="button"
+          title={SCALE_LABELS[n - 1]}
+          onClick={() => onChange(n)}
+          style={{
+            cursor: 'pointer',
+            width: '30px',
+            height: '30px',
+            borderRadius: '50%',
+            border: n === value ? '2px solid #f5b301' : '1px solid #bbb',
+            background: n === value ? '#f5b301' : '#fff',
+            color: n === value ? '#fff' : '#333',
+            fontWeight: n === value ? 'bold' : 'normal',
+          }}
+        >
+          {n}
+        </button>
+        <span style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>{SCALE_LABELS[n - 1]}</span>
       </span>
     ));
 
-  const StarRow = ({ label, field }) => (
-    <div style={{ margin: '10px 0' }}>
-      <label style={{ display: 'inline-block', width: '110px' }}>{label}</label>
-      {renderStars(rates[field], (v) => setRate(field, v))}
-      <span style={{ marginLeft: '8px', color: '#666' }}>
-        {rates[field] > 0 ? `${rates[field]}점` : '미선택'}
-      </span>
+  const ScaleRow = ({ label, field }) => (
+    <div style={{ margin: '10px 0', display: 'flex', alignItems: 'flex-start' }}>
+      <label style={{ display: 'inline-block', width: '130px', paddingTop: '6px' }}>{label}</label>
+      <span>{renderScale(rates[field], (v) => setRate(field, v))}</span>
     </div>
   );
 
@@ -42,8 +80,8 @@ function B2cSurvey() {
       alert('아이디(숫자)를 정확히 입력해주세요.');
       return;
     }
-    if (!rates.cost || !rates.employee || !rates.service || !rates.equip) {
-      alert('만족도 4개 항목을 모두 선택해주세요.');
+    if (RATE_KEYS.some((k) => !rates[k])) {
+      alert('불만 항목을 모두 선택해주세요.');
       return;
     }
     if (injuryIssue && !injuryArea.trim()) {
@@ -53,11 +91,13 @@ function B2cSurvey() {
 
     const submitData = {
       username: Number(username),
-      costRate: rates.cost,
-      employeeRate: rates.employee,
-      serviceRate: rates.service,
-      equipRate: rates.equip,
-      memberIssue,
+      serviceRate1: rates.serviceRate1,
+      serviceRate2: rates.serviceRate2,
+      costRate: rates.costRate,
+      equipRate1: rates.equipRate1,
+      equipRate2: rates.equipRate2,
+      employeeRate1: rates.employeeRate1,
+      employeeRate2: rates.employeeRate2,
       injuryIssue,
       injuryArea: injuryIssue ? injuryArea.trim() : null,
     };
@@ -72,8 +112,7 @@ function B2cSurvey() {
       if (response.ok) {
         alert('설문이 제출되었습니다. 감사합니다!');
         setUsername('');
-        setRates({ cost: 0, employee: 0, service: 0, equip: 0 });
-        setMemberIssue(false);
+        setRates(Object.fromEntries(RATE_KEYS.map((k) => [k, 0])));
         setInjuryIssue(false);
         setInjuryArea('');
       } else {
@@ -87,12 +126,15 @@ function B2cSurvey() {
 
   return (
     <div>
-      <h3>회원 만족도 설문</h3>
+      <h3>회원 설문</h3>
+      <p style={{ color: '#666', fontSize: '14px' }}>
+        각 항목을 매우좋음 ~ 매우나쁨의 5단계로 평가해주세요.
+      </p>
 
       <form onSubmit={handleSubmit}>
         {/* 아이디 (로그인 연동 전 임시 직접 입력) */}
         <div style={{ margin: '10px 0' }}>
-          <label style={{ display: 'inline-block', width: '110px' }}>아이디</label>
+          <label style={{ display: 'inline-block', width: '130px' }}>아이디</label>
           <input
             type="text"
             value={username}
@@ -102,26 +144,15 @@ function B2cSurvey() {
           />
         </div>
 
-        {/* 만족도 별점 */}
-        <StarRow label="가격 만족도" field="cost" />
-        <StarRow label="직원 만족도" field="employee" />
-        <StarRow label="서비스 만족도" field="service" />
-        <StarRow label="기구 만족도" field="equip" />
-
-        {/* 불편 회원 경험 */}
-        <div style={{ margin: '10px 0' }}>
-          <label style={{ display: 'inline-block', width: '220px' }}>
-            이번 달 불편했던 경험이 있나요?
-          </label>
-          <label style={{ marginRight: '12px' }}>
-            <input type="radio" name="memberIssue" checked={memberIssue === true}
-                   onChange={() => setMemberIssue(true)} /> 있음
-          </label>
-          <label>
-            <input type="radio" name="memberIssue" checked={memberIssue === false}
-                   onChange={() => setMemberIssue(false)} /> 없음
-          </label>
-        </div>
+        {/* 불만 7종 (1~5) */}
+        {COMPLAINT_GROUPS.map((g) => (
+          <fieldset key={g.group} style={{ margin: '12px 0', border: '1px solid #eee', padding: '10px' }}>
+            <legend style={{ fontWeight: 'bold' }}>{g.group}</legend>
+            {g.items.map((it) => (
+              <ScaleRow key={it.key} label={it.label} field={it.key} />
+            ))}
+          </fieldset>
+        ))}
 
         {/* 부상 경험 */}
         <div style={{ margin: '10px 0' }}>
@@ -141,7 +172,7 @@ function B2cSurvey() {
         {/* 부상 부위 (부상 있음일 때만) */}
         {injuryIssue && (
           <div style={{ margin: '10px 0' }}>
-            <label style={{ display: 'inline-block', width: '110px' }}>부상 부위</label>
+            <label style={{ display: 'inline-block', width: '130px' }}>부상 부위</label>
             <input
               type="text"
               value={injuryArea}

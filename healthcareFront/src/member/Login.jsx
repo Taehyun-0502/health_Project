@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // 로그인 페이지 컴포넌트 (디자인 제외 Plain 버전)
 function Login() {
