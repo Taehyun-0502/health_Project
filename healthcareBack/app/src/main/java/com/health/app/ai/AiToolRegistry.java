@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.health.app.complaint.ComplaintService;
-import com.health.app.churn.ChurnService;
 import com.health.app.contract.ContractDTO;
 import com.health.app.contract.ContractService;
 import com.health.app.dashboard.DashboardService;
@@ -87,9 +86,6 @@ public class AiToolRegistry {
 
     @Autowired
     private ComplaintService complaintService;
-
-    @Autowired
-    private ChurnService churnService;
 
     @Autowired
     private SurveyService surveyService;
@@ -229,21 +225,6 @@ public class AiToolRegistry {
                 Set.of("OWNER"), "READ",
                 "/fitb/b2bmypage/b2bcomplaint", "건의글 페이지로 이동",
                 (ctx, args) -> complaintService.ownerList(ctx.getGymId())));
-
-        register(new ToolSpec(
-                "get_churn_prediction",
-                "우리 지점 회원 1명의 이탈 예측 결과를 조회한다. memberUsername은 회원 아이디(전화 뒤 8자리).",
-                Map.of("memberUsername", prop("integer", "대상 회원 아이디(전화 뒤 8자리)")),
-                List.of("memberUsername"),
-                Set.of("OWNER"), "READ",
-                "/fitb/dashboard", "대시보드로 이동",
-                (ctx, args) -> {
-                    Long target = resolveSameGymMember(ctx, args);
-                    if (target == null) {
-                        return Map.of("message", "해당 회원을 찾을 수 없습니다.");
-                    }
-                    return churnService.predictByUsername(target);
-                }));
 
         register(new ToolSpec(
                 "get_member_survey",

@@ -1,7 +1,6 @@
 package com.health.app.churn;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,12 +44,5 @@ public class ChurnController {
     @GetMapping("/list")
     public ResponseEntity<List<ChurnDTO>> selectAll() throws Exception {
         return ResponseEntity.ok(churnService.selectAll());
-    }
-
-    // FastAPI 모델 예측 결과 조회 API
-    @GetMapping("/predict/{username}")
-    public ResponseEntity<Map<String, Object>> predict(@PathVariable Long username) {
-        Map<String, Object> result = churnService.predictByUsername(username);
-        return ResponseEntity.ok(result);
     }
 }

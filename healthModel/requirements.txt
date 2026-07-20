@@ -9,16 +9,6 @@ pandas>=2.0
 numpy>=1.24
 scikit-learn>=1.3      # 번들 언피클/전처리에 필요
 
-# --- 재학습(train_models.py)에 추가 ---
-# scikit-learn (위 포함)
-
-# --- 보고서 생성(make_report.py)에 추가 ---
-scipy>=1.10
-statsmodels>=0.14
-
-# --- 웹 데모(app.py)에 추가 ---
-streamlit>=1.30        # altair 포함 설치됨
-
 # --- 백엔드 API(churn.py, FastAPI)에 추가 ---
 fastapi>=0.110
 uvicorn[standard]>=0.29
@@ -26,4 +16,4 @@ psycopg[binary]>=3.1   # PostgreSQL(Supabase) 드라이버
 python-dotenv>=1.0     # .env 로드
 
 # 검증 환경: python 3.13 / xgboost 3.3.0 / shap 0.52.0 / scikit-learn 1.9.0
-#            pandas 3.0.3 / numpy 2.4.6 / scipy 1.18.0 / statsmodels 0.14.6
+#            pandas 3.0.3 / numpy 2.4.6
