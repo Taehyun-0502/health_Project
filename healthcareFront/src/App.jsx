@@ -3,7 +3,6 @@ import AdminMain from './AdminMain.jsx';
 import Login from './member/Login.jsx';
 import Join from './member/Join.jsx';
 import MemberMain from './MemberMain.jsx';
-import './App.css';
 import B2cMain from './b2c_mypage/B2cMain.jsx';
 import B2cComplaint from './b2c_mypage/B2cComplaint.jsx';
 import Membership from './b2c_mypage/Membership.jsx';
@@ -33,6 +32,8 @@ import B2bCoupon from './b2b_mypage/B2bCoupon.jsx';
 import B2cSurvey from './b2c_mypage/B2cSurvey.jsx';
 import FitcLayout from './components/FitcLayout.jsx'; // ◀ 일반회원 레이아웃 임포트
 import FitbLayout from './components/FitbLayout.jsx'; // ◀ 사장님 레이아웃 임포트 
+import B2bPromotion from './promotion/B2bPromotion.jsx';
+import B2bManagementPage from './attendance/B2bManagementPage.jsx';
 
 
 
@@ -83,6 +84,8 @@ function App() {
         <Route path="contract/:dataId" element={<ContractDetail />} />
         <Route path="payment/:dataId" element={<Payment />} />
         <Route path="itempage" element={<Itempage />} />
+        <Route path="promotion" element={<B2bPromotion />} />
+        <Route path="management" element={<B2bManagementPage />} />
         <Route path="/fitb/contractpage" element={<ContractLayout />}>
           <Route index element={<Contractpage />} />
           <Route path="member" element={<RosterPage />} />

@@ -981,7 +981,16 @@ function Settlepage() {
                   </thead>
                   <tbody>
                     {pays.map((p, index) => (
-                      <tr key={p.payId || p.dataId || index}>
+                      // 행 클릭 = 우측 통합 드로어에 매출 탭 추가 (삭제 버튼은 stopPropagation으로 기존 동작 유지)
+                      <tr
+                        key={p.payId || p.dataId || index}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() =>
+                          window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
+                            detail: { kind: 'settle', id: p.payId ?? p.dataId ?? index, title: p.payName ?? p.username ?? '매출', data: p },
+                          }))
+                        }
+                      >
                         <td>{p.payId ? `#${p.payId}` : `임시 (계약 #${p.dataId})`}</td>
                         <td>{p.username ?? '-'}</td>
                         <td><strong>{p.payName}</strong></td>
@@ -1001,7 +1010,7 @@ function Settlepage() {
                           <button
                             className="btn-action btn-action-danger"
                             style={{ padding: '4px 10px', fontSize: '12px' }}
-                            onClick={() => handleDeletePay(p.payId)}
+                            onClick={(e) => { e.stopPropagation(); handleDeletePay(p.payId); }}
                           >
                             삭제
                           </button>
@@ -1062,7 +1071,7 @@ function Settlepage() {
               <div className="settle-stats">
                 <div className="card-premium stat-card">
                   <div className="stat-card-title">지출 총액</div>
-                  <div className="stat-card-value" style={{ color: '#f43f5e' }}>
+                  <div className="stat-card-value" style={{ color: 'var(--danger-solid)' }}>
                     {formatWon(expenseTotalAmount)}
                   </div>
                   <div className="stat-card-desc">검색 필터 기준 사업장 총 운영 지출비</div>
@@ -1094,7 +1103,7 @@ function Settlepage() {
                         <tr key={e.expenseId}>
                           <td>#{e.expenseId}</td>
                           <td><strong>{e.expenseName}</strong></td>
-                           <td style={{ fontWeight: '600', color: '#f43f5e' }}>
+                           <td style={{ fontWeight: '600', color: 'var(--danger-solid)' }}>
                              {(() => {
                                if (e.expenseRate > 0) {
                                  const base = Math.round(e.expensePrice / (1 + e.expenseRate));
@@ -1104,7 +1113,7 @@ function Settlepage() {
                                      {formatWon(e.expensePrice)}
                                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 'normal', marginTop: '2px' }}>
                                        {formatWon(base)} 
-                                       <span style={{ color: '#ef4444', fontWeight: 'bold', marginLeft: '4px' }}>
+                                       <span style={{ color: 'var(--danger-solid)', fontWeight: 'bold', marginLeft: '4px' }}>
                                          + {formatWon(incentive)}
                                        </span>
                                      </div>
@@ -1159,13 +1168,13 @@ function Settlepage() {
                             marginBottom: '10px',
                             cursor: 'pointer',
                             transition: 'all 0.2s',
-                            backgroundColor: selectedExpenseContractId === c.dataId.toString() ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
+                            backgroundColor: selectedExpenseContractId === c.dataId.toString() ? 'var(--accent-bg)' : 'transparent',
                             borderColor: selectedExpenseContractId === c.dataId.toString() ? 'var(--primary-accent, #2563eb)' : 'var(--border-color, #e2e8f0)'
                           }}
                           onClick={() => handleSelectExpenseContract(c)}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 'bold', color: c.contract === 2 ? '#ef4444' : '#f59e0b', background: c.contract === 2 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 'bold', color: c.contract === 2 ? 'var(--danger-solid)' : '#f59e0b', background: c.contract === 2 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
                               {c.contract === 2 ? '임금 계약' : '제휴 수수료'}
                             </span>
                             <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>#{c.dataId}</span>
@@ -1177,7 +1186,7 @@ function Settlepage() {
                             <span>
                               금액: <strong>{formatWon(c.amount)}</strong>
                               {c.contract === 2 && getIncentiveAmount(c) > 0 && (
-                                <span style={{ color: '#ef4444', fontWeight: 'bold', marginLeft: '6px' }}>
+                                <span style={{ color: 'var(--danger-solid)', fontWeight: 'bold', marginLeft: '6px' }}>
                                   + {formatWon(getIncentiveAmount(c))}
                                 </span>
                               )}
@@ -1231,7 +1240,7 @@ function Settlepage() {
                         {selectedExpenseContractId && unpaidExpenses.find(c => c.dataId.toString() === selectedExpenseContractId)?.contract === 2 && (
                           <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                             기본급: {formatWon(unpaidExpenses.find(c => c.dataId.toString() === selectedExpenseContractId).amount)}
-                            <span style={{ color: '#ef4444', fontWeight: 'bold', marginLeft: '6px' }}>
+                            <span style={{ color: 'var(--danger-solid)', fontWeight: 'bold', marginLeft: '6px' }}>
                               + 인센티브: {formatWon(getIncentiveAmount(unpaidExpenses.find(c => c.dataId.toString() === selectedExpenseContractId)))}
                             </span>
                           </div>
@@ -1264,7 +1273,7 @@ function Settlepage() {
                     </div>
 
                     {selectedExpenseContractId && (
-                      <div style={{ marginTop: '15px', padding: '10px', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '6px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ marginTop: '15px', padding: '10px', background: 'var(--accent-bg)', borderRadius: '6px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>연동 계약서 ID: <strong>#{selectedExpenseContractId}</strong></span>
                         <button 
                           type="button" 

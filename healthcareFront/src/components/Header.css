@@ -1,0 +1,157 @@
+.portal-header {
+  position: relative;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--white);
+}
+
+/* B2B 유틸리티 바 — 디자인 시스템: 높이 60px, 흰 배경, 페이지명 17/700 */
+.portal-header--b2b {
+  min-height: 60px;
+  padding: 0 28px;
+}
+
+.portal-header__identity h1 {
+  margin: 0;
+  color: var(--gray-900);
+  font-size: var(--text-h3);
+  font-weight: 700;
+}
+
+.portal-header__identity p {
+  margin-top: 2px;
+  color: var(--gray-500);
+  font-size: var(--text-sm);
+}
+
+.portal-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.portal-notification {
+  position: relative;
+}
+
+.portal-notification__trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--gray-700);
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.portal-notification__trigger:hover {
+  border-color: var(--gray-200);
+  background: var(--gray-100);
+}
+
+.portal-notification__count {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 18px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  color: var(--white);
+  background: var(--danger-solid);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.portal-notification__menu {
+  position: absolute;
+  top: 46px;
+  right: 0;
+  width: min(320px, calc(100vw - 32px));
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--white);
+  box-shadow: var(--shadow-md);
+}
+
+.portal-notification__menu h2 {
+  padding: 4px 6px 10px;
+  border-bottom: 1px solid var(--gray-200);
+  color: var(--gray-900);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.portal-notification__menu ul {
+  list-style: none;
+}
+
+.portal-notification__menu li + li {
+  border-top: 1px solid var(--gray-100);
+}
+
+.portal-notification__menu li button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 8px;
+  border: 0;
+  color: var(--gray-700);
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.portal-notification__menu li button:hover:not(:disabled) {
+  background: var(--gray-100);
+}
+
+.portal-notification__menu li button:disabled {
+  cursor: default;
+}
+
+.portal-notification__menu li button > span:first-child {
+  color: var(--accent);
+  font-size: 8px;
+}
+
+.portal-notification__empty {
+  padding: 20px 8px;
+  color: var(--gray-500);
+  text-align: center;
+  font-size: var(--text-xs);
+}
+
+.portal-header__logout {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  color: var(--gray-700);
+  background: var(--white);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .portal-header--b2b {
+    min-height: 58px;
+    padding: 0 18px;
+  }
+}

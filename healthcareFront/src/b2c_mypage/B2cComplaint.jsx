@@ -73,49 +73,57 @@ function B2cComplaint() {
   };
 
   return (
-    <div>
-      <h3>건의사항 접수함</h3>
-      
+    <div style={{ padding: '16px 16px 32px' }}>
+      <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>건의사항 접수함</h3>
+
       {/* 건의사항 작성 폼 */}
       <form ref={suggestFormRef} onSubmit={handleSuggestSubmit} style={{ marginBottom: '30px' }}>
         <div>
-          <label>건의 제목: </label>
-          <input type="text" name="title" required style={{ width: '100%' }} />
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)', marginBottom: '6px' }}>건의 제목: </label>
+          <input type="text" name="title" required style={{ width: '100%', boxSizing: 'border-box', padding: '12px', border: '1px solid var(--gray-300)', borderRadius: '10px' }} />
         </div>
-        <div style={{ marginTop: '10px' }}>
-          <label>건의 내용: </label>
-          <textarea name="content" required style={{ width: '100%', height: '100px' }}></textarea>
+        <div style={{ marginTop: '12px' }}>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)', marginBottom: '6px' }}>건의 내용: </label>
+          <textarea name="content" required style={{ width: '100%', boxSizing: 'border-box', height: '100px', padding: '12px', border: '1px solid var(--gray-300)', borderRadius: '10px', fontFamily: 'inherit' }}></textarea>
         </div>
-        <button type="submit" style={{ marginTop: '10px' }}>건의사항 보내기</button>
+        <button type="submit" style={{ marginTop: '12px', width: '100%', minHeight: '48px', padding: '12px', backgroundColor: 'var(--b2c-accent)', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}>건의사항 보내기</button>
       </form>
 
-      <hr />
+      <hr style={{ border: 'none', borderTop: '1px solid var(--gray-200)', margin: '24px 0' }} />
 
       {/* 건의 처리결과 화면 목록 */}
-      <h4>내가 접수한 건의 내역</h4>
+      <h4 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--gray-900)' }}>내가 접수한 건의 내역</h4>
       {suggestions.length === 0 ? (
-        <p>접수된 건의 내역이 없습니다.</p>
+        <p style={{ color: 'var(--gray-400)', fontSize: '14px' }}>접수된 건의 내역이 없습니다.</p>
       ) : (
-        <table border="1" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '13px' }}>
           <thead>
-            <tr>
-              <th>번호</th>
-              <th>제목</th>
-              <th>상태</th>
-              <th>접수일자</th>
+            <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-500)', borderBottom: '2px solid var(--gray-200)' }}>
+              <th style={{ padding: '10px', fontWeight: '600' }}>번호</th>
+              <th style={{ padding: '10px', fontWeight: '600' }}>제목</th>
+              <th style={{ padding: '10px', fontWeight: '600' }}>상태</th>
+              <th style={{ padding: '10px', fontWeight: '600' }}>접수일자</th>
             </tr>
           </thead>
           <tbody>
             {suggestions.map((item) => (
-              <tr key={item.complaintId}>
-                <td>{item.complaintId}</td>
-                <td>{item.title}</td>
-                <td>
-                  <span style={{ color: item.status === '처리완료' ? 'green' : 'orange', fontWeight: 'bold' }}>
+              <tr key={item.complaintId} style={{ borderBottom: '1px solid var(--gray-200)', textAlign: 'center' }}>
+                <td style={{ padding: '10px' }}>{item.complaintId}</td>
+                <td style={{ padding: '10px' }}>{item.title}</td>
+                <td style={{ padding: '10px' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '3px 10px',
+                    borderRadius: '999px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    backgroundColor: item.status === '처리완료' ? 'var(--success-bg)' : 'var(--warning-bg)',
+                    color: item.status === '처리완료' ? 'var(--success)' : 'var(--warning)'
+                  }}>
                     {item.status}
                   </span>
                 </td>
-                <td>{item.createAt}</td>
+                <td style={{ padding: '10px', color: 'var(--gray-500)' }}>{item.createAt}</td>
               </tr>
             ))}
           </tbody>

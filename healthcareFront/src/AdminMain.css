@@ -1,0 +1,177 @@
+/* B2B Home — 디자인 시스템 v1.0 (프로토타입: 인사말 + 2×2 메인 카드 + 기타 메뉴 그리드)
+   본문 컨테이너 max 1080px 중앙 정렬 */
+
+.admin-home {
+  width: min(100%, 1080px);
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+.admin-home__header h1 {
+  color: var(--gray-900);
+  font-size: var(--text-h1);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.admin-home__header > p {
+  margin-top: 6px;
+  color: var(--gray-500);
+  font-size: 14px;
+}
+
+/* 메인 2×2 카드 */
+.admin-home__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 32px;
+}
+
+.admin-home__card {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 26px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  color: inherit;
+  background: var(--white);
+  box-shadow: var(--shadow-card);
+  text-decoration: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.admin-home__card:hover {
+  border-color: var(--gray-300);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.admin-home__card .admin-home__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.admin-home__copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-home__copy strong,
+.admin-home__copy span {
+  display: block;
+}
+
+.admin-home__copy strong {
+  color: var(--gray-900);
+  font-size: var(--text-h3);
+  font-weight: 600;
+}
+
+.admin-home__copy span {
+  margin-top: 5px;
+  color: var(--gray-500);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.admin-home__arrow {
+  align-self: center;
+  color: var(--gray-400);
+  font-size: 18px;
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.admin-home__card:hover .admin-home__arrow,
+.admin-home__extra-card:hover .admin-home__arrow {
+  color: var(--accent);
+  transform: translateX(3px);
+}
+
+/* 기타 메뉴 */
+.admin-home__section-label {
+  margin: 36px 0 14px;
+  color: var(--gray-500);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.admin-home__extra-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-home__extra-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 15px;
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  color: inherit;
+  background: var(--white);
+  text-decoration: none;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.admin-home__extra-card:hover {
+  border-color: var(--gray-300);
+  background: var(--gray-50);
+}
+
+.admin-home__extra-card .admin-home__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  color: var(--accent-text);
+  background: var(--accent-bg);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-home__extra-card .admin-home__copy strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.admin-home__extra-card .admin-home__copy span {
+  display: none;
+}
+
+.admin-home__extra-card .admin-home__arrow {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .admin-home {
+    padding: 24px 16px 56px;
+  }
+
+  .admin-home__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-home__extra-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-home__extra-card .admin-home__copy span {
+    display: block;
+  }
+}
