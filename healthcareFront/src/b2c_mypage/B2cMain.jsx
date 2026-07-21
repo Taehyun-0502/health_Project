@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 
 // 마이페이지 서브 메뉴 (하단 탭바와 별개로 마이페이지 내부 이동을 담당)
 const SUB_MENUS = [
@@ -41,9 +41,7 @@ function B2cMain() {
         <Outlet />
       </div>
 
-      <div style={{ marginTop: '20px' }}>
-        <Link to="/fitc" style={{ color: 'var(--b2c-accent)', fontWeight: '600', textDecoration: 'none' }}>메인화면으로 이동</Link>
-      </div>
+
     </div>
   );
 }
