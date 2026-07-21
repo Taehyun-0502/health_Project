@@ -1,8 +1,8 @@
-/* 대시보드 최소 스타일 */
+/* 대시보드 — 디자인 시스템 v1.0 (본문 max 1080 중앙, 카드 radius 12, 차트 메인 = 액션 오렌지) */
 .dash-page {
-  max-width: 900px;
+  max-width: 1080px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 20px 24px 64px;
 }
 
 .dash-header {
@@ -13,20 +13,21 @@
 
 .dash-user {
   font-size: 14px;
-  color: #888;
+  color: var(--gray-500);
   font-weight: normal;
 }
 
 .dash-message {
-  color: #c0392b;
+  color: var(--danger);
 }
 
 /* 위젯 편집 패널 */
 .dash-edit {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-bottom: 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--white);
+  padding: 12px 16px;
+  margin-bottom: 14px;
 }
 
 .dash-edit ul {
@@ -39,51 +40,56 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 0;
+  padding: 5px 0;
+  font-size: 14px;
 }
 
 .dash-edit li.locked {
-  color: #aaa;
+  color: var(--gray-400);
 }
 
 /* 위젯 카드 */
 .dash-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 16px;
 }
 
 .dash-card {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--white);
+  box-shadow: var(--shadow-card);
+  padding: 18px 20px;
 }
 
 .dash-card h2 {
   margin: 0 0 8px;
   font-size: 15px;
+  font-weight: 700;
 }
 
 .dash-kpi {
   margin: 0;
-  font-size: 26px;
-  font-weight: bold;
+  font-size: 23px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .dash-kpi span {
   font-size: 13px;
-  color: #888;
+  color: var(--gray-500);
   font-weight: normal;
 }
 
 .dash-sub {
   margin: 4px 0 0;
   font-size: 12px;
-  color: #666;
+  color: var(--gray-500);
 }
 
 .dash-empty {
-  color: #888;
+  color: var(--gray-500);
   font-size: 13px;
 }
 
@@ -97,27 +103,38 @@
 .dash-list li {
   display: flex;
   justify-content: space-between;
-  padding: 3px 0;
+  padding: 5px 0;
   font-size: 13px;
+}
+
+.dash-list li + li {
+  border-top: 1px solid var(--gray-100);
 }
 
 .dash-badge {
   font-size: 11px;
-  background: #eee;
-  border-radius: 10px;
-  padding: 2px 8px;
+  font-weight: 600;
+  background: var(--gray-100);
+  color: var(--gray-500);
+  border-radius: 999px;
+  padding: 2px 9px;
 }
 
 .dash-badge.danger {
-  background: #fdecea;
-  color: #c0392b;
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
-/* 월별 막대 차트 */
+.dash-badge.warning {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+/* 월별 막대 차트 — 시리즈 1 = 액션 오렌지 */
 .dash-chart {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
+  gap: 8px;
   height: 120px;
 }
 
@@ -132,14 +149,15 @@
 
 .dash-bar {
   width: 100%;
-  background: #4a90d9;
+  background: var(--accent);
   border-radius: 3px 3px 0 0;
 }
 
 .dash-bar-value,
 .dash-bar-month {
   font-size: 10px;
-  color: #888;
+  color: var(--gray-400);
+  font-variant-numeric: tabular-nums;
 }
 
 /* 월별 예측 이탈률 추이 위젯 — 그리드 전체 폭 사용 */
@@ -164,52 +182,58 @@
 .dash-ai-zone {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 16px;
+  margin-top: 16px;
 }
 
 .dash-ai-card {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--white);
+  box-shadow: var(--shadow-card);
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
 }
 
 .dash-ai-card h3 {
-  margin: 0 0 10px;
-  font-size: 14px;
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 /* 왼쪽: 질문 카드 4종 */
 .dash-ai-questions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
   flex: 1;
 }
 
 .dash-ai-question {
   text-align: left;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #f7f8fa;
-  padding: 9px 11px;
-  font-size: 12.5px;
+  border: 1px solid var(--gray-200);
+  border-radius: 9px;
+  background: var(--white);
+  padding: 12px 13px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
   line-height: 1.45;
   cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
 }
 
 .dash-ai-question:hover {
-  border-color: #4a90d9;
-  background: #eef4fc;
+  border-color: var(--accent-soft);
+  background: var(--accent-bg);
 }
 
 .dash-ai-tag {
   display: block;
   font-size: 10.5px;
   font-weight: 600;
-  color: #2f6fe4;
+  color: var(--accent-text);
   margin-bottom: 3px;
 }
 
@@ -217,32 +241,36 @@
 .dash-ai-tasks {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
   flex: 1;
 }
 
 .dash-ai-task {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
   text-align: left;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #f7f8fa;
-  padding: 9px 11px;
-  font-size: 12.5px;
+  border: 1px solid var(--gray-200);
+  border-radius: 9px;
+  background: var(--white);
+  padding: 12px 13px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
 }
 
 .dash-ai-task:hover {
-  border-color: #bbb;
+  border-color: var(--gray-300);
+  background: var(--gray-50);
 }
 
 .dash-ai-task-sub {
   margin-left: 18px;
   width: calc(100% - 18px);
-  background: #fff;
+  background: var(--gray-50);
 }
 
 .dash-ai-task-label {
@@ -250,18 +278,13 @@
 }
 
 .dash-ai-task-go {
-  color: #999;
+  color: var(--gray-400);
   font-size: 12px;
-}
-
-.dash-badge.warning {
-  background: #fcf3df;
-  color: #8a5e00;
 }
 
 /* 영역 하단 동작 캡션 (질문=팝업 답변 / 브리핑=페이지 이동 혼동 방지) */
 .dash-ai-caption {
-  margin: 10px 0 0;
+  margin: 12px 0 0;
   font-size: 11px;
-  color: #999;
+  color: var(--gray-400);
 }

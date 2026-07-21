@@ -1,0 +1,267 @@
+/* B2B 좌측 LNB — 디자인 시스템 v1.0 (화이트 셸, 프로토타입 기준)
+   활성 메뉴: 소프트 오렌지 배경 + 딥 오렌지 텍스트 + 3px 액션 오렌지 인셋 바 */
+
+.b2b-lnb {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  flex: 0 0 248px;
+  flex-direction: column;
+  width: 248px;
+  height: 100vh;
+  padding: 22px 16px 16px;
+  color: var(--gray-900);
+  background: var(--white);
+  border-right: 1px solid var(--gray-200);
+}
+
+.b2b-lnb__brand {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px 22px;
+  color: var(--gray-900);
+  text-decoration: none;
+}
+
+.b2b-lnb__brand-copy strong,
+.b2b-lnb__brand-copy small,
+.b2b-profile__copy strong,
+.b2b-profile__copy small {
+  display: block;
+}
+
+.b2b-lnb__brand-copy strong {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.b2b-lnb__brand-copy small {
+  margin-top: 3px;
+  color: var(--gray-400);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+}
+
+.b2b-profile__copy small {
+  color: var(--gray-400);
+  font-size: 11px;
+}
+
+.b2b-lnb__nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.b2b-lnb__section-label {
+  display: none;
+}
+
+.b2b-lnb__nav-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.b2b-lnb__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: var(--gray-500);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: color 0.16s ease, background-color 0.16s ease;
+}
+
+.b2b-lnb__link:hover {
+  color: var(--gray-900);
+  background: var(--gray-100);
+}
+
+.b2b-lnb__link.is-active {
+  color: var(--accent-text);
+  background: var(--accent-bg);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.b2b-lnb__menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  color: inherit;
+}
+
+.b2b-lnb__subnav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 4px 32px;
+  padding-left: 12px;
+  border-left: 1px solid var(--gray-200);
+}
+
+.b2b-lnb__sublink {
+  padding: 7px 8px;
+  border-radius: 6px;
+  color: var(--gray-500);
+  text-decoration: none;
+  font-size: var(--text-sm);
+}
+
+.b2b-lnb__sublink:hover {
+  color: var(--gray-900);
+  background: var(--gray-100);
+}
+
+.b2b-lnb__sublink.is-active {
+  color: var(--accent-text);
+  background: var(--accent-bg);
+  font-weight: 600;
+}
+
+/* 하단 프로필 카드 — 프로토타입: 보더 카드 + 오렌지 원형 아바타 */
+.b2b-profile {
+  position: relative;
+}
+
+.b2b-profile__summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 11px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  background: var(--gray-50);
+  cursor: pointer;
+  list-style: none;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.b2b-profile__summary:hover,
+.b2b-profile.is-active .b2b-profile__summary {
+  border-color: var(--gray-300);
+  background: var(--gray-100);
+}
+
+.b2b-profile__summary::-webkit-details-marker {
+  display: none;
+}
+
+.b2b-profile__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: var(--white);
+  background: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.b2b-profile__copy {
+  min-width: 0;
+}
+
+.b2b-profile__copy strong,
+.b2b-profile__copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.b2b-profile__copy strong {
+  color: var(--gray-900);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.b2b-profile__chevron {
+  color: var(--gray-400);
+  transition: transform 0.16s ease;
+}
+
+.b2b-profile[open] .b2b-profile__chevron {
+  transform: rotate(180deg);
+}
+
+.b2b-profile__menu {
+  position: absolute;
+  right: 0;
+  bottom: 68px;
+  left: 0;
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  background: var(--white);
+  box-shadow: var(--shadow-md);
+}
+
+.b2b-profile__menu a,
+.b2b-profile__menu button {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--gray-700);
+  background: transparent;
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.b2b-profile__menu a:hover,
+.b2b-profile__menu button:hover {
+  color: var(--gray-900);
+  background: var(--gray-100);
+}
+
+@media (max-width: 768px) {
+  .b2b-lnb {
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 14px 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .b2b-lnb__brand {
+    padding: 0 0 14px;
+  }
+
+  .b2b-lnb__nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .b2b-lnb__link {
+    padding: 0 10px;
+  }
+
+  .b2b-lnb__subnav {
+    margin-left: 24px;
+  }
+
+  .b2b-profile {
+    margin-top: 14px;
+  }
+}

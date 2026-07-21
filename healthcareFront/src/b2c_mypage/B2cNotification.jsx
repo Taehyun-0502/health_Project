@@ -48,18 +48,18 @@ function B2cNotification() {
   };
 
   return (
-    <div>
-      <h3>알림 내역</h3>
+    <div style={{ padding: '16px 16px 32px' }}>
+      <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>알림 내역</h3>
       {alarms.length === 0 ? (
-        <p style={{ color: '#666', marginTop: '10px' }}>새로운 알림 소식이 없습니다.</p>
+        <p style={{ color: 'var(--gray-500)', marginTop: '10px' }}>새로운 알림 소식이 없습니다.</p>
       ) : (
-        <table border="1" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '13px' }}>
           <thead>
-            <tr>
-              <th>구분</th>
-              <th>내용</th>
-              <th>수신일</th>
-              <th>읽음</th>
+            <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-500)', borderBottom: '2px solid var(--gray-200)' }}>
+              <th style={{ padding: '10px', fontWeight: '600' }}>구분</th>
+              <th style={{ padding: '10px', fontWeight: '600' }}>내용</th>
+              <th style={{ padding: '10px', fontWeight: '600' }}>수신일</th>
+              <th style={{ padding: '10px', fontWeight: '600' }}>읽음</th>
             </tr>
           </thead>
           <tbody>
@@ -67,12 +67,17 @@ function B2cNotification() {
               <tr
                 key={alarm.alarmId}
                 onClick={() => handleAlarmClick(alarm)}
-                style={{ cursor: 'pointer', fontWeight: alarm.read === 'Y' ? 'normal' : 'bold' }}
+                style={{
+                  cursor: 'pointer',
+                  fontWeight: alarm.read === 'Y' ? 'normal' : 'bold',
+                  backgroundColor: alarm.read === 'Y' ? 'transparent' : 'var(--b2c-lime-bg)',
+                  borderBottom: alarm.read === 'Y' ? '1px solid var(--gray-200)' : '1px solid var(--b2c-lime-line)'
+                }}
               >
-                <td>{alarm.category}</td>
-                <td>{alarm.message}</td>
-                <td>{alarm.createAt}</td>
-                <td>{alarm.read === 'Y' ? '읽음' : '안읽음'}</td>
+                <td style={{ padding: '10px' }}>{alarm.category}</td>
+                <td style={{ padding: '10px' }}>{alarm.message}</td>
+                <td style={{ padding: '10px', color: 'var(--gray-500)' }}>{alarm.createAt}</td>
+                <td style={{ padding: '10px', color: alarm.read === 'Y' ? 'var(--gray-400)' : 'var(--b2c-accent)' }}>{alarm.read === 'Y' ? '읽음' : '안읽음'}</td>
               </tr>
             ))}
           </tbody>

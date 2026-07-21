@@ -82,22 +82,22 @@ function B2cCheckIn() {
   );
 
   return (
-    <div style={{ maxWidth: '450px', margin: '0 auto', padding: '10px' }}>
-      <h3>출석 일지 (달력 보기)</h3>
-      <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>최근 30일 이내에 출석 완료된 날짜에 체크 표시가 찍힙니다.</p>
+    <div style={{ padding: '16px 16px 32px' }}>
+      <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>출석 일지 (달력 보기)</h3>
+      <p style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '15px' }}>최근 30일 이내에 출석 완료된 날짜에 체크 표시가 찍힙니다.</p>
 
       {/* 다가오는 PT 일정 안내 (담당 트레이너가 등록한 예정 수업, 조회 전용) */}
       {ptSchedules.length > 0 && (
-        <div style={{ marginBottom: '20px', padding: '12px', border: '1px solid #bbf7d0', borderRadius: '8px', backgroundColor: '#f0fdf4' }}>
-          <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#15803d' }}>🗓️ 다가오는 PT 일정</h4>
+        <div style={{ marginBottom: '20px', padding: '12px', border: '1px solid var(--b2c-lime-line)', borderRadius: '12px', backgroundColor: 'var(--b2c-lime-bg)' }}>
+          <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'var(--b2c-accent)' }}>🗓️ 다가오는 PT 일정</h4>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {ptSchedules.map((schedule) => (
-              <li key={schedule.scheduleId} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 4px', borderBottom: '1px solid #dcfce7', fontSize: '13px' }}>
+              <li key={schedule.scheduleId} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 4px', borderBottom: '1px solid var(--b2c-lime-line)', fontSize: '13px' }}>
                 <span>
                   <b>{schedule.scheduleAt ? `${schedule.scheduleAt.substring(0, 10).replaceAll('-', '.')} ${schedule.scheduleAt.substring(11, 16)}` : '-'}</b>
-                  {schedule.memo && <span style={{ color: '#888' }}> — {schedule.memo}</span>}
+                  {schedule.memo && <span style={{ color: 'var(--gray-400)' }}> — {schedule.memo}</span>}
                 </span>
-                <span style={{ color: '#666' }}>{schedule.trainerName ? `${schedule.trainerName} 트레이너` : ''}</span>
+                <span style={{ color: 'var(--gray-500)' }}>{schedule.trainerName ? `${schedule.trainerName} 트레이너` : ''}</span>
               </li>
             ))}
           </ul>
@@ -106,20 +106,20 @@ function B2cCheckIn() {
 
       {/* 달력 컨트롤러 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-        <button onClick={handlePrevMonth} style={{ padding: '6px 12px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>&lt; 이전달</button>
-        <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{year}년 {month + 1}월</span>
-        <button onClick={handleNextMonth} style={{ padding: '6px 12px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>다음달 &gt;</button>
+        <button onClick={handlePrevMonth} style={{ padding: '10px 14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: '#fff', color: 'var(--gray-700)', fontWeight: '600' }}>&lt; 이전달</button>
+        <span style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--gray-900)' }}>{year}년 {month + 1}월</span>
+        <button onClick={handleNextMonth} style={{ padding: '10px 14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: '#fff', color: 'var(--gray-700)', fontWeight: '600' }}>다음달 &gt;</button>
       </div>
 
       {/* 요일 구분 그리드 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', textAlign: 'center', fontWeight: 'bold', fontSize: '14px', marginBottom: '10px' }}>
-        <div style={{ color: 'red' }}>일</div>
+        <div style={{ color: 'var(--danger-solid)' }}>일</div>
         <div>월</div>
         <div>화</div>
         <div>수</div>
         <div>목</div>
         <div>금</div>
-        <div style={{ color: 'blue' }}>토</div>
+        <div style={{ color: 'var(--b2c-accent)' }}>토</div>
       </div>
 
       {/* 캘린더 날짜 바둑판 그리드 */}
@@ -133,24 +133,42 @@ function B2cCheckIn() {
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const isAttended = attendedDates.has(dateStr); // 해당 일자에 출석 기록이 있는지 판단
 
+          // 오늘 날짜 표시용 비교 (시각 표현 전용)
+          const now = new Date();
+          const isToday =
+            now.getFullYear() === year && now.getMonth() === month && now.getDate() === day;
+
           return (
             <div
               key={`day-${day}`}
               style={{
                 minHeight: '50px',
-                border: '1px solid #eee',
+                border: '1px solid var(--gray-200)',
                 borderRadius: '8px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: isAttended ? '#e0f2fe' : '#fafafa', // 출석한 날은 이쁜 하늘색 처리
+                backgroundColor: isAttended ? 'var(--b2c-lime-bg)' : 'var(--gray-50)', // 출석한 날은 라임 하이라이트 처리
+                outline: isToday ? '2px solid var(--b2c-accent)' : 'none',
+                outlineOffset: isToday ? '-2px' : undefined,
                 transition: 'all 0.2s',
                 position: 'relative'
               }}
             >
-              {/* 날짜 숫자 표시 */}
-              <span style={{ fontSize: '12px', fontWeight: isAttended ? 'bold' : 'normal', color: isAttended ? '#0369a1' : '#333' }}>
+              {/* 날짜 숫자 표시 (출석일은 라임 도장 원형) */}
+              <span style={{
+                fontSize: '12px',
+                fontWeight: isAttended ? 'bold' : 'normal',
+                color: isAttended ? '#fff' : 'var(--gray-900)',
+                backgroundColor: isAttended ? 'var(--b2c-accent)' : 'transparent',
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
                 {day}
               </span>
 
@@ -158,11 +176,10 @@ function B2cCheckIn() {
               {isAttended && (
                 <span style={{
                   fontSize: '9px',
-                  backgroundColor: '#0284c7',
-                  color: '#fff',
+                  color: 'var(--b2c-accent)',
                   padding: '2px 4px',
-                  borderRadius: '4px',
-                  marginTop: '4px',
+                  borderRadius: '999px',
+                  marginTop: '2px',
                   fontWeight: 'bold'
                 }}>
                   출석

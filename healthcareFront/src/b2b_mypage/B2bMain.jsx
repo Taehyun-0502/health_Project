@@ -1,36 +1,52 @@
 import { Link, Outlet } from 'react-router-dom';
+import { isGymRole } from '../config/uiNavigation.js';
+import './B2bMain.css';
 
-// B2B 사장님 마이페이지 프레임 컴포넌트 (디자인 제외 Plain 버전 - 중첩 라우팅 적용)
 function B2bMain() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const showGymMenus = isGymRole(user.role);
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2>B2B 관리자 마이페이지 ({user.name})</h2>
-      
-      {/* 관리자 전용 서브 링크 영역 (건의사항 및 계정설정 보존) */}
-      <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-        {/* 회원 건의사항 접수함 링크 (admin 계정 제외) */}
-        {user.role !== 'admin' && (
-          <Link to="b2bcomplaint" style={{ textDecoration: 'none', fontWeight: 'bold', color: 'blue' }}>회원건의 접수현황</Link>
+    <section className="b2b-profile-page">
+      <header className="b2b-profile-page__header">
+        <p>PROFILE</p>
+        <h1>{user.name || '관리자'}님의 마이페이지</h1>
+        <span>계정과 알림, 회원 관리 정보를 확인합니다.</span>
+      </header>
+
+      <nav className="b2b-profile-page__grid" aria-label="마이페이지 메뉴">
+        {showGymMenus && (
+          <Link to="b2bcomplaint" className="b2b-profile-page__card">
+            <strong>회원건의 접수현황</strong>
+            <span>회원이 접수한 건의사항과 처리 상태를 확인합니다.</span>
+          </Link>
         )}
+        <Link to="notification" className="b2b-profile-page__card">
+          <strong>알림 내역</strong>
+          <span>계약, 정산, 물품과 운영 알림을 확인합니다.</span>
+        </Link>
+        <Link to="account" className="b2b-profile-page__card">
+          <strong>계정 설정</strong>
+          <span>내 계정 정보와 기본 설정을 관리합니다.</span>
+        </Link>
+        {showGymMenus && (
+          <Link to="b2blist" className="b2b-profile-page__card">
+            <strong>회원·이탈 분석</strong>
+            <span>회원 현황과 이탈 위험 분석 결과를 확인합니다.</span>
+          </Link>
+        )}
+        {showGymMenus && (
+          <Link to="b2bcoupon" className="b2b-profile-page__card">
+            <strong>쿠폰 관리</strong>
+            <span>발급한 쿠폰과 회원별 사용 상태를 확인합니다.</span>
+          </Link>
+        )}
+      </nav>
 
-        {/* 알림 내역 링크 */}
-        <Link to="notification" style={{ textDecoration: 'none' }}>알림 내역</Link>
-
-        {/* 계정설정 링크 */}
-        <Link to="account" style={{ textDecoration: 'none' }}>계정설정</Link>
-      </div>
-
-      {/* 자식 라우트 컴포넌트(B2bComplaint 등)가 실시간으로 교체 마운트되는 슬롯 공간 */}
-      <div style={{ border: '1px solid #ccc', padding: '20px', minHeight: '300px' }}>
+      <div className="b2b-profile-page__outlet">
         <Outlet />
       </div>
-
-      <div style={{ marginTop: '20px' }}>
-        <Link to="/fitb">관리자 메인화면으로 이동</Link>
-      </div>
-    </div>
+    </section>
   );
 }
 
