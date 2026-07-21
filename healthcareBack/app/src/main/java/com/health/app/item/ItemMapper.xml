@@ -29,6 +29,7 @@ where h.gym_id=#{gymId}
     and (h.item_name like concat('%', #{pager.searchKeyword}, '%') or h.item_category like concat('%', #{pager.searchKeyword}, '%'))
 </if>
 group by h.gym_id, h.item_category, h.item_name
+having sum(h.item_count) > 0
 <choose>
     <when test="sort == 'count_desc'">order by itemCount desc</when>
     <when test="sort == 'count_asc'">order by itemCount asc</when>
@@ -49,6 +50,7 @@ select count(*) from (
         and (item_name like concat('%', #{pager.searchKeyword}, '%') or item_category like concat('%', #{pager.searchKeyword}, '%'))
     </if>
     group by gym_id, item_category, item_name
+    having sum(item_count) > 0
 ) t
 </select>
 
@@ -75,6 +77,7 @@ where gym_id=#{gymId}
     and (item_name like concat('%', #{keyword}, '%') or item_category like concat('%', #{keyword}, '%'))
 </if>
 group by gym_id, item_category, item_name
+having sum(item_count) > 0
 order by item_name
 </select>
 

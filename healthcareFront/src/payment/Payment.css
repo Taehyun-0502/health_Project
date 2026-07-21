@@ -1,0 +1,362 @@
+/* 결제 페이지 (B2B 현장 결제 확정) — FitbLayout 콘텐츠 영역에 렌더된다.
+   디자인 토큰은 src/index.css 단일 원천을 사용한다. 이 파일은 표현만 담당하며,
+   제거해도 라우팅·API·폼 제출·상태 전이 등 기능은 그대로 동작한다. */
+
+.pay-page {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+/* ── 헤더 ───────────────────────────────── */
+.pay-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.pay-title {
+  font-size: var(--text-h1);
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--gray-900);
+}
+
+.pay-back {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--gray-500);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.pay-back:hover {
+  color: var(--accent-strong);
+}
+
+/* ── 2단 레이아웃: 본문 + 요약 레일 ───────── */
+.pay-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+.pay-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* ── 카드 ───────────────────────────────── */
+.pay-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+}
+
+.pay-card-title {
+  font-size: var(--text-h3);
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: 16px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+  line-height: 1.3;
+}
+
+/* ── 계약 정보 필드 (라벨/값 2열) ──────────── */
+.pay-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pay-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.pay-field:last-child {
+  border-bottom: none;
+}
+
+.pay-field-label {
+  font-size: var(--text-sm);
+  color: var(--gray-500);
+}
+
+.pay-field-value {
+  font-size: var(--text-body);
+  font-weight: 500;
+  color: var(--gray-900);
+  text-align: right;
+}
+
+.pay-field-value.is-amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pay-type-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background: var(--accent-bg);
+  color: var(--accent-text);
+}
+
+/* ── 쿠폰 선택 (라디오 목록) ────────────────── */
+.pay-coupon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pay-coupon-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pay-coupon-option:hover {
+  border-color: var(--gray-300);
+  background: var(--gray-50);
+}
+
+.pay-coupon-option.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.pay-coupon-radio {
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-strong);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.pay-coupon-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pay-coupon-name {
+  font-size: var(--text-body);
+  font-weight: 500;
+  color: var(--gray-900);
+}
+
+.pay-coupon-cat {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.pay-coupon-meta {
+  font-size: var(--text-xs);
+  color: var(--gray-500);
+}
+
+.pay-coupon-none {
+  padding: 24px 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--gray-500);
+}
+
+/* ── 결제 방법 (할부 선택) ──────────────────── */
+.pay-method-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pay-select {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: var(--text-body);
+  color: var(--gray-900);
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pay-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14);
+}
+
+.pay-select:disabled {
+  background: var(--gray-100);
+  color: var(--gray-400);
+  cursor: not-allowed;
+}
+
+.pay-method-note {
+  font-size: var(--text-xs);
+  color: var(--gray-500);
+}
+
+/* ── 우측 요약 레일 ────────────────────────── */
+.pay-summary {
+  position: sticky;
+  top: 24px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+}
+
+.pay-summary-title {
+  font-size: var(--text-h3);
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: 16px;
+}
+
+.pay-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  font-size: var(--text-sm);
+  color: var(--gray-700);
+}
+
+.pay-summary-row .pay-summary-num {
+  font-variant-numeric: tabular-nums;
+  color: var(--gray-900);
+}
+
+.pay-summary-row.is-discount {
+  color: var(--accent-text);
+}
+
+.pay-summary-row.is-discount .pay-summary-num {
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.pay-summary-divider {
+  height: 1px;
+  background: var(--gray-200);
+  margin: 10px 0;
+}
+
+.pay-summary-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 0 18px;
+}
+
+.pay-summary-total-label {
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.pay-summary-total-value {
+  font-size: var(--text-h1);
+  font-weight: 700;
+  color: var(--accent-strong);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.4px;
+}
+
+/* 결제하기 = 최종 확정 액션 → 블랙 솔리드 버튼 (디자인 가이드 2단 위계) */
+.pay-submit {
+  width: 100%;
+  padding: 14px;
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--white);
+  background: var(--black);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.pay-submit:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.pay-submit:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.pay-submit:disabled {
+  background: var(--gray-300);
+  color: var(--white);
+  cursor: not-allowed;
+}
+
+/* ── 메시지 / 로딩·빈 상태 ─────────────────── */
+.pay-message {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid #fecaca;
+}
+
+.pay-state {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 80px 24px;
+  text-align: center;
+  color: var(--gray-500);
+}
+
+.pay-state-title {
+  font-size: var(--text-h2);
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 12px;
+}
+
+/* ── 반응형: 좁은 화면에서 단일 컬럼 ───────── */
+@media (max-width: 900px) {
+  .pay-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pay-summary {
+    position: static;
+  }
+}

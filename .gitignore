@@ -52,3 +52,6 @@ healthModel/healthModel/LICENSE_PYTHON.txt
 .claude/
 CLAUDE.md
 **/CLAUDE.md
+
+# VS Code workspace settings
+.vscode/
