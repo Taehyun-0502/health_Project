@@ -13,6 +13,8 @@ const WIDGET_LABEL = {
   expiringContract: '다가오는 계약 만료',
   bodyComposition: '체성분 변화 추이',
   gymChurn: '헬스장 이탈율',
+  gymChurnTrend: '월별 예측 이탈률 추이',
+  gymRiskTrend: '월별 위험군 추이',
   managedMemberCount: '담당 회원 수',
   lowSessionMembers: '세션 소진 임박',
   monthlySession: '월별 세션 수행',
@@ -21,6 +23,181 @@ const WIDGET_LABEL = {
 };
 
 const ROLE_LABEL = { ADMIN: '관계사', OWNER: '사장님', TRAINER: '트레이너' };
+
+// 헬스장 이탈율 위젯 — 위험도 분포 도넛 차트 (순수 SVG)
+function ChurnDonut({ tiers, centerLabel, centerValue }) {
+  const size = 124;
+  const stroke = 20;
+  const r = (size - stroke) / 2;
+  const c = size / 2;
+  const circ = 2 * Math.PI * r;
+  const sum = tiers.reduce((acc, t) => acc + t.count, 0) || 1;
+
+  let offset = 0;
+  const segments = tiers.map((t) => {
+    const len = (t.count / sum) * circ;
+    const seg = (
+      <circle
+        key={t.key}
+        cx={c}
+        cy={c}
+        r={r}
+        fill="none"
+        stroke={t.color}
+        strokeWidth={stroke}
+        strokeDasharray={`${len} ${circ - len}`}
+        strokeDashoffset={-offset}
+      />
+    );
+    offset += len;
+    return seg;
+  });
+
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
+      <g transform={`rotate(-90 ${c} ${c})`}>
+        <circle cx={c} cy={c} r={r} fill="none" stroke="#eef0f4" strokeWidth={stroke} />
+        {segments}
+      </g>
+      <text x={c} y={c - 4} textAnchor="middle" fontSize="11" fill="#94a3b8">{centerLabel}</text>
+      <text x={c} y={c + 20} textAnchor="middle" fontSize="22" fontWeight="800" fill="#ef4444">{centerValue}명</text>
+    </svg>
+  );
+}
+
+// 헬스장 이탈율 위젯 — 월별 예측 이탈률 추이 라인 차트 (순수 SVG)
+function ChurnTrend({ trend }) {
+  const points = (trend || []).map((d) => ({
+    month: parseInt(String(d.month).slice(5), 10),
+    pct: Number(d.rate) * 100,
+  }));
+
+  if (points.length === 0) {
+    return <p className="dash-empty">추이 데이터가 아직 없습니다.</p>;
+  }
+
+  const W = 340;
+  const H = 180;
+  const padL = 34;
+  const padR = 14;
+  const padT = 26;
+  const padB = 26;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  const maxPct = Math.max(40, Math.ceil(Math.max(...points.map((p) => p.pct)) / 10) * 10);
+  const xAt = (i) => (points.length <= 1 ? padL + plotW / 2 : padL + (plotW * i) / (points.length - 1));
+  const yAt = (pct) => padT + plotH * (1 - pct / maxPct);
+
+  const ticks = [];
+  for (let v = 0; v <= maxPct; v += 10) ticks.push(v);
+
+  const linePath = points.map((p, i) => `${i ? 'L' : 'M'}${xAt(i)},${yAt(p.pct)}`).join(' ');
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, height: 'auto' }}>
+      {/* 가로 눈금선 + Y축 라벨 */}
+      {ticks.map((v) => (
+        <g key={v}>
+          <line x1={padL} y1={yAt(v)} x2={W - padR} y2={yAt(v)} stroke="#eef0f4" strokeWidth="1" />
+          <text x={padL - 6} y={yAt(v) + 3} textAnchor="end" fontSize="9" fill="#94a3b8">{v}%</text>
+        </g>
+      ))}
+      {/* 추이 선 */}
+      <path d={linePath} fill="none" stroke="#6366f1" strokeWidth="2" />
+      {/* 데이터 포인트 + 값 라벨 + X축(월) 라벨 */}
+      {points.map((p, i) => (
+        <g key={i}>
+          <circle cx={xAt(i)} cy={yAt(p.pct)} r="4" fill="#fff" stroke="#6366f1" strokeWidth="2" />
+          <text x={xAt(i)} y={yAt(p.pct) - 9} textAnchor="middle" fontSize="10" fontWeight="700" fill="#475569">
+            {p.pct.toFixed(1)}%
+          </text>
+          <text x={xAt(i)} y={H - 8} textAnchor="middle" fontSize="10" fill="#94a3b8">{p.month}월</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+// 월별 위험군 추이 라인 차트 (순수 SVG) — 위험군(이탈률 45% 이상) 인원수 추이
+function RiskTrend({ trend }) {
+  const points = (trend || []).map((d) => ({
+    month: parseInt(String(d.month).slice(5), 10),
+    count: Number(d.count) || 0,
+  }));
+
+  if (points.length === 0) {
+    return <p className="dash-empty">추이 데이터가 아직 없습니다.</p>;
+  }
+
+  const W = 340;
+  const H = 180;
+  const padL = 34;
+  const padR = 14;
+  const padT = 26;
+  const padB = 26;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  // 정수 눈금 4칸으로 떨어지도록 nice-step 계산
+  const maxCount = Math.max(...points.map((p) => p.count), 1);
+  const rawStep = maxCount / 4;
+  const pow = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const f = rawStep / pow;
+  const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * pow;
+  const yMax = step * 4;
+  const ticks = [0, step, step * 2, step * 3, step * 4];
+
+  const xAt = (i) => (points.length <= 1 ? padL + plotW / 2 : padL + (plotW * i) / (points.length - 1));
+  const yAt = (v) => padT + plotH * (1 - v / (yMax || 1));
+
+  const linePath = points.map((p, i) => `${i ? 'L' : 'M'}${xAt(i)},${yAt(p.count)}`).join(' ');
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, height: 'auto' }}>
+      {/* 가로 눈금선 + Y축 라벨(명) */}
+      {ticks.map((v) => (
+        <g key={v}>
+          <line x1={padL} y1={yAt(v)} x2={W - padR} y2={yAt(v)} stroke="#eef0f4" strokeWidth="1" />
+          <text x={padL - 6} y={yAt(v) + 3} textAnchor="end" fontSize="9" fill="#94a3b8">{v}</text>
+        </g>
+      ))}
+      {/* 추이 선 */}
+      <path d={linePath} fill="none" stroke="#ef4444" strokeWidth="2" />
+      {/* 데이터 포인트 + 값 라벨 + X축(월) 라벨 */}
+      {points.map((p, i) => (
+        <g key={i}>
+          <circle cx={xAt(i)} cy={yAt(p.count)} r="4" fill="#fff" stroke="#ef4444" strokeWidth="2" />
+          <text x={xAt(i)} y={yAt(p.count) - 9} textAnchor="middle" fontSize="10" fontWeight="700" fill="#475569">
+            {p.count}명
+          </text>
+          <text x={xAt(i)} y={H - 8} textAnchor="middle" fontSize="10" fill="#94a3b8">{p.month}월</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+// 헬스장 이탈율 위젯 — 위험도 분포 + 월별 추이 2패널 렌더
+// 헬스장 이탈율 위젯 — 좌측 이탈율 %(제목 아래) + 우측 위험도 분포 도넛
+function GymChurnCard({ value }) {
+  // 위험군 = 개입 + 위험(45점 이상). 도넛은 등급별 구간, 중앙은 위험군 합계
+  const tiers = [
+    { key: 'urgent', label: '위험 (70점 이상)', count: value.urgentCount || 0, color: '#ef4444' },
+    { key: 'intervene', label: '개입 (45~69점)', count: value.interveneCount || 0, color: '#f59e0b' },
+    { key: 'watch', label: '관심 (25~44점)', count: value.watchCount || 0, color: '#facc15' },
+    { key: 'stable', label: '안정 (25점 미만)', count: value.stableCount || 0, color: '#10b981' },
+  ];
+  return (
+    <div className="gymchurn-card">
+      <div className="gymchurn-info">
+        <p className="dash-kpi">{(Number(value.averageChurnRate) * 100).toFixed(1)}<span> %</span></p>
+        <p className="dash-sub">위험군 {value.highRiskCount || 0}명 · {value.total || 0}명 분석</p>
+      </div>
+      <ChurnDonut tiers={tiers} centerLabel="위험군" centerValue={value.highRiskCount || 0} />
+    </div>
+  );
+}
 
 // AI 영역 왼쪽 질문 카드 4종 - 단일 위젯/메서드로 없어서 AI가 READ 도구를 조합해야 답할 수 있는 질문
 // 질문 문구는 이 메타에 고정한다 (사용자 입력 아님 - 전송 질문 예측 가능, 임의 문자열 주입 여지 없음)
@@ -212,8 +389,13 @@ function Dashboard() {
             <p className="dash-sub">운동 데이터 {value.total}건 기준</p>
           </div>
         );
-      case 'memberChurn':
       case 'gymChurn':
+        return <GymChurnCard value={value} />;
+      case 'gymChurnTrend':
+        return <ChurnTrend trend={value} />;
+      case 'gymRiskTrend':
+        return <RiskTrend trend={value} />;
+      case 'memberChurn':
         return (
           <div>
             <p className="dash-kpi">{value.highRiskCount}<span> 명 고위험</span></p>
@@ -275,7 +457,10 @@ function Dashboard() {
       <div className="dash-grid">
         {activeWidgets.length === 0 && <p className="dash-empty">표시할 위젯이 없습니다. 위젯 편집에서 켜보세요.</p>}
         {activeWidgets.map((widget) => (
-          <div key={widget.widgetKey} className="dash-card">
+          <div
+            key={widget.widgetKey}
+            className="dash-card"
+          >
             <h2>{WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey}</h2>
             {renderWidgetData(widget.widgetKey)}
           </div>

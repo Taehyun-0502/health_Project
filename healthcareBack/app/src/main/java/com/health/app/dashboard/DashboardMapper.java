@@ -57,6 +57,12 @@ public interface DashboardMapper {
     // 사장님: 지점 회원 이탈 예측(헬스장 이탈율) 집계 쿼리 호출
     public Map<String, Object> ownerChurnSummary(Long gymId) throws Exception;
 
+    // 사장님: 지점 월별 평균 예측 이탈률 추이(최근 6개월) 쿼리 호출
+    public List<Map<String, Object>> ownerChurnTrend(Long gymId) throws Exception;
+
+    // 사장님: 지점 월별 위험군(이탈률 45% 이상) 인원 추이(최근 6개월) 쿼리 호출
+    public List<Map<String, Object>> ownerRiskTrend(Long gymId) throws Exception;
+
     // 트레이너: 담당 회원 수 집계 쿼리 호출
     public Map<String, Object> trainerMemberCount(Long username) throws Exception;
 

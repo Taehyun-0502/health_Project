@@ -27,7 +27,7 @@ import Settlepage from './settle/settlepage.jsx'
 import B2bMain from './b2b_mypage/B2bMain.jsx';
 import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
 import B2bNotification from './b2b_mypage/B2bNotification.jsx';
-import Dashboard from './dashboard/dashboard.jsx';
+import Dashboard from './dashboard/Dashboard.jsx';
 import B2bList from './b2b_mypage/B2bList.jsx';
 import B2bCoupon from './b2b_mypage/B2bCoupon.jsx';
 import B2cSurvey from './b2c_mypage/B2cSurvey.jsx';

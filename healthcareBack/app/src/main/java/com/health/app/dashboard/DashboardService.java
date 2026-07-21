@@ -20,8 +20,8 @@ public class DashboardService {
     private static final Map<String, List<String>> DEFAULT_WIDGETS = Map.of(
             // 관계사: 계약 체육관 수 / 다가오는 구독 만료 / 월별 총 매출 / 월별 총 지출 / 체육관 만족도
             "ADMIN", List.of("gymCount", "expiringSubscription", "monthlyRevenue", "monthlyExpense", "gymNps"),
-            // 사장님: 계약 회원 수 / 다가오는 계약 만료 / 월별 총 매출 / 월별 총 지출 / 체성분(운동 데이터) 추이 / 헬스장 이탈율
-            "OWNER", List.of("memberCount", "expiringContract", "monthlyRevenue", "monthlyExpense", "bodyComposition", "gymChurn"),
+            // 사장님: 계약 회원 수 / 다가오는 계약 만료 / 월별 총 매출 / 월별 총 지출 / 체성분(운동 데이터) 추이 / 헬스장 이탈율 / 월별 예측 이탈률 추이
+            "OWNER", List.of("memberCount", "expiringContract", "monthlyRevenue", "monthlyExpense", "bodyComposition", "gymChurn", "gymChurnTrend", "gymRiskTrend"),
             // 트레이너: 담당 회원 수 / 세션 소진 임박 / 월별 세션 수행 / 회원 이탈 예측 / 목표 달성률
             "TRAINER", List.of("managedMemberCount", "lowSessionMembers", "monthlySession", "memberChurn", "goalRate"));
 
@@ -144,6 +144,10 @@ public class DashboardService {
                 return countOf(dashboardMapper.ownerModelSummary(gymId)) > 0;
             case "gymChurn":
                 return countOf(dashboardMapper.ownerChurnSummary(gymId)) > 0;
+            case "gymChurnTrend":
+                return !dashboardMapper.ownerChurnTrend(gymId).isEmpty();
+            case "gymRiskTrend":
+                return !dashboardMapper.ownerRiskTrend(gymId).isEmpty();
             case "managedMemberCount":
             case "lowSessionMembers":
                 return countOf(dashboardMapper.trainerMemberCount(username)) > 0;
@@ -179,6 +183,10 @@ public class DashboardService {
                 return dashboardMapper.ownerModelSummary(gymId);
             case "gymChurn":
                 return dashboardMapper.ownerChurnSummary(gymId);
+            case "gymChurnTrend":
+                return dashboardMapper.ownerChurnTrend(gymId);
+            case "gymRiskTrend":
+                return dashboardMapper.ownerRiskTrend(gymId);
             case "managedMemberCount":
                 return dashboardMapper.trainerMemberCount(username);
             case "lowSessionMembers":

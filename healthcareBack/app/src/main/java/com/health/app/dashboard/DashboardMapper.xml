@@ -165,7 +165,12 @@
     <select id="ownerChurnSummary" parameterType="Long" resultType="map">
     select count(*) as "total",
            coalesce(round(avg(r.churn_rate), 3), 0) as "averageChurnRate",
-           count(case when r.churn_rate >= 0.7 then 1 end) as "highRiskCount"
+           -- 위험군 = 이탈률 45% 이상 (개입 + 위험 등급 합계)
+           count(case when r.churn_rate >= 0.45 then 1 end) as "highRiskCount",
+           count(case when r.churn_rate >= 0.7 then 1 end) as "urgentCount",
+           count(case when r.churn_rate >= 0.45 and r.churn_rate &lt; 0.7 then 1 end) as "interveneCount",
+           count(case when r.churn_rate >= 0.25 and r.churn_rate &lt; 0.45 then 1 end) as "watchCount",
+           count(case when r.churn_rate &lt; 0.25 then 1 end) as "stableCount"
     from (
         select distinct on (username) username, churn_rate
         from "h_churn_result"
@@ -173,6 +178,30 @@
     ) r
     join "h_member" mb on r.username = mb.username
     where mb.gym_id = #{gymId}
+    </select>
+
+    <!-- 사장님: 지점 월별 평균 예측 이탈률 추이 (최근 6개월, h_member 조인으로 지점 격리) -->
+    <select id="ownerChurnTrend" parameterType="Long" resultType="map">
+    select to_char(r.churn_date, 'YYYY-MM')       as "month",
+           coalesce(round(avg(r.churn_rate), 3), 0) as "rate"
+    from "h_churn_result" r
+    join "h_member" mb on r.username = mb.username
+    where mb.gym_id = #{gymId}
+      and r.churn_date >= date_trunc('month', current_date) - interval '5 months'
+    group by to_char(r.churn_date, 'YYYY-MM')
+    order by "month" asc
+    </select>
+
+    <!-- 사장님: 지점 월별 위험군(이탈률 45% 이상) 인원 추이 (최근 6개월, 그 달 위험군에 든 고유 회원 수) -->
+    <select id="ownerRiskTrend" parameterType="Long" resultType="map">
+    select to_char(r.churn_date, 'YYYY-MM') as "month",
+           count(distinct r.username) filter (where r.churn_rate >= 0.45) as "count"
+    from "h_churn_result" r
+    join "h_member" mb on r.username = mb.username
+    where mb.gym_id = #{gymId}
+      and r.churn_date >= date_trunc('month', current_date) - interval '5 months'
+    group by to_char(r.churn_date, 'YYYY-MM')
+    order by "month" asc
     </select>
 
     <!-- 트레이너: 유효 담당 PT·PT 체험 계약(contract=4,5 / SIGNED·ACTIVE) 기준 담당 회원 수 + 이번 달 신규 집계 SQL -->

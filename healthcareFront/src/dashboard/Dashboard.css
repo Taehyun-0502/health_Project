@@ -142,6 +142,24 @@
   color: #888;
 }
 
+/* 월별 예측 이탈률 추이 위젯 — 그리드 전체 폭 사용 */
+.dash-card-wide {
+  grid-column: 1 / -1;
+}
+
+/* 헬스장 이탈율 위젯 — 좌: 이탈율 % KPI, 우: 위험도 분포 도넛 (세로 중앙 정렬) */
+.gymchurn-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.gymchurn-info {
+  display: flex;
+  flex-direction: column;
+}
+
 /* ===== AI 영역 (위젯 그리드 아래 좌우 분할, OWNER 전용) ===== */
 .dash-ai-zone {
   display: grid;
