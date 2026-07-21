@@ -14,6 +14,7 @@ export const isGymRole = (role) => ['owner', 'trainer'].includes(normalizeRole(r
 export const B2B_PRIMARY_NAV = [
   { id: 'home', label: '홈', to: '/fitb', icon: 'H', end: true },
   { id: 'dashboard', label: '대시보드', to: '/fitb/dashboard', icon: 'D' },
+  { id: 'management', label: '회원 관리', to: '/fitb/management', icon: 'M' },
   { id: 'contract', label: '계약', to: '/fitb/contractpage', icon: 'C' },
   { id: 'settle', label: '정산 매출', to: '/fitb/Settlepage', icon: 'S' },
   { id: 'item', label: '물품', to: '/fitb/itempage', icon: 'I' },
@@ -118,13 +119,21 @@ const ROLE_HOME_ACTIONS = {
   ],
 };
 
-export const getB2bHomeActions = (role) => [
-  ...CORE_HOME_ACTIONS,
-  ...(ROLE_HOME_ACTIONS[normalizeRole(role)] || []),
-];
+export const getB2bHomeActions = (role) => {
+  const normRole = normalizeRole(role);
+  const core = normRole === 'admin'
+    ? CORE_HOME_ACTIONS.filter((action) => action.id !== 'item')
+    : CORE_HOME_ACTIONS;
+  return [
+    ...core,
+    ...(ROLE_HOME_ACTIONS[normRole] || []),
+  ];
+};
 
 const PAGE_TITLE_RULES = [
   { test: /^\/fitb\/dashboard/, label: '대시보드' },
+  { test: /^\/fitb\/b2bmanagement/, label: '회원 · 직원 관리' },
+  { test: /^\/fitb\/ownermanagement/, label: '회원 관리' },
   { test: /^\/fitb\/contractpage/, label: '계약 관리' },
   { test: /^\/fitb\/contract\//, label: '계약 관리' },
   { test: /^\/fitb\/payment\//, label: '결제' },

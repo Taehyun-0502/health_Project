@@ -56,43 +56,43 @@ function B2cCoupon() {
   };
 
   return (
-    <div style={{ padding: '16px 16px 32px' }}>
-      <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>내 쿠폰함</h3>
-      <p style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '15px' }}>회원님이 보유하고 계신 가맹점 할인 혜택 쿠폰 목록입니다.</p>
+    <div style={{ padding: '0 0 16px' }}>
+      <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--gray-900)' }}>내 쿠폰함</h3>
+      <p style={{ fontSize: '12px', color: 'var(--gray-500)', marginBottom: '15px' }}>회원님이 보유하고 계신 가맹점 할인 혜택 쿠폰 목록입니다.</p>
 
       {coupons.length === 0 ? (
-        <p style={{ color: 'var(--gray-400)', marginTop: '20px', textAlign: 'center', fontSize: '14px' }}>보유 중인 혜택 쿠폰이 없습니다.</p>
+        <p style={{ color: 'var(--gray-400)', marginTop: '20px', textAlign: 'center', fontSize: '13px' }}>보유 중인 혜택 쿠폰이 없습니다.</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
             <thead>
-              <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-500)', borderBottom: '2px solid var(--gray-200)' }}>
-                <th style={{ padding: '10px', textAlign: 'left' }}>보낸사람</th>
-                <th style={{ padding: '10px', textAlign: 'left' }}>쿠폰 이름</th>
-                <th style={{ padding: '10px', textAlign: 'left' }}>종류</th>
-                <th style={{ padding: '10px', textAlign: 'left' }}>할인률</th>
-                <th style={{ padding: '10px', textAlign: 'left' }}>혜택 상세</th>
-                <th style={{ padding: '10px', textAlign: 'center' }}>만료일</th>
-                <th style={{ padding: '10px', textAlign: 'center' }}>상태</th>
+              <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-500)', borderBottom: '2px solid var(--gray-200)', whiteSpace: 'nowrap' }}>
+                <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>보낸사람</th>
+                <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>쿠폰 이름</th>
+                <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>종류</th>
+                <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>할인률</th>
+                <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>혜택 상세</th>
+                <th style={{ padding: '8px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>만료일</th>
+                <th style={{ padding: '8px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>상태</th>
               </tr>
             </thead>
             <tbody>
               {currentItems.map((coupon) => (
-                <tr key={coupon.couponId} style={{ borderBottom: '1px solid var(--gray-200)' }}>
-                  <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.fromName}</td>
-                  <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.couponName}</td>
-                  <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.category}</td>
-                  <td style={{ padding: '10px', fontWeight: 'bold' }}>{coupon.percent}%</td>
-                  <td style={{ padding: '10px', fontWeight: 'bold' }}>
+                <tr key={coupon.couponId} style={{ borderBottom: '1px solid var(--gray-200)', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '8px 4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{coupon.fromName}</td>
+                  <td style={{ padding: '8px 4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{coupon.couponName}</td>
+                  <td style={{ padding: '8px 4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{coupon.category}</td>
+                  <td style={{ padding: '8px 4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{coupon.percent}%</td>
+                  <td style={{ padding: '8px 4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                     {/* 카테고리별 혜택 종류 조건 분기 화면 표시 */}
                     {coupon.category === '헬스' && coupon.maxAmount && `최대 ${coupon.maxAmount}원 할인`}
                     {coupon.category === 'PT' && coupon.maxAmount && `최대 ${coupon.maxAmount}원 할인`}
                     {coupon.category === '체험권' && coupon.couponCount && `${coupon.couponCount}회`}
                   </td>
-                  <td style={{ padding: '10px', textAlign: 'center', color: 'var(--gray-500)' }}>{coupon.date}</td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>
+                  <td style={{ padding: '8px 4px', textAlign: 'center', color: 'var(--gray-500)', whiteSpace: 'nowrap' }}>{coupon.date}</td>
+                  <td style={{ padding: '8px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                     <span style={{
-                      padding: '3px 10px',
+                      padding: '2px 8px',
                       borderRadius: '999px',
                       fontSize: '11px',
                       fontWeight: '600',

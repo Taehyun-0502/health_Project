@@ -37,7 +37,7 @@ function B2cMain() {
       </div>
 
       {/* 자식 라우트 컴포넌트들이 마운트되는 슬롯 */}
-      <div style={{ border: '1px solid var(--gray-200)', borderRadius: '14px', backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(23,23,23,.06)', padding: '20px', minHeight: '300px' }}>
+      <div style={{ border: '1px solid var(--gray-200)', borderRadius: '14px', backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(23,23,23,.06)', padding: '16px 12px', minHeight: '300px' }}>
         <Outlet />
       </div>
 
