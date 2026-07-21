@@ -303,7 +303,7 @@
             OR
             (d.receiver_id = #{username} AND d.contract = 1)
           )
-          AND d.status = 'SIGNED'
+          AND d.status IN ('SIGNED', 'ACTIVE')
           AND d.data_id NOT IN (
               SELECT data_id FROM "h_expense" WHERE data_id IS NOT NULL
           )
@@ -320,7 +320,7 @@
             OR
             (d.receiver_id = #{username} AND d.contract = 1)
           )
-          AND d.status = 'SIGNED'
+          AND d.status IN ('SIGNED', 'ACTIVE')
           AND d.data_id NOT IN (
               SELECT data_id FROM "h_expense" WHERE data_id IS NOT NULL
           )

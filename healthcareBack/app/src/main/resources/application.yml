@@ -46,7 +46,7 @@ jwt:
   secret: ${JWT_SECRET_KEY}
 
 # AI 비서 (Anthropic Messages API) 설정
-# 실제 키는 환경변수 ANTHROPIC_API_KEY로 주입 (아래 기본값은 개발용 placeholder - 실 키를 git에 커밋 금지)
+# 키·모델은 .env의 AI_API_KEY / AI_MODEL을 주입 (DB_URL 등과 동일 방식, .env는 gitignore - 실 키 커밋 금지)
 anthropic:
-  api-key: ${ANTHROPIC_API_KEY:sk-ant-api03-PLACEHOLDER-REPLACE-WITH-REAL-KEY}
-  model: ${ANTHROPIC_MODEL:claude-sonnet-5}
+  api-key: ${AI_API_KEY}
+  model: ${AI_MODEL:claude-sonnet-5}

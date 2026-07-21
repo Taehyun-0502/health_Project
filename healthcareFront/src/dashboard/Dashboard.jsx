@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 
 // 위젯 키별 표시 이름 (백엔드 h_dashboard_widget.widget_key와 매핑)
@@ -21,15 +22,31 @@ const WIDGET_LABEL = {
 
 const ROLE_LABEL = { ADMIN: '관계사', OWNER: '사장님', TRAINER: '트레이너' };
 
+// AI 영역 왼쪽 질문 카드 4종 - 단일 위젯/메서드로 없어서 AI가 READ 도구를 조합해야 답할 수 있는 질문
+// 질문 문구는 이 메타에 고정한다 (사용자 입력 아님 - 전송 질문 예측 가능, 임의 문자열 주입 여지 없음)
+const AI_QUESTIONS = [
+  { key: 'netprofit', tag: '매출 × 지출', question: '최근 6개월 순이익 추이 알려줘' },
+  { key: 'renewal', tag: '계약', question: 'PT 계약 갱신율은 어때?' },
+  { key: 'unpaid', tag: '결제', question: '미결제 회원 알려줘' },
+  { key: 'churn', tag: '이탈 예측', question: '이탈 위험이 높은 회원은 누구야?' },
+];
+
 // 역할별 커스텀 대시보드 (1부: 위젯 조회/토글/순서 변경/데이터 표시)
 function Dashboard() {
+  const navigate = useNavigate();
   const [widgets, setWidgets] = useState([]);
   const [data, setData] = useState({});
   const [editOpen, setEditOpen] = useState(false);
   const [message, setMessage] = useState('');
+  const [briefing, setBriefing] = useState(null); // null=미로드, []=처리할 일 없음
+  const [bundleOpen, setBundleOpen] = useState(false);
 
   const loginUser = JSON.parse(localStorage.getItem('user') || 'null');
   const token = localStorage.getItem('accessToken');
+  // Phase 1.5(프리뷰 게이트): 대시보드 AI 영역은 ADMIN·OWNER·TRAINER 모두 노출
+  // (ADMIN·TRAINER는 질문 시 고정 문구 응답·브리핑 빈 후보 - 세부 항목은 추후 role별 변경)
+  const aiEligible = ['owner', 'admin', 'trainer']
+    .includes(String(loginUser?.role || '').toLowerCase());
 
   // 위젯 설정 + 활성 위젯 데이터 조회 (GET /dashboard/widgets, /dashboard/data)
   const loadDashboard = useCallback(async () => {
@@ -57,6 +74,24 @@ function Dashboard() {
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
+
+  // 태스크 브리핑("오늘 처리할 일") - 결정적 GET /ai/briefing (토큰 무소모)
+  // 대시보드 진입(마운트)마다 건수>0 후보에서 랜덤 3개를 새로 받는다 (OWNER 외에는 서버가 빈 후보 반환)
+  useEffect(() => {
+    if (!token || !aiEligible) return;
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/ai/briefing`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((result) => setBriefing(result ? result.items ?? [] : []))
+      .catch(() => setBriefing([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 질문 카드 클릭 - 고정 문구 질문을 AI 챗 팝업으로 자동 전송 (AiPanel이 ai-ask 이벤트 수신)
+  const askAi = (question) => {
+    window.dispatchEvent(new CustomEvent('ai-ask', { detail: question }));
+  };
 
   // 위젯 표시 여부 토글 (PUT /dashboard/widgets/toggle)
   const handleToggle = async (widget) => {
@@ -246,6 +281,75 @@ function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* AI 영역 (OWNER 전용, 위젯 그리드 아래 좌우 분할)
+          왼쪽=질문 카드(클릭 시 AI 팝업 답변·토큰 소모) / 오른쪽=태스크 브리핑(클릭 시 페이지 이동·무소모) */}
+      {aiEligible && (
+        <div className="dash-ai-zone">
+          <div className="dash-ai-card">
+            <h3>AI 비서에게 물어보기</h3>
+            <div className="dash-ai-questions">
+              {AI_QUESTIONS.map((q) => (
+                <button key={q.key} type="button" className="dash-ai-question" onClick={() => askAi(q.question)}>
+                  <span className="dash-ai-tag">{q.tag}</span>
+                  {q.question}
+                </button>
+              ))}
+            </div>
+            <p className="dash-ai-caption">누르면 AI가 팝업으로 답해드려요</p>
+          </div>
+
+          <div className="dash-ai-card">
+            <h3>오늘 처리할 일</h3>
+            {briefing == null && <p className="dash-sub">불러오는 중...</p>}
+            {briefing != null && briefing.length === 0 && (
+              <p className="dash-sub">오늘 처리할 일이 없어요</p>
+            )}
+            {briefing != null && briefing.length > 0 && (
+              <div className="dash-ai-tasks">
+                {briefing.map((item) => (
+                  item.bundle ? (
+                    // 지출 내역 확인 - 1슬롯 묶음 (커미션·월급 아코디언)
+                    <div key={item.key}>
+                      <button type="button" className="dash-ai-task" onClick={() => setBundleOpen(!bundleOpen)}>
+                        <span className="dash-ai-task-label">{item.label}</span>
+                        <span className="dash-badge warning">{item.count}건</span>
+                        <span className="dash-ai-task-go">{bundleOpen ? '▴' : '▾'}</span>
+                      </button>
+                      {bundleOpen && item.bundle.map((sub) => (
+                        <button
+                          key={sub.key}
+                          type="button"
+                          className="dash-ai-task dash-ai-task-sub"
+                          onClick={() => navigate(sub.linkTo)}
+                        >
+                          <span className="dash-ai-task-label">{sub.label}</span>
+                          <span className="dash-badge warning">{sub.count}건</span>
+                          <span className="dash-ai-task-go">→</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className="dash-ai-task"
+                      onClick={() => navigate(item.linkTo)}
+                    >
+                      <span className="dash-ai-task-label">{item.label}</span>
+                      <span className={`dash-badge ${item.tone === 'danger' ? 'danger' : 'warning'}`}>
+                        {item.count}건
+                      </span>
+                      <span className="dash-ai-task-go">→</span>
+                    </button>
+                  )
+                ))}
+              </div>
+            )}
+            <p className="dash-ai-caption">누르면 해당 페이지로 이동해요</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
