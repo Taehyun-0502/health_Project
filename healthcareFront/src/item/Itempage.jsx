@@ -627,7 +627,7 @@ function Itempage() {
                           // 행 클릭 = 우측 통합 드로어에 물품 탭 추가 (상세 보기 버튼은 stopPropagation으로 기존 동작 유지)
                           <tr
                             key={item.itemId || index}
-                            style={{ cursor: 'pointer' }}
+                            className="is-clickable"
                             onClick={() =>
                               window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
                                 detail: { kind: 'item', id: item.itemId ?? item.itemName ?? index, title: item.itemName ?? '물품', data: item },
