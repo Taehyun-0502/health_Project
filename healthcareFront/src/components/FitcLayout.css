@@ -1,0 +1,23 @@
+/* B2C(회원) 셸 — 디자인 시스템: 375px 기준 단일 컬럼, PC에서는 480px 중앙 고정 컬럼.
+   컬러는 B2C 회원앱 목업 팔레트(차콜 + 라임 그린, index.css --b2c-* 토큰). */
+
+.b2c-shell {
+  min-height: 100vh;
+  background: var(--gray-100);
+}
+
+.b2c-shell__column {
+  width: min(100%, 480px);
+  min-height: calc(100vh - 64px);
+  margin: 0 auto;
+  /* 하단 고정 탭바(62px)에 콘텐츠가 가리지 않도록 여백 확보 */
+  padding: 12px 0 80px;
+  background: var(--gray-50);
+}
+
+@media (min-width: 481px) {
+  .b2c-shell__column {
+    border-left: 1px solid var(--gray-200);
+    border-right: 1px solid var(--gray-200);
+  }
+}

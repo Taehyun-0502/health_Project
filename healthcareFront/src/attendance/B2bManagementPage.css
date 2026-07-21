@@ -1,0 +1,14 @@
+.b2b-management-page {
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.b2b-management-page__empty {
+  padding: 32px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  color: var(--gray-500);
+  background: var(--white);
+  text-align: center;
+}

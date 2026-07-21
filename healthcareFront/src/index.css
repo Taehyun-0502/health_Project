@@ -1,35 +1,71 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css');
 
 :root {
-  --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  
-  /* 테마 컬러 (라이트 모드 기본) */
-  --bg-primary: #f8fafc;
-  --bg-card: rgba(255, 255, 255, 0.8);
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --border-color: rgba(226, 232, 240, 0.8);
-  --primary-accent: #6366f1; /* Indigo */
-  --primary-hover: #4f46e5;
-  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --glass-effect: backdrop-filter: blur(16px) saturate(180%);
-}
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", Roboto, "Noto Sans KR", "Segoe UI", "Malgun Gothic",
+    "Helvetica Neue", Arial, sans-serif;
+  --font-family: var(--font-sans);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* 테마 컬러 (다크 모드 기본) */
-    --bg-primary: #0b0f19;
-    --bg-card: rgba(17, 25, 40, 0.75);
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --border-color: rgba(255, 255, 255, 0.08);
-    --social-bg: rgba(30, 41, 59, 0.8);
-    --shadow-md: 0 4px 30px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 10px 30px -3px rgba(0, 0, 0, 0.5);
-  }
+  --black: #171717;
+  --gray-900: #171717;
+  --gray-700: #404040;
+  --gray-500: #525252;
+  --gray-400: #a3a3a3;
+  --gray-300: #d4d4d4;
+  --gray-200: #e5e5e5;
+  --gray-100: #f5f5f4;
+  --gray-50: #fafaf8;
+  --white: #ffffff;
+
+  --accent: #ff6b00;
+  --accent-strong: #c84f00;
+  --accent-soft: #ffe4d1;
+  --accent-bg: #fff0e8;
+  --accent-text: #c84f00;
+
+  --success: #15803d;
+  --success-solid: #16a34a;
+  --success-bg: #f0fdf4;
+  --danger: #b91c1c;
+  --danger-solid: #dc2626;
+  --danger-bg: #fef2f2;
+  --warning: #92400e;
+  --warning-solid: #d97706;
+  --warning-bg: #fef3c7;
+  --info: #1d4ed8;
+  --info-solid: #2563eb;
+  --info-bg: #eff6ff;
+
+  /* B2C(회원 앱) 전용 액센트 — 차콜 + 라임 그린 (B2C 회원앱 목업 팔레트).
+     뉴트럴·시맨틱은 위 공통 토큰을 그대로 공유한다. */
+  --b2c-accent: #4d7c0f;
+  --b2c-lime: #a3e635;
+  --b2c-lime-bright: #bef264;
+  --b2c-lime-soft: #ecfccb;
+  --b2c-lime-bg: #f7fee7;
+  --b2c-lime-line: #d9f99d;
+
+  --text-h1: 24px;
+  --text-h2: 20px;
+  --text-h3: 17px;
+  --text-body: 15px;
+  --text-sm: 13px;
+  --text-xs: 12px;
+
+  /* 이전 화면 호환 별칭: 값은 신규 토큰을 참조한다. */
+  --bg-primary: var(--gray-50);
+  --bg-card: var(--white);
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-700);
+  --border-color: var(--gray-200);
+  --primary-accent: var(--accent);
+  --primary-hover: var(--accent-strong);
+  --primary-gradient: var(--accent-strong);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 1px 3px rgba(23, 23, 23, 0.06);
+  --shadow-md: 0 8px 24px rgba(23, 23, 23, 0.08);
+  --shadow-lg: 0 12px 30px rgba(23, 23, 23, 0.1);
+  --glass-effect: none;
 }
 
 * {
@@ -126,10 +162,9 @@ body {
 /* 글래스모피즘 카드 공통 */
 .card-premium {
   background-color: var(--bg-card);
-  backdrop-filter: blur(16px);
   border: 1px solid var(--border-color);
-  border-radius: 20px;
-  box-shadow: var(--shadow-lg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
   padding: 40px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -158,7 +193,7 @@ body {
   width: 100%;
   padding: 12px 16px;
   font-size: 14px;
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--white);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   color: var(--text-primary);
@@ -168,7 +203,7 @@ body {
 
 .form-input:focus {
   border-color: var(--primary-accent);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14);
 }
 
 /* 프리미엄 버튼 공통 */

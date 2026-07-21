@@ -1,0 +1,20 @@
+.b2b-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--gray-50);
+}
+
+.b2b-shell__workspace {
+  min-width: 0;
+  flex: 1;
+}
+
+.b2b-shell__content {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .b2b-shell {
+    flex-direction: column;
+  }
+}

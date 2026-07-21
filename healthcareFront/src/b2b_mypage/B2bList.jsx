@@ -385,7 +385,7 @@ function MemberListRow({ loading, members, statKey, gymId, mode, period }) {
             <button
               type="button"
               onClick={
-                isCoupon ? () => navigate('/fitb?tab=promotion')
+                isCoupon ? () => navigate('/fitb/promotion')
                 : isHelper ? () => setHelperOpen(true)
                 : isPtTrial ? () => setPtOpen(true)
                 : undefined

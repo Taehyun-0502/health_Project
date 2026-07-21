@@ -55,58 +55,58 @@ function B2cAccount() {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
-      <h3>내 계정 설정 (B2C)</h3>
-      <p style={{ fontSize: '13px', color: '#666' }}>회원님의 임시 비밀번호와 이메일을 수정할 수 있습니다.</p>
+    <div style={{ padding: '16px 16px 32px' }}>
+      <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>내 계정 설정 (B2C)</h3>
+      <p style={{ fontSize: '13px', color: 'var(--gray-500)' }}>회원님의 임시 비밀번호와 이메일을 수정할 수 있습니다.</p>
 
-      {message && <div style={{ color: 'red', fontSize: '13px', marginBottom: '10px' }}>{message}</div>}
+      {message && <div style={{ color: 'var(--danger)', backgroundColor: 'var(--danger-bg)', padding: '10px 12px', borderRadius: '10px', fontSize: '13px', marginBottom: '10px' }}>{message}</div>}
 
       <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '15px' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '14px', marginBottom: '4px' }}>아이디 (전화번호)</label>
-          <input 
-            type="text" 
-            value={user.username || ''} 
-            disabled 
-            style={{ width: '100%', padding: '8px', backgroundColor: '#f5f5f5', border: '1px solid #ccc', borderRadius: '4px' }} 
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)', marginBottom: '6px' }}>아이디 (전화번호)</label>
+          <input
+            type="text"
+            value={user.username || ''}
+            disabled
+            style={{ width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: 'var(--gray-100)', border: '1px solid var(--gray-300)', borderRadius: '10px' }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '14px', marginBottom: '4px' }}>이메일 주소</label>
-          <input 
-            type="email" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
-            style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} 
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)', marginBottom: '6px' }}>이메일 주소</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{ width: '100%', boxSizing: 'border-box', padding: '12px', border: '1px solid var(--gray-300)', borderRadius: '10px' }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '14px', marginBottom: '4px' }}>새 비밀번호 입력</label>
-          <input 
-            type="password" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-            required 
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)', marginBottom: '6px' }}>새 비밀번호 입력</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
             placeholder="변경할 새 비밀번호"
-            style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} 
+            style={{ width: '100%', boxSizing: 'border-box', padding: '12px', border: '1px solid var(--gray-300)', borderRadius: '10px' }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '14px', marginBottom: '4px' }}>새 비밀번호 확인</label>
-          <input 
-            type="password" 
-            value={passwordCheck} 
-            onChange={(e) => setPasswordCheck(e.target.value)} 
-            required 
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)', marginBottom: '6px' }}>새 비밀번호 확인</label>
+          <input
+            type="password"
+            value={passwordCheck}
+            onChange={(e) => setPasswordCheck(e.target.value)}
+            required
             placeholder="변경할 새 비밀번호 재입력"
-            style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} 
+            style={{ width: '100%', boxSizing: 'border-box', padding: '12px', border: '1px solid var(--gray-300)', borderRadius: '10px' }}
           />
         </div>
 
-        <button type="submit" style={{ padding: '10px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}>
+        <button type="submit" style={{ width: '100%', minHeight: '48px', padding: '12px', backgroundColor: 'var(--black)', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '15px', marginTop: '10px' }}>
           수정 완료
         </button>
       </form>

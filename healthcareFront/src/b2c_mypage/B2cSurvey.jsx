@@ -54,15 +54,15 @@ function B2cSurvey() {
             width: '30px',
             height: '30px',
             borderRadius: '50%',
-            border: n === value ? '2px solid #f5b301' : '1px solid #bbb',
-            background: n === value ? '#f5b301' : '#fff',
-            color: n === value ? '#fff' : '#333',
+            border: n === value ? '2px solid var(--b2c-accent)' : '1px solid var(--gray-300)',
+            background: n === value ? 'var(--b2c-accent)' : '#fff',
+            color: n === value ? '#fff' : 'var(--gray-700)',
             fontWeight: n === value ? 'bold' : 'normal',
           }}
         >
           {n}
         </button>
-        <span style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>{SCALE_LABELS[n - 1]}</span>
+        <span style={{ fontSize: '11px', color: 'var(--gray-400)', marginTop: '2px' }}>{SCALE_LABELS[n - 1]}</span>
       </span>
     ));
 
@@ -125,29 +125,30 @@ function B2cSurvey() {
   };
 
   return (
-    <div>
-      <h3>회원 설문</h3>
-      <p style={{ color: '#666', fontSize: '14px' }}>
+    <div style={{ padding: '16px 16px 32px' }}>
+      <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>회원 설문</h3>
+      <p style={{ color: 'var(--gray-500)', fontSize: '14px' }}>
         각 항목을 매우좋음 ~ 매우나쁨의 5단계로 평가해주세요.
       </p>
 
       <form onSubmit={handleSubmit}>
         {/* 아이디 (로그인 연동 전 임시 직접 입력) */}
         <div style={{ margin: '10px 0' }}>
-          <label style={{ display: 'inline-block', width: '130px' }}>아이디</label>
+          <label style={{ display: 'inline-block', width: '130px', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)' }}>아이디</label>
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="회원 아이디(전화번호)"
             required
+            style={{ padding: '10px 12px', border: '1px solid var(--gray-300)', borderRadius: '10px' }}
           />
         </div>
 
         {/* 불만 7종 (1~5) */}
         {COMPLAINT_GROUPS.map((g) => (
-          <fieldset key={g.group} style={{ margin: '12px 0', border: '1px solid #eee', padding: '10px' }}>
-            <legend style={{ fontWeight: 'bold' }}>{g.group}</legend>
+          <fieldset key={g.group} style={{ margin: '12px 0', border: '1px solid var(--gray-200)', borderRadius: '12px', padding: '12px' }}>
+            <legend style={{ fontWeight: 'bold', color: 'var(--gray-900)' }}>{g.group}</legend>
             {g.items.map((it) => (
               <ScaleRow key={it.key} label={it.label} field={it.key} />
             ))}
@@ -172,18 +173,19 @@ function B2cSurvey() {
         {/* 부상 부위 (부상 있음일 때만) */}
         {injuryIssue && (
           <div style={{ margin: '10px 0' }}>
-            <label style={{ display: 'inline-block', width: '130px' }}>부상 부위</label>
+            <label style={{ display: 'inline-block', width: '130px', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)' }}>부상 부위</label>
             <input
               type="text"
               value={injuryArea}
               onChange={(e) => setInjuryArea(e.target.value)}
               placeholder="예: 오른쪽 어깨"
               required
+              style={{ padding: '10px 12px', border: '1px solid var(--gray-300)', borderRadius: '10px' }}
             />
           </div>
         )}
 
-        <button type="submit" style={{ marginTop: '15px' }}>설문 제출</button>
+        <button type="submit" style={{ marginTop: '15px', width: '100%', minHeight: '48px', padding: '12px', backgroundColor: 'var(--b2c-accent)', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}>설문 제출</button>
       </form>
     </div>
   );
