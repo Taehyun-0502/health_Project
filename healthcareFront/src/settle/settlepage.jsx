@@ -709,24 +709,20 @@ function Settlepage() {
 
   return (
     <div className="settle-container">
-      {/* 헤더 */}
-      <header className="settle-header">
-        <div className="settle-title-area">
-          <h1 className="gradient-title" style={{ fontSize: '32px', marginBottom: '0' }}>정산 관리 시스템</h1>
-          <span className="settle-subtitle">
-            {activeRole === 'ADMIN' 
-              ? '가맹점 계약에 따른 플랫폼 커미션 정산 관리 화면' 
-              : '사업장 운영 매출 내역 및 지출 비용 손익 대시보드'}
-          </span>
+      {/* 페이지 헤더 — 계약 페이지 톤에 맞춘 컴팩트 헤드 (본문 큰 타이틀 없음, 상단 유틸바가 "정산 · 매출" 표시) */}
+      <div className="settle-pagehead">
+        <p className="settle-pagehead__meta">
+          {activeRole === 'ADMIN'
+            ? '가맹점 계약에 따른 플랫폼 커미션 정산 관리'
+            : '사업장 운영 매출 내역 및 지출 비용 손익 관리'}
+          <br />
+          접속자: <span className="settle-pagehead__name">{loginUser?.name || '사용자'}</span>
+          <span className="settle-pagehead__role">{activeRole}</span>
+        </p>
+        <div className="settle-pagehead__actions">
+          <Link to="/fitb" className="settle-pagehead__link">대시보드</Link>
         </div>
-        <div className="settle-user-info">
-          <span>접속자: <span className="settle-user-name">{loginUser?.name || '사용자'}</span></span>
-          <span className={`settle-role-badge ${activeRole.toLowerCase()}`}>{activeRole}</span>
-          <Link to="/fitb" style={{ fontSize: '13px', color: 'var(--primary-accent)', textDecoration: 'none', marginLeft: '10px' }}>
-            대시보드로 돌아가기
-          </Link>
-        </div>
-      </header>
+      </div>
 
       {errorInfo && (
         <div className="settle-error-banner">
@@ -735,7 +731,7 @@ function Settlepage() {
         </div>
       )}
 
-      {loading && <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-secondary)' }}>데이터 로드 중...</div>}
+      {loading && <div className="settle-loading">데이터 로드 중...</div>}
 
       {/* ======================================================== */}
       {/* 2. 관리자 (ADMIN) 뷰 구현                                */}
@@ -744,21 +740,21 @@ function Settlepage() {
         <div>
           {/* 주요 지표 요약 카드 */}
           <section className="settle-stats">
-            <div className="card-premium stat-card">
+            <div className="stat-card">
               <div className="stat-card-title">누적 수수료 수익</div>
-              <div className="stat-card-value" style={{ color: 'var(--primary-accent)' }}>
+              <div className="stat-card-value is-accent">
                 {formatWon(commissionStats.totalPaidAmount)}
               </div>
               <div className="stat-card-desc">지급 완료 기준 총 정산 금액</div>
             </div>
-            <div className="card-premium stat-card">
+            <div className="stat-card">
               <div className="stat-card-title">미지급 정산 대기</div>
-              <div className="stat-card-value" style={{ color: '#f59e0b' }}>
+              <div className="stat-card-value is-warning">
                 {commissionStats.unpaidCount} 건
               </div>
               <div className="stat-card-desc">신속한 확인 및 지급 처리가 필요합니다.</div>
             </div>
-            <div className="card-premium stat-card">
+            <div className="stat-card">
               <div className="stat-card-title">평균 커미션 수수료율</div>
               <div className="stat-card-value">
                 {(commissionStats.avgCommissionRate * 100).toFixed(1)}%
@@ -768,12 +764,12 @@ function Settlepage() {
           </section>
 
           {/* 커미션 수동 집계 생성 컨트롤: 매달 1일 자동 스케줄러와 별개로, 관리자가 특정 월을 즉시 강제 집계할 수 있음 */}
-          <div className="card-premium generate-commission-card">
-            <h3 style={{ margin: '0 0 6px 0', fontSize: '15px' }}>⚙️ 정산 커미션 수동 집계</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 12px 0' }}>
+          <div className="settle-panel generate-commission-card">
+            <h3>⚙️ 정산 커미션 수동 집계</h3>
+            <p>
               매달 1일 자동으로 전월 정산이 생성되지만, 필요 시 특정 월을 수동으로 즉시 집계할 수 있습니다. 이미 집계된 가맹점/월 조합은 자동으로 건너뜁니다.
             </p>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="gen-commission-controls">
               <input
                 type="month"
                 className="select-premium"
@@ -818,7 +814,7 @@ function Settlepage() {
               </select>
             </div>
             <div className="filter-right">
-              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+              <span className="filter-count">
                 총 <strong>{commissionTotalCount}</strong>건 검색됨
               </span>
               <button type="button" className="btn-export-premium" onClick={handleExportCommissionsCsv}>
@@ -850,7 +846,7 @@ function Settlepage() {
                         <strong>{c.gymName || `사업장 ID: ${c.gymId}`}</strong>
                       </td>
                       <td>{getYearMonth(c.settleMonth)}</td>
-                      <td style={{ fontWeight: '600' }}>{formatWon(c.commission)}</td>
+                      <td className="cell-amount">{formatWon(c.commission)}</td>
                       <td>{(c.commissionRate * 100).toFixed(0)}%</td>
                       <td>
                         <span className={`status-badge ${c.status === '지급' ? 'paid' : 'pending'}`}>
@@ -859,9 +855,8 @@ function Settlepage() {
                       </td>
                       <td>{c.settledAt || '-'}</td>
                       <td>
-                        <button 
-                          className={`btn-action btn-action-primary`}
-                          style={{ padding: '6px 12px', fontSize: '12px' }}
+                        <button
+                          className="btn-action btn-action-primary btn-sm"
                           onClick={() => handleToggleCommissionStatus(c.settlementId)}
                         >
                           {c.status === '지급' ? '미지급 처리' : '지급 완료 처리'}
@@ -948,14 +943,14 @@ function Settlepage() {
           {ownerTab === 'sales' && (
             <div>
               <div className="settle-stats">
-                <div className="card-premium stat-card">
+                <div className="stat-card">
                   <div className="stat-card-title">총 매출 합계</div>
-                  <div className="stat-card-value" style={{ color: 'var(--primary-accent)' }}>
+                  <div className="stat-card-value is-accent">
                     {formatWon(payTotalAmount)}
                   </div>
                   <div className="stat-card-desc">검색 필터 기준 전체 매출 금액</div>
                 </div>
-                <div className="card-premium stat-card">
+                <div className="stat-card">
                   <div className="stat-card-title">결제 승인 건수</div>
                   <div className="stat-card-value">
                     {payTotalCount} 건
@@ -965,7 +960,7 @@ function Settlepage() {
               </div>
 
               {/* 매출 테이블 */}
-              <div className="settle-table-container" style={{ marginBottom: '30px' }}>
+              <div className="settle-table-container is-spaced">
                 <table className="settle-table">
                   <thead>
                     <tr>
@@ -984,7 +979,7 @@ function Settlepage() {
                       // 행 클릭 = 우측 통합 드로어에 매출 탭 추가 (삭제 버튼은 stopPropagation으로 기존 동작 유지)
                       <tr
                         key={p.payId || p.dataId || index}
-                        style={{ cursor: 'pointer' }}
+                        className="row-clickable"
                         onClick={() =>
                           window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
                             detail: { kind: 'settle', id: p.payId ?? p.dataId ?? index, title: p.payName ?? p.username ?? '매출', data: p },
@@ -994,22 +989,21 @@ function Settlepage() {
                         <td>{p.payId ? `#${p.payId}` : `임시 (계약 #${p.dataId})`}</td>
                         <td>{p.username ?? '-'}</td>
                         <td><strong>{p.payName}</strong></td>
-                        <td style={{ fontWeight: '600' }}>{formatWon(p.payPrice)}</td>
+                        <td className="cell-amount">{formatWon(p.payPrice)}</td>
                         <td>
                           {p.couponId ? (
-                            <span style={{ color: 'var(--accent-color, #2563eb)' }}>
+                            <span className="pay-coupon-used">
                               {p.couponName} (-{formatWon(p.discountAmount)})
                             </span>
                           ) : (
-                            <span style={{ color: 'var(--text-secondary, #999)' }}>미사용</span>
+                            <span className="pay-coupon-unused">미사용</span>
                           )}
                         </td>
                         <td>{p.installment === 0 ? '일시불' : `${p.installment}개월 할부`}</td>
                         <td>{p.payDate}</td>
                         <td>
                           <button
-                            className="btn-action btn-action-danger"
-                            style={{ padding: '4px 10px', fontSize: '12px' }}
+                            className="btn-action btn-action-danger btn-xs"
                             onClick={(e) => { e.stopPropagation(); handleDeletePay(p.payId); }}
                           >
                             삭제
@@ -1029,9 +1023,9 @@ function Settlepage() {
 
               {/* 미결제 계약 목록 (h_pay 연동, /fitb/payment 페이지로 이동) */}
               {unpaidContracts.length > 0 && (
-                <div className="card-premium expense-form-card">
+                <div className="settle-panel expense-form-card">
                   <h3>💳 미결제 리스트</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
+                  <p className="settle-form-desc">
                     회원이 보유한 쿠폰을 확인하고 할인을 적용해 결제를 확정합니다.
                   </p>
                   <div className="unpaid-contract-filter">
@@ -1047,9 +1041,9 @@ function Settlepage() {
                       <option value="4">PT 계약</option>
                     </select>
                   </div>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  <ul className="unpaid-contract-ul">
                     {pagedUnpaidContracts.map((c) => (
-                      <li key={c.dataId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-color, #e5e7eb)' }}>
+                      <li key={c.dataId} className="unpaid-contract-li">
                         <span>[{c.contract === 3 ? '이용권' : 'PT'}] {c.receiverName} (₩{c.amount?.toLocaleString()}) - #{c.dataId}</span>
                         <Link to={`/fitb/payment/${c.dataId}`} className="btn-premium">쿠폰 적용 결제하기</Link>
                       </li>
@@ -1069,14 +1063,14 @@ function Settlepage() {
           {ownerTab === 'expenses' && (
             <div>
               <div className="settle-stats">
-                <div className="card-premium stat-card">
+                <div className="stat-card">
                   <div className="stat-card-title">지출 총액</div>
-                  <div className="stat-card-value" style={{ color: 'var(--danger-solid)' }}>
+                  <div className="stat-card-value is-danger">
                     {formatWon(expenseTotalAmount)}
                   </div>
                   <div className="stat-card-desc">검색 필터 기준 사업장 총 운영 지출비</div>
                 </div>
-                <div className="card-premium stat-card">
+                <div className="stat-card">
                   <div className="stat-card-title">등록된 지출 건수</div>
                   <div className="stat-card-value">
                     {expenseTotalCount} 건
@@ -1103,7 +1097,7 @@ function Settlepage() {
                         <tr key={e.expenseId}>
                           <td>#{e.expenseId}</td>
                           <td><strong>{e.expenseName}</strong></td>
-                           <td style={{ fontWeight: '600', color: 'var(--danger-solid)' }}>
+                           <td className="cell-amount is-danger">
                              {(() => {
                                if (e.expenseRate > 0) {
                                  const base = Math.round(e.expensePrice / (1 + e.expenseRate));
@@ -1111,9 +1105,9 @@ function Settlepage() {
                                  return (
                                    <div>
                                      {formatWon(e.expensePrice)}
-                                     <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 'normal', marginTop: '2px' }}>
-                                       {formatWon(base)} 
-                                       <span style={{ color: 'var(--danger-solid)', fontWeight: 'bold', marginLeft: '4px' }}>
+                                     <div className="expense-breakdown">
+                                       {formatWon(base)}
+                                       <span className="incentive-amount">
                                          + {formatWon(incentive)}
                                        </span>
                                      </div>
@@ -1126,9 +1120,8 @@ function Settlepage() {
                            <td>{e.expenseDate}</td>
                           <td>{e.expenseRate > 0 ? `${(e.expenseRate * 100).toFixed(0)}%` : '없음'}</td>
                           <td>
-                            <button 
-                              className="btn-action btn-action-danger"
-                              style={{ padding: '4px 10px', fontSize: '12px' }}
+                            <button
+                              className="btn-action btn-action-danger btn-xs"
                               onClick={() => handleDeleteExpense(e.expenseId)}
                             >
                               삭제
@@ -1147,46 +1140,36 @@ function Settlepage() {
               <Pagination pager={expensePager} onPageChange={handleExpensePageChange} />
 
               {/* 지출 등록 폼 (계약 연동 및 직접 등록 듀얼 레이아웃) */}
-              <div className="expense-dual-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '30px' }}>
-                
+              <div className="expense-dual-layout">
+
                 {/* 왼쪽: 지출 대기 계약서 목록 */}
-                <div className="card-premium expense-contract-list-card" style={{ padding: '24px' }}>
-                  <h3 style={{ marginBottom: '10px' }}>📋 지출 정산 대기 계약서</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
+                <div className="settle-panel expense-contract-list-card">
+                  <h3>📋 지출 정산 대기 계약서</h3>
+                  <p className="settle-form-desc">
                     서명 완료된 임금 계약서(강사) 및 제휴 수수료 계약서(플랫폼) 중 아직 지출 등록되지 않은 내역입니다. 클릭 시 우측 폼에 자동 입력됩니다.
                   </p>
-                  
-                  <div className="expense-contract-scroll-list" style={{ maxHeight: '320px', overflowY: 'auto' }}>
+
+                  <div className="expense-contract-scroll-list">
                     {unpaidExpenses.map(c => (
                         <div
                           key={c.dataId}
                           className={`expense-contract-item ${selectedExpenseContractId === c.dataId.toString() ? 'selected' : ''}`}
-                          style={{
-                            padding: '12px',
-                            border: '1px solid var(--border-color, #e2e8f0)',
-                            borderRadius: '8px',
-                            marginBottom: '10px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            backgroundColor: selectedExpenseContractId === c.dataId.toString() ? 'var(--accent-bg)' : 'transparent',
-                            borderColor: selectedExpenseContractId === c.dataId.toString() ? 'var(--primary-accent, #2563eb)' : 'var(--border-color, #e2e8f0)'
-                          }}
                           onClick={() => handleSelectExpenseContract(c)}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 'bold', color: c.contract === 2 ? 'var(--danger-solid)' : '#f59e0b', background: c.contract === 2 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                          <div className="expense-item-head">
+                            <span className={`expense-item-badge ${c.contract === 2 ? 'is-wage' : 'is-commission'}`}>
                               {c.contract === 2 ? '임금 계약' : '제휴 수수료'}
                             </span>
-                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>#{c.dataId}</span>
+                            <span className="expense-item-id">#{c.dataId}</span>
                           </div>
-                          <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                          <div className="expense-item-target">
                             {c.contract === 2 ? `지출 대상: ${c.receiverName} 트레이너` : `지출 대상: 플랫폼 제휴 수수료`}
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                          <div className="expense-item-foot">
                             <span>
                               금액: <strong>{formatWon(c.amount)}</strong>
                               {c.contract === 2 && getIncentiveAmount(c) > 0 && (
-                                <span style={{ color: 'var(--danger-solid)', fontWeight: 'bold', marginLeft: '6px' }}>
+                                <span className="incentive-amount">
                                   + {formatWon(getIncentiveAmount(c))}
                                 </span>
                               )}
@@ -1200,7 +1183,7 @@ function Settlepage() {
                         </div>
                       ))}
                     {unpaidExpenses.length === 0 && (
-                      <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                      <div className="expense-empty">
                         지출 대기 중인 계약서가 없습니다.
                       </div>
                     )}
@@ -1209,9 +1192,9 @@ function Settlepage() {
                 </div>
 
                 {/* 오른쪽: 지출 등록 폼 */}
-                <div className="card-premium expense-form-card" style={{ padding: '24px' }}>
+                <div className="settle-panel expense-form-card">
                   <h3>💸 신규 지출 항목 직접 등록</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
+                  <p className="settle-form-desc">
                     좌측의 계약서를 선택하여 자동 입력하거나, 직접 지출 항목을 입력하여 등록할 수 있습니다.
                   </p>
                   <form onSubmit={handleAddExpense}>
@@ -1238,9 +1221,9 @@ function Settlepage() {
                           onChange={(e) => setNewExpensePrice(e.target.value)}
                         />
                         {selectedExpenseContractId && unpaidExpenses.find(c => c.dataId.toString() === selectedExpenseContractId)?.contract === 2 && (
-                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                          <div className="expense-base-note">
                             기본급: {formatWon(unpaidExpenses.find(c => c.dataId.toString() === selectedExpenseContractId).amount)}
-                            <span style={{ color: 'var(--danger-solid)', fontWeight: 'bold', marginLeft: '6px' }}>
+                            <span className="incentive-amount">
                               + 인센티브: {formatWon(getIncentiveAmount(unpaidExpenses.find(c => c.dataId.toString() === selectedExpenseContractId)))}
                             </span>
                           </div>
@@ -1273,12 +1256,11 @@ function Settlepage() {
                     </div>
 
                     {selectedExpenseContractId && (
-                      <div style={{ marginTop: '15px', padding: '10px', background: 'var(--accent-bg)', borderRadius: '6px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div className="expense-linked-banner">
                         <span>연동 계약서 ID: <strong>#{selectedExpenseContractId}</strong></span>
-                        <button 
-                          type="button" 
-                          className="tester-btn" 
-                          style={{ padding: '2px 6px', fontSize: '11px', background: 'transparent', border: '1px solid var(--border-color, #e2e8f0)', cursor: 'pointer' }}
+                        <button
+                          type="button"
+                          className="btn-unlink"
                           onClick={() => {
                             setSelectedExpenseContractId('');
                             setNewExpenseName('');

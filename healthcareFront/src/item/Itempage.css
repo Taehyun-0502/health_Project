@@ -206,6 +206,11 @@
   background: var(--gray-50);
 }
 
+/* 행 클릭 = 우측 통합 드로어 오픈 (인라인 cursor 대체) */
+.item-table tbody tr.is-clickable {
+  cursor: pointer;
+}
+
 .item-table__name,
 .item-table__date,
 .item-table__amount--strong,
