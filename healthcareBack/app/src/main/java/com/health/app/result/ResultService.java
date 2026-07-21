@@ -1,31 +1,16 @@
 package com.health.app.result;
 
 import java.util.List;
-import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 @Service
 public class ResultService {
 
     private final ResultMapper resultMapper;
-    private final com.health.app.churn.ChurnService churnService;
-    private final RestTemplate restTemplate;
 
-    @Value("${app.churn.fastapi-url:http://localhost:8000}")
-    private String churnFastapiUrl;
-
-    public ResultService(ResultMapper resultMapper, com.health.app.churn.ChurnService churnService) {
+    public ResultService(ResultMapper resultMapper) {
         this.resultMapper = resultMapper;
-        this.churnService = churnService;
-        this.restTemplate = new RestTemplate();
     }
 
     // data_id로 분석 결과 조회
@@ -67,107 +52,5 @@ public class ResultService {
     // 프로모션 발송용: 특정 이탈요인(statKey)을 가진 위험군 회원 (최신 예측 기준)
     public List<ChurnStatMemberDTO> selectMembersByFactor(Long gymId, String statKey) throws Exception {
         return resultMapper.selectMembersByFactor(gymId, statKey);
-    }
-
-    // 전체 또는 특정 지점에 대해 일괄 분석 및 저장 수행
-    @Transactional
-    public int analyzeAndSaveAll(Long gymId) throws Exception {
-        List<com.health.app.churn.ChurnDTO> allData = churnService.selectAll();
-        int successCount = 0;
-        for (com.health.app.churn.ChurnDTO dto : allData) {
-            try {
-                // 특정 지점의 회원들만 선별 분석
-                if (gymId != null) {
-                    Long memberGymId = resultMapper.selectGymIdByUsername(dto.getUsername());
-                    if (memberGymId == null || !memberGymId.equals(gymId)) {
-                        continue;
-                    }
-                }
-                analyzeAndSave(dto.getModelId());
-                successCount++;
-            } catch (Exception e) {
-                // 에러 발생 시 로그를 남기고 다른 회원 처리를 계속 진행
-                System.err.println("Failed to analyze data_id: " + dto.getModelId() + ". Error: " + e.getMessage());
-            }
-        }
-        return successCount;
-    }
-
-    // 이탈 모델 분석을 수행하고 그 결과를 데이터베이스에 저장/갱신
-    @Transactional
-    public ResultDTO analyzeAndSave(Long dataId) throws Exception {
-        // 1. data_id로 회원 username 조회
-        Long username = resultMapper.selectUsernameByDataId(dataId);
-        if (username == null) {
-            throw new IllegalArgumentException("No member data found for data_id: " + dataId);
-        }
-
-        // 2. FastAPI churn 서버 호출하여 분석 결과 가져오기
-        String url = churnFastapiUrl + "/churn/" + username;
-        RequestEntity<Void> request = RequestEntity.method(HttpMethod.GET, java.net.URI.create(url)).build();
-
-        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-            request,
-            new ParameterizedTypeReference<Map<String, Object>>() {}
-        );
-
-        Map<String, Object> body = response.getBody();
-        if (body == null) {
-            throw new RuntimeException("FastAPI response is null for username: " + username);
-        }
-
-        // FastAPI에서 계산되어 돌아온 visit_per_week를 DB(h_model_data)에 UPSERT 위임
-        churnService.upsertChurnFeaturesFromResponse(body, username);
-
-        // 3. 응답 맵에서 분석 데이터 추출
-        @SuppressWarnings("unchecked")
-        Map<String, Object> diagnosis = (Map<String, Object>) body.get("진단");
-        if (diagnosis == null) {
-            throw new RuntimeException("FastAPI response is missing the '진단' diagnosis block.");
-        }
-
-        // 3.1. 이탈확률(churn_rate) 추출 및 변환 (위험점수 / 100.0)
-        Double churnRate = null;
-        if (diagnosis.get("위험점수") != null) {
-            Number scoreNum = (Number) diagnosis.get("위험점수");
-            churnRate = scoreNum.doubleValue() / 100.0;
-        }
-
-        // 3.2. 이탈 위험 요인 Top 3 추출 (위험요인_이탈↑)
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> riskFactors = (List<Map<String, Object>>) diagnosis.get("위험요인_이탈↑");
-        String top1Reason = null;
-        String top2Reason = null;
-        String top3Reason = null;
-
-        if (riskFactors != null) {
-            if (riskFactors.size() > 0 && riskFactors.get(0) != null) {
-                top1Reason = (String) riskFactors.get(0).get("해석");
-            }
-            if (riskFactors.size() > 1 && riskFactors.get(1) != null) {
-                top2Reason = (String) riskFactors.get(1).get("해석");
-            }
-            if (riskFactors.size() > 2 && riskFactors.get(2) != null) {
-                top3Reason = (String) riskFactors.get(2).get("해석");
-            }
-        }
-
-        // 4. ResultDTO 생성 및 DB 저장/갱신
-        ResultDTO resultDTO = new ResultDTO();
-        resultDTO.setUsername(username);
-        resultDTO.setChurnRate(churnRate);
-        resultDTO.setTop1Reason(top1Reason);
-        resultDTO.setTop2Reason(top2Reason);
-        resultDTO.setTop3Reason(top3Reason);
-
-        ResultDTO existing = resultMapper.selectByDataId(dataId);
-        if (existing != null) {
-            resultDTO.setResultId(existing.getResultId());
-            resultMapper.update(resultDTO);
-        } else {
-            resultMapper.insert(resultDTO);
-        }
-
-        return resultDTO;
     }
 }

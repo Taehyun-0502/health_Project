@@ -135,7 +135,7 @@
         FROM "h_coupon" c
         INNER JOIN "h_coupon_type" t ON c.coupon_num = t.coupon_num
         INNER JOIN "h_member" m ON c.to_id = m.username
-        LEFT JOIN "h_churn_result" cr ON c.to_id = cr.username AND cr.predict_date = CURRENT_DATE -- ◀ 당일 예측 기준 조인
+        LEFT JOIN "h_churn_result" cr ON c.to_id = cr.username AND cr.churn_date = CURRENT_DATE -- ◀ 당일 예측 기준 조인
         WHERE t.category = '체험권'
           AND t.gym_id = #{gymId}
         ORDER BY c.coupon_id DESC

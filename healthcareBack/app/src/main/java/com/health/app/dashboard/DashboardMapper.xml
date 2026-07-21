@@ -126,14 +126,14 @@
     order by "month" asc
     </select>
 
-    <!-- 사장님: 활성 회원 계약(contract=3,4) 기준 계약 회원 수 + 이번 달 신규 집계 SQL -->
+    <!-- 사장님: 유효 회원 계약(contract=3,4,5 / SIGNED·ACTIVE) 기준 계약 회원 수 + 이번 달 신규 집계 SQL -->
     <select id="ownerMemberCount" parameterType="Long" resultType="map">
     select count(distinct d.receiver_id) as "total",
            count(distinct case when d.signed_at >= date_trunc('month', current_date) then d.receiver_id end) as "newThisMonth"
     from "h_contract_data" d
     where d.gym_id = #{gymId}
-      and d.contract in (3, 4)
-      and d.status = 'SIGNED'
+      and d.contract in (3, 4, 5)
+      and d.status in ('SIGNED', 'ACTIVE')
       and (d.end_date is null or d.end_date >= current_date)
     </select>
 
@@ -144,8 +144,8 @@
            (d.end_date - current_date) as "dday"
     from "h_contract_data" d
     where d.gym_id = #{gymId}
-      and d.contract in (3, 4)
-      and d.status = 'SIGNED'
+      and d.contract in (3, 4, 5)
+      and d.status in ('SIGNED', 'ACTIVE')
       and d.end_date between current_date and current_date + 30
     order by d.end_date asc
     </select>
@@ -160,25 +160,29 @@
     where mb.gym_id = #{gymId}
     </select>
 
-    <!-- 사장님: 지점 회원 이탈 예측(h_churn_result, healthModel 일일 배치 적재분) 집계 SQL -->
+    <!-- 사장님: 지점 회원 이탈 예측(h_churn_result, healthModel 일일 배치 적재분) 집계 SQL
+         (h_churn_result는 이력 누적 가능 - 회원별 최신 1건만 집계, h_member 조인으로 지점 격리) -->
     <select id="ownerChurnSummary" parameterType="Long" resultType="map">
     select count(*) as "total",
            coalesce(round(avg(r.churn_rate), 3), 0) as "averageChurnRate",
            count(case when r.churn_rate >= 0.7 then 1 end) as "highRiskCount"
-    from "h_churn_result" r
-    join "h_model_data" m on r.model_id = m.model_id
-    join "h_member" mb on m.username = mb.username
+    from (
+        select distinct on (username) username, churn_rate
+        from "h_churn_result"
+        order by username, churn_date desc nulls last
+    ) r
+    join "h_member" mb on r.username = mb.username
     where mb.gym_id = #{gymId}
     </select>
 
-    <!-- 트레이너: 활성 PT 계약(contract=4) 기준 담당 회원 수 + 이번 달 신규 집계 SQL -->
+    <!-- 트레이너: 유효 담당 PT·PT 체험 계약(contract=4,5 / SIGNED·ACTIVE) 기준 담당 회원 수 + 이번 달 신규 집계 SQL -->
     <select id="trainerMemberCount" parameterType="Long" resultType="map">
     select count(distinct d.receiver_id) as "total",
            count(distinct case when d.signed_at >= date_trunc('month', current_date) then d.receiver_id end) as "newThisMonth"
     from "h_contract_data" d
     where d.manager_id = #{username}
-      and d.contract = 4
-      and d.status = 'SIGNED'
+      and d.contract in (4, 5)
+      and d.status in ('SIGNED', 'ACTIVE')
       and (d.end_date is null or d.end_date >= current_date)
     </select>
 
@@ -194,8 +198,8 @@
            ), 0) as "remain"
     from "h_contract_data" d
     where d.manager_id = #{username}
-      and d.contract = 4
-      and d.status = 'SIGNED'
+      and d.contract in (4, 5)
+      and d.status in ('SIGNED', 'ACTIVE')
       and (d.end_date is null or d.end_date >= current_date)
       and d.quantity is not null
     order by "remain" asc
@@ -211,8 +215,8 @@
       and exists (
           select 1 from "h_contract_data" d
           where d.manager_id = #{username}
-            and d.contract = 4
-            and d.status = 'SIGNED'
+            and d.contract in (4, 5)
+            and d.status in ('SIGNED', 'ACTIVE')
             and (d.end_date is null or d.end_date >= current_date)
             and d.receiver_id = i.username
       )
@@ -220,20 +224,23 @@
     order by "month" asc
     </select>
 
-    <!-- 트레이너: 담당 회원 이탈 예측(h_churn_result) 집계 SQL -->
+    <!-- 트레이너: 담당 회원 이탈 예측(h_churn_result) 집계 SQL (회원별 최신 1건만 집계) -->
     <select id="trainerChurnSummary" parameterType="Long" resultType="map">
     select count(*) as "total",
            coalesce(round(avg(r.churn_rate), 3), 0) as "averageChurnRate",
            count(case when r.churn_rate >= 0.7 then 1 end) as "highRiskCount"
-    from "h_churn_result" r
-    join "h_model_data" m on r.model_id = m.model_id
+    from (
+        select distinct on (username) username, churn_rate
+        from "h_churn_result"
+        order by username, churn_date desc nulls last
+    ) r
     where exists (
         select 1 from "h_contract_data" d
         where d.manager_id = #{username}
-          and d.contract = 4
-          and d.status = 'SIGNED'
+          and d.contract in (4, 5)
+          and d.status in ('SIGNED', 'ACTIVE')
           and (d.end_date is null or d.end_date >= current_date)
-          and d.receiver_id = m.username
+          and d.receiver_id = r.username
     )
     </select>
 
