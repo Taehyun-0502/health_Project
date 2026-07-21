@@ -5,7 +5,7 @@ const colors = {
   skinLight: '#ffd6b5',
   skinDark: '#e5a97a',
   outline: '#3e2723',
-  pants: '#2980b9',
+  pants: '#a3e635',
   hair: '#2c3e50',
   shoes: '#ffffff'
 };
@@ -308,14 +308,14 @@ function B2cAvatar() {
           position: 'relative',
           width: '300px',
           height: '300px',
-          border: '1px solid #ddd',
+          border: '1px solid var(--gray-200)',
           borderRadius: '12px',
           overflow: 'hidden',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          background: 'linear-gradient(to bottom, #e8f4f8 65%, #d2b48c 65%)',
-          boxShadow: '0 4px 8px rgba(0,0,0,0.05)'
+          background: 'linear-gradient(to bottom, var(--b2c-lime-bg) 65%, #d2b48c 65%)',
+          boxShadow: '0 1px 3px rgba(23,23,23,.06)'
         }}
       >
         {/* 배경 점선 패턴 */}
@@ -326,7 +326,7 @@ function B2cAvatar() {
             left: 0,
             right: 0,
             bottom: '35%',
-            backgroundImage: 'radial-gradient(#d1e8f0 1px, transparent 1px)', 
+            backgroundImage: 'radial-gradient(var(--b2c-lime-line) 1px, transparent 1px)',
             backgroundSize: '15px 15px' 
           }}
         />
@@ -336,27 +336,27 @@ function B2cAvatar() {
       {/* 하단 정보 영역 (수동 출석하기 버튼 배제) */}
       <div style={{ marginTop: '15px', width: '300px', textAlign: 'center' }}>
         {isLoading ? (
-          <div style={{ color: '#888', fontSize: '14px', padding: '10px' }}>
+          <div style={{ color: 'var(--gray-400)', fontSize: '14px', padding: '10px' }}>
             출석 데이터를 불러오는 중...
           </div>
         ) : (
-          <div style={{ padding: '10px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #eee' }}>
+          <div style={{ padding: '10px', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid var(--gray-200)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '14px', color: '#555' }}>
-                연속 출석: <strong style={{ fontSize: '18px', color: '#0f4c81' }}>{days}</strong>일
+              <span style={{ fontSize: '14px', color: 'var(--gray-500)' }}>
+                연속 출석: <strong style={{ fontSize: '18px', color: 'var(--b2c-accent)' }}>{days}</strong>일
               </span>
               <span style={{
                 fontSize: '11px',
-                backgroundColor: '#f97316',
+                backgroundColor: 'var(--b2c-accent)',
                 color: '#fff',
                 padding: '2px 8px',
-                borderRadius: '12px',
+                borderRadius: '999px',
                 fontWeight: 'bold'
               }}>
                 {currentLevel.title}
               </span>
             </div>
-            <div style={{ fontSize: '13px', color: '#dc2626', fontWeight: 'bold', minHeight: '20px', marginTop: '6px' }}>
+            <div style={{ fontSize: '13px', color: 'var(--b2c-accent)', fontWeight: 'bold', minHeight: '20px', marginTop: '6px' }}>
               {currentLevel.msg}
             </div>
           </div>

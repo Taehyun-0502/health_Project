@@ -46,31 +46,31 @@ function Membership() {
   };
 
   return (
-    <div>
-      <h3>내 멤버십 정보</h3>
+    <div style={{ padding: '16px 16px 32px' }}>
+      <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>내 멤버십 정보</h3>
       {memberships.length === 0 ? (
-        <p>이용 중인 피트니스 회원권(멤버십) 정보가 없습니다.</p>
+        <p style={{ color: 'var(--gray-400)', fontSize: '14px' }}>이용 중인 피트니스 회원권(멤버십) 정보가 없습니다.</p>
       ) : (
-        <table border="1" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '13px' }}>
           <thead>
-            <tr>
-              <th>번호</th>
-              <th>계약종류</th>
-              <th>시작일</th>
-              <th>만료일</th>
-              <th>결제액</th>
-              <th>담당자</th>
+            <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-500)', borderBottom: '2px solid var(--gray-200)' }}>
+              <th style={{ padding: '10px', fontWeight: '600' }}>번호</th>
+              <th style={{ padding: '10px', fontWeight: '600' }}>계약종류</th>
+              <th style={{ padding: '10px', fontWeight: '600' }}>시작일</th>
+              <th style={{ padding: '10px', fontWeight: '600' }}>만료일</th>
+              <th style={{ padding: '10px', fontWeight: '600' }}>결제액</th>
+              <th style={{ padding: '10px', fontWeight: '600' }}>담당자</th>
             </tr>
           </thead>
           <tbody>
             {memberships.map((item, idx) => (
-              <tr key={item.dataId || idx}>
-                <td>{idx + 1}</td>
-                <td>{getContractName(item.contract)}</td>
-                <td>{item.startDate}</td>
-                <td>{item.endDate}</td>
-                <td>{item.amount ? `${item.amount.toLocaleString()}만원` : '0만원'}</td>
-                <td>{item.managerId || '미지정'}</td>
+              <tr key={item.dataId || idx} style={{ borderBottom: '1px solid var(--gray-200)', textAlign: 'center' }}>
+                <td style={{ padding: '10px' }}>{idx + 1}</td>
+                <td style={{ padding: '10px', fontWeight: '600', color: 'var(--b2c-accent)' }}>{getContractName(item.contract)}</td>
+                <td style={{ padding: '10px', color: 'var(--gray-500)' }}>{item.startDate}</td>
+                <td style={{ padding: '10px', color: 'var(--gray-500)' }}>{item.endDate}</td>
+                <td style={{ padding: '10px', fontVariantNumeric: 'tabular-nums' }}>{item.amount ? `${item.amount.toLocaleString()}만원` : '0만원'}</td>
+                <td style={{ padding: '10px', color: 'var(--gray-500)' }}>{item.managerId || '미지정'}</td>
               </tr>
             ))}
           </tbody>

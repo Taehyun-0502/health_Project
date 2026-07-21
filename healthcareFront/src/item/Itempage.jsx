@@ -1,28 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import './Itempage.css';
-import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import Pagination from './Pagination';
-// SVG 아이콘 컴포넌트 정의
-const ListIcon = () => (
-  <svg viewBox="0 0 24 24">
-    <path d="M4 14h6v-10h-6v10zm0 6h6v-4h-6v4zm8-16v6h10v-6h-10zm0 16h10v-10h-10v10zm0-8h10v-2h-10v2z" fill="currentColor" />
-  </svg>
-);
-
-const FormIcon = () => (
-  <svg viewBox="0 0 24 24">
-    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor" />
-  </svg>
-);
-
-const LinksIcon = () => (
-  <svg viewBox="0 0 24 24">
-    <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" fill="currentColor" />
-  </svg>
-);
 
 function Itempage() {
-  const [activeTab, setActiveTab] = useState('list'); // 'list' | 'form'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('view') === 'form' ? 'form' : 'list';
   const [selectedItem, setSelectedItem] = useState(null); // 선택된 상세 물품 상태
   const [detailList, setDetailList] = useState([]); // 선택된 물품의 상세 구매 이력 리스트
 
@@ -36,6 +19,15 @@ function Itempage() {
     itemCount: '',
     itemExpiryDate: ''
   });
+
+  const setActiveTab = (view) => {
+    const next = new URLSearchParams(searchParams);
+    if (view === 'form') next.set('view', 'form');
+    else next.delete('view');
+    setSelectedItem(null);
+    setEditingItem(null);
+    setSearchParams(next);
+  };
 
   // 현재 페이지에 표시할 물품 데이터 목록 (서버가 gymId+검색어+페이지 조건으로 이미 필터링/페이징해서 내려줌)
   const [items, setItems] = useState([]);
@@ -110,6 +102,7 @@ function Itempage() {
 
   // gymId가 바뀌면 1페이지/검색어 초기화 상태로 목록과 자동완성 목록을 다시 조회 (정렬 옵션은 유지)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1);
     setSearchTerm('');
     fetchItems(1, '', sortOption);
@@ -311,7 +304,7 @@ function Itempage() {
     }
   };
 
-  const currentMonthKey = useMemo(() => new Date().toISOString().split('T')[0].substring(0, 7), []);
+  const currentMonthKey = new Date().toISOString().split('T')[0].substring(0, 7);
   const [selectedMonthFilter, setSelectedMonthFilter] = useState(currentMonthKey);
 
   // 조회 월 선택 옵션: 실제 이력 존재 여부와 무관하게 올해(현재 연도) 1월~12월을 항상 전부 제공
@@ -475,65 +468,16 @@ function Itempage() {
         ))}
       </datalist>
 
-      {/* 좌측 사이드바 탭 메뉴 영역 */}
-      <aside className="item-sidebar">
-        <div className="item-sidebar-title">물품 관리 시스템</div>
-        <nav>
-          <ul className="item-sidebar-menu">
-            <li>
-              <button
-                className={`item-tab-btn ${activeTab === 'list' ? 'active' : ''}`}
-                onClick={() => { setSelectedItem(null); setEditingItem(null); setActiveTab('list'); }}
-              >
-                <ListIcon />
-                물품 목록
-              </button>
-            </li>
-            <li>
-              <button
-                className={`item-tab-btn ${activeTab === 'form' ? 'active' : ''}`}
-                onClick={() => { setSelectedItem(null); setEditingItem(null); setActiveTab('form'); }}
-              >
-                <FormIcon />
-                물품 등록
-              </button>
-            </li>
-            <li>
-              <Link
-                to="/fitb"
-                className="item-tab-btn"
-                style={{ textDecoration: 'none' }}
-              >
-                <LinksIcon />
-                대시보드로 가기
-              </Link>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-
-      {/* 우측 상세 컨텐츠 영역 */}
       <main className="item-content-area">
         {activeTab === 'list' && (
           <div className="item-tab-content">
             {editingItem ? (
               <div className="item-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
-                  <h2 className="item-card-title" style={{ margin: 0 }}>물품 정보 수정</h2>
+                <div className="item-section-header">
+                  <h2 className="item-card-title item-card-title--flush">물품 정보 수정</h2>
                   <button
                     onClick={() => setEditingItem(null)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '6px',
-                      backgroundColor: '#f1f5f9',
-                      color: '#475569',
-                      border: 'none',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s',
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#e2e8f0'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                    className="item-secondary-btn"
                   >
                     취소
                   </button>
@@ -580,7 +524,6 @@ function Itempage() {
                         className="item-input"
                         value={editFormData.itemDate || editFormData.itemBuy || ''}
                         disabled
-                        style={{ backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#94a3b8' }}
                       />
                     </div>
 
@@ -627,25 +570,12 @@ function Itempage() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                    <button type="submit" className="item-submit-btn" style={{ flex: 1 }}>수정 완료</button>
+                  <div className="item-form-actions">
+                    <button type="submit" className="item-submit-btn item-submit-btn--grow">수정 완료</button>
                     <button
                       type="button"
                       onClick={() => setEditingItem(null)}
-                      style={{
-                        flex: 1,
-                        padding: '0.75rem',
-                        borderRadius: '8px',
-                        backgroundColor: '#f1f5f9',
-                        color: '#475569',
-                        border: 'none',
-                        fontWeight: '700',
-                        fontSize: '1rem',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s',
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#e2e8f0'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                      className="item-secondary-btn item-secondary-btn--grow"
                     >
                       취소
                     </button>
@@ -694,28 +624,34 @@ function Itempage() {
                     <tbody>
                       {items.length > 0 ? (
                         items.map((item, index) => (
+                          // 행 클릭 = 우측 통합 드로어에 물품 탭 추가 (상세 보기 버튼은 stopPropagation으로 기존 동작 유지)
                           <tr
                             key={item.itemId || index}
-                            onClick={() => handleItemClick(item)}
                             style={{ cursor: 'pointer' }}
+                            onClick={() =>
+                              window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
+                                detail: { kind: 'item', id: item.itemId ?? item.itemName ?? index, title: item.itemName ?? '물품', data: item },
+                              }))
+                            }
                           >
                             {/* 페이지가 바뀌어도 전체 목록 기준 연속된 번호가 보이도록 offset + index로 계산 */}
                             <td>{(pager?.offset || 0) + index + 1}</td>
                             <td>
-                              <span style={{
-                                padding: '0.25rem 0.55rem',
-                                borderRadius: '6px',
-                                backgroundColor: '#e0e7ff',
-                                color: '#4f46e5',
-                                fontSize: '0.8rem',
-                                fontWeight: '600'
-                              }}>
+                              <span className="item-category-badge">
                                 {item.itemCategory}
                               </span>
                             </td>
-                            <td style={{ fontWeight: '600' }}>{item.itemName}</td>
+                            <td className="item-table__name">
+                              <button
+                                type="button"
+                                className="item-table__detail-button"
+                                onClick={(e) => { e.stopPropagation(); handleItemClick(item); }}
+                              >
+                                {item.itemName}
+                              </button>
+                            </td>
                             <td>
-                              <span style={{ fontWeight: '700', color: '#0f172a' }}>
+                              <span className="item-table__count">
                                 {item.itemCount.toLocaleString()}
                               </span> 개
                             </td>
@@ -726,7 +662,7 @@ function Itempage() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                          <td colSpan="5" className="item-table__empty">
                             검색 조건에 맞는 물품이 없거나 현재 사업장에 등록된 물품이 없습니다.
                           </td>
                         </tr>
@@ -740,96 +676,63 @@ function Itempage() {
               </div>
             ) : (
               <div className="item-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+                <div className="item-section-header">
                   <div>
-                    <span style={{
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '20px',
-                      backgroundColor: '#e0e7ff',
-                      color: '#4f46e5',
-                      fontSize: '0.85rem',
-                      fontWeight: '700',
-                      marginRight: '0.75rem',
-                      display: 'inline-block',
-                      verticalAlign: 'middle'
-                    }}>
+                    <span className="item-category-badge item-category-badge--large">
                       {selectedItem.itemCategory}
                     </span>
-                    <h2 className="item-card-title" style={{ margin: 0, display: 'inline-block', verticalAlign: 'middle' }}>
+                    <h2 className="item-card-title item-card-title--inline">
                       {selectedItem.itemName} 상세 정보
                     </h2>
                   </div>
                   <button
                     onClick={() => setSelectedItem(null)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '6px',
-                      backgroundColor: '#f1f5f9',
-                      color: '#475569',
-                      border: 'none',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s',
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#e2e8f0'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                    className="item-secondary-btn"
                   >
                     ← 목록으로 돌아가기
                   </button>
                 </div>
 
                 {/* 요약 카드 그리드 */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                  <div style={{ padding: '1.25rem', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600' }}>
+                <div className="item-summary-grid">
+                  <div className="item-summary-card">
+                    <div className="item-summary-card__label">
                       {selectedMonthFilter === 'all' ? '전체 기간 총 갯수' : '선택 월 총 갯수'}
                     </div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#4f46e5' }}>
+                    <div className="item-summary-card__value">
                       {currentStats.totalCount.toLocaleString()} 개
                     </div>
                   </div>
-                  <div style={{ padding: '1.25rem', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600' }}>
+                  <div className="item-summary-card">
+                    <div className="item-summary-card__label">
                       {selectedMonthFilter === 'all' ? '전체 기간 구매 갯수' : '선택 월 구매 갯수'}
                     </div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#16a34a' }}>
+                    <div className="item-summary-card__value item-summary-card__value--success">
                       {currentStats.purchaseCount.toLocaleString()} 개
                     </div>
                   </div>
-                  <div style={{ padding: '1.25rem', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600' }}>
+                  <div className="item-summary-card">
+                    <div className="item-summary-card__label">
                       {selectedMonthFilter === 'all' ? '전체 기간 폐기 갯수' : '선택 월 폐기 갯수'}
                     </div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#ef4444' }}>
+                    <div className="item-summary-card__value item-summary-card__value--danger">
                       {currentStats.disposalCount.toLocaleString()} 개
                     </div>
                   </div>
                 </div>
 
                 {/* 상세 내역 필터바 영역 */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
+                <div className="item-detail-toolbar">
+                  <h3>
                     📦 등록 및 관리 내역 리스트 ({detailList.length}건)
                   </h3>
 
                   {/* 월별 필터 셀렉트 */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600' }}>조회 월 선택:</span>
+                  <label className="item-month-filter">
+                    <span>조회 월 선택:</span>
                     <select
                       value={selectedMonthFilter}
                       onChange={(e) => setSelectedMonthFilter(e.target.value)}
-                      style={{
-                        padding: '0.4rem 0.8rem',
-                        borderRadius: '8px',
-                        border: '1px solid #cbd5e1',
-                        fontSize: '0.85rem',
-                        fontWeight: '600',
-                        color: '#334155',
-                        backgroundColor: '#ffffff',
-                        outline: 'none',
-                        cursor: 'pointer',
-                        transition: 'border-color 0.2s'
-                      }}
                     >
                       <option value="all">전체 내역</option>
                       {availableMonths.map(m => {
@@ -841,7 +744,7 @@ function Itempage() {
                         );
                       })}
                     </select>
-                  </div>
+                  </label>
                 </div>
 
                 {filteredDetails.length > 0 ? (
@@ -871,62 +774,31 @@ function Itempage() {
 
                           return (
                             <tr key={id}>
-                              <td style={{ fontWeight: '500', color: '#64748b' }}>#{id}</td>
+                              <td className="item-table__muted">#{id}</td>
                               <td>
-                                <span style={{
-                                  padding: '0.2rem 0.5rem',
-                                  borderRadius: '4px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '700',
-                                  backgroundColor: isDisposal ? '#fee2e2' : '#dcfce7',
-                                  color: isDisposal ? '#ef4444' : '#16a34a'
-                                }}>
+                                <span className={`item-status-badge ${isDisposal ? 'is-disposal' : 'is-purchase'}`}>
                                   {isDisposal ? '폐기' : '구매'}
                                 </span>
                               </td>
-                              <td style={{ fontWeight: '600', color: '#334155' }}>{buyDate}</td>
-                              <td style={{ color: '#0f172a' }}>{isDisposal ? '-' : (price ? `${price.toLocaleString()} 원` : '0 원')}</td>
-                              <td style={{ fontWeight: '700', color: isDisposal ? '#ef4444' : '#4f46e5' }}>
+                              <td className="item-table__date">{buyDate}</td>
+                              <td className="item-table__amount">{isDisposal ? '-' : (price ? `${price.toLocaleString()} 원` : '0 원')}</td>
+                              <td className={`item-table__quantity ${isDisposal ? 'is-disposal' : ''}`}>
                                 {isDisposal ? `-${displayCount} 개` : `${displayCount} 개`}
                               </td>
-                              <td style={{ fontWeight: '700', color: '#0f172a' }}>
+                              <td className="item-table__amount item-table__amount--strong">
                                 {isDisposal ? '-' : `${totalPrice.toLocaleString()} 원`}
                               </td>
                               <td>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <div className="item-row-actions">
                                   <button
                                     onClick={() => handleEditClick(item)}
-                                    style={{
-                                      padding: '0.3rem 0.6rem',
-                                      borderRadius: '4px',
-                                      backgroundColor: '#e2e8f0',
-                                      color: '#334155',
-                                      border: 'none',
-                                      fontWeight: '600',
-                                      fontSize: '0.8rem',
-                                      cursor: 'pointer',
-                                      transition: 'background-color 0.2s',
-                                    }}
-                                    onMouseEnter={(e) => e.target.style.backgroundColor = '#cbd5e1'}
-                                    onMouseLeave={(e) => e.target.style.backgroundColor = '#e2e8f0'}
+                                    className="item-row-action"
                                   >
                                     수정
                                   </button>
                                   <button
                                     onClick={() => handleDeleteClick(item)}
-                                    style={{
-                                      padding: '0.3rem 0.6rem',
-                                      borderRadius: '4px',
-                                      backgroundColor: '#fee2e2',
-                                      color: '#ef4444',
-                                      border: 'none',
-                                      fontWeight: '600',
-                                      fontSize: '0.8rem',
-                                      cursor: 'pointer',
-                                      transition: 'background-color 0.2s',
-                                    }}
-                                    onMouseEnter={(e) => e.target.style.backgroundColor = '#fca5a5'}
-                                    onMouseLeave={(e) => e.target.style.backgroundColor = '#fee2e2'}
+                                    className="item-row-action item-row-action--danger"
                                   >
                                     삭제
                                   </button>
@@ -939,11 +811,11 @@ function Itempage() {
                     </table>
                   </div>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: '3rem 2rem', color: '#94a3b8', border: '1px dashed #e2e8f0', borderRadius: '12px' }}>
+                  <div className="item-detail-empty">
                     {selectedMonthFilter === 'all'
                       ? '등록된 상세 내역이 없습니다.'
                       : `${selectedMonthFilter.substring(0, 4)}년 ${selectedMonthFilter.substring(5, 7)}월에 등록된 내역이 없습니다.`}
-                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.5rem' }}>
+                    <div className="item-detail-empty__hint">
                       (상단의 '조회 월 선택'에서 다른 월을 고르거나 전체 내역을 볼 수 있습니다.)
                     </div>
                   </div>
@@ -956,12 +828,12 @@ function Itempage() {
         {activeTab === 'form' && (
           <div className="item-tab-content">
             <div className="item-card">
-              <h2 className="item-card-title" style={{ marginBottom: '1.5rem' }}>물품 등록</h2>
+              <h2 className="item-card-title">물품 등록</h2>
               <form onSubmit={handleFormSubmit} className="item-form">
                 <div className="item-form-grid">
 
                   {/* 물품명 입력칸 (직접 입력하거나 기존 목록에서 선택) */}
-                  <div className="item-form-group" style={{ gridColumn: 'span 2' }}>
+                  <div className="item-form-group full-width">
                     <label htmlFor="itemName">물품명 *</label>
                     <input
                       id="itemName"
@@ -974,11 +846,11 @@ function Itempage() {
                       required
                     />
                     {existingItemNames.length > 0 && (
-                      <div style={{ marginTop: '0.75rem' }}>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: '600' }}>
+                      <div className="item-suggestions">
+                        <div className="item-suggestions__label">
                           💡 내가 등록한 전체 물품 목록 (클릭 시 자동 입력):
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                        <div className="item-suggestions__list">
                           {existingItemNames.map((name) => {
                             const isSelected = formData.itemName === name;
                             const matchedItem = itemNames.find(item => item.itemName === name);
@@ -994,28 +866,7 @@ function Itempage() {
                                     itemCategory: matchedItem ? matchedItem.itemCategory : prev.itemCategory
                                   }));
                                 }}
-                                style={{
-                                  padding: '0.2rem 0.5rem',
-                                  borderRadius: '4px',
-                                  border: 'none',
-                                  backgroundColor: isSelected ? '#e0e7ff' : '#f1f5f9',
-                                  color: isSelected ? '#4f46e5' : '#475569',
-                                  fontWeight: '600',
-                                  fontSize: '0.75rem',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease',
-                                  outline: 'none'
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (!isSelected) {
-                                    e.target.style.backgroundColor = '#e2e8f0';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (!isSelected) {
-                                    e.target.style.backgroundColor = '#f1f5f9';
-                                  }
-                                }}
+                                className={`item-suggestion${isSelected ? ' is-selected' : ''}`}
                               >
                                 {name}
                               </button>

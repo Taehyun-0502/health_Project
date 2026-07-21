@@ -1,7 +1,8 @@
 import { useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import './Auth.css';
 
-// 로그인 페이지 컴포넌트 (디자인 제외 Plain 버전)
+// 로그인 페이지 컴포넌트 — 디자인 시스템 v1.0 (480px 카드 + 블랙 확정 버튼)
 function Login() {
   const formRef = useRef(null);
   const navigate = useNavigate();
@@ -54,19 +55,28 @@ function Login() {
   };
 
   return (
-    <div>
-      <h2>로그인</h2>
-      <form ref={formRef} onSubmit={handleSubmit}>
-        <div>
-          <label>전화번호 (아이디): </label>
-          <input type="tel" name="username" required placeholder="예: 01012345678" />
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-brand">
+          <strong>Haru Health</strong>
+          <small>MANAGEMENT</small>
         </div>
-        <div>
-          <label>비밀번호: </label>
-          <input type="password" name="password" required />
-        </div>
-        <button type="submit">로그인</button>
-      </form>
+        <form className="auth-form" ref={formRef} onSubmit={handleSubmit}>
+          <div className="auth-field">
+            <label>전화번호 (아이디)</label>
+            <input type="tel" name="username" required placeholder="예: 01012345678" />
+          </div>
+          <div className="auth-field">
+            <label>비밀번호</label>
+            <input type="password" name="password" required placeholder="비밀번호 입력" />
+          </div>
+          <button className="auth-submit" type="submit">로그인</button>
+        </form>
+        <p className="auth-foot">
+          계정이 없으신가요?
+          <Link to="/join">계정 추가</Link>
+        </p>
+      </div>
     </div>
   );
 }

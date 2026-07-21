@@ -86,21 +86,28 @@ function Contractpage() {
   const typeCount = (type) => userList.filter((item) => item.contract === type).length;
   const filteredList = typeFilter ? userList.filter((item) => item.contract === typeFilter) : userList;
 
+  // 상태 문자열 → 배지 클래스 (ACTIVE/SIGNED/ISSUED/TERMINATED/DRAFT, 미지원 값은 issued 톤)
+  const badgeClass = (status) => {
+    const key = String(status || '').toLowerCase();
+    const known = ['active', 'signed', 'issued', 'terminated', 'draft'];
+    return `contract-badge contract-badge--${known.includes(key) ? key : 'issued'}`;
+  };
+
   return (
     <div>
-      <h1>계약서 리스트 (권한별)</h1>
-      <p>
-        로그인 사용자: {loginUser ? `${loginUser.name} (${loginUser.role})` : '없음'}
-      </p>
-      <p>{message}</p>
-
-      {/* 권한별 계약서 작성 버튼 */}
-      <div>
-        {createButtons.map((btn) => (
-          <button key={btn.to} onClick={() => navigate(btn.to)}>
-            {btn.label}
-          </button>
-        ))}
+      {/* 페이지 헤더: 조회 상태 문구 + 권한별 계약서 작성 버튼 */}
+      <div className="contract-pagehead">
+        <p className="contract-pagehead__meta">
+          로그인 사용자: {loginUser ? `${loginUser.name} (${loginUser.role})` : '없음'}
+          {message && <><br />{message}</>}
+        </p>
+        <div className="contract-pagehead__actions">
+          {createButtons.map((btn) => (
+            <button key={btn.to} className="contract-btn-primary" onClick={() => navigate(btn.to)}>
+              {btn.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* 계약 유형 필터 탭 (전체/제휴/임금/이용권/PT/PT 체험, 건수 표시) */}
@@ -123,79 +130,86 @@ function Contractpage() {
       </div>
 
       {/* 이름/username 검색 - 입력창 내부 X는 값이 있을 때만 표시 */}
-      <div style={{ margin: '8px 0' }}>
-        <span style={{ position: 'relative', display: 'inline-block' }}>
+      <div className="contract-search">
+        <span className="contract-search__box">
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') runSearch(); }}
             placeholder="이름 또는 아이디 검색"
             enterKeyHint="search"
-            style={{ paddingRight: '22px' }}
           />
           {keyword !== '' && (
             <button
               type="button"
+              className="contract-search__clear"
               title="검색어 지우기"
               onClick={clearSearch}
-              style={{
-                position: 'absolute', right: '2px', top: '50%', transform: 'translateY(-50%)',
-                border: 'none', background: 'none', cursor: 'pointer', padding: 0,
-              }}
             >
               ✕
             </button>
           )}
         </span>
-        <button type="button" title="검색" onClick={runSearch}>🔍</button>
+        <button type="button" className="contract-search__run" title="검색" onClick={runSearch}>🔍</button>
       </div>
 
       {/* 공통 리스트 칼럼: 계약 ID | 계약 유형 | 이름 | 상태 | 금액 | 시작일 | 종료일 | 발행일 | 갱신 */}
-      <table border="1">
-        <thead>
-          <tr>
-            <th>계약 ID</th>
-            <th>계약 유형</th>
-            <th>이름</th>
-            <th>상태</th>
-            <th>금액(만원)</th>
-            <th>시작일</th>
-            <th>종료일</th>
-            <th>발행일</th>
-            <th>갱신</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredList.map((item) => (
-            <tr key={item.dataId}>
-              <td>
-                <button onClick={() => navigate(`/fitb/contract/${item.dataId}`)}>{item.dataId}</button>
-              </td>
-              <td>{CONTRACT_LABEL[item.contract] ?? item.contract}</td>
-              <td>{item.member?.name ?? item.receiverName}</td>
-              <td>{item.status}</td>
-              {/* 제휴(1)는 amount가 없어 수수료율(contractRate)을 % 표시 */}
-              <td>{item.contract === 1 ? (item.contractRate != null ? `${item.contractRate}%` : '') : item.amount}</td>
-              <td>{item.startDate}</td>
-              <td>{item.endDate}</td>
-              <td>{item.issueDate}</td>
-              <td>
-                {/* 갱신: 재계약(previous) 또는 연계(related) 이력이 있으면 해당 계약으로 이동 */}
-                {item.previousDataId && (
-                  <button onClick={() => navigate(`/fitb/contract/${item.previousDataId}`)}>
-                    재계약 #{item.previousDataId}
-                  </button>
-                )}
-                {item.relatedDataId && (
-                  <button onClick={() => navigate(`/fitb/contract/${item.relatedDataId}`)}>
-                    연계 #{item.relatedDataId}
-                  </button>
-                )}
-              </td>
+      <div className="contract-table-card">
+        <table className="contract-table">
+          <thead>
+            <tr>
+              <th>계약 ID</th>
+              <th>계약 유형</th>
+              <th>이름</th>
+              <th>상태</th>
+              <th>금액(만원)</th>
+              <th>시작일</th>
+              <th>종료일</th>
+              <th>발행일</th>
+              <th>갱신</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredList.map((item) => (
+              // 행 클릭 = 우측 통합 드로어에 계약 탭 추가 (기존 버튼 동선은 stopPropagation으로 유지)
+              <tr
+                key={item.dataId}
+                style={{ cursor: 'pointer' }}
+                onClick={() =>
+                  window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
+                    detail: { kind: 'contract', id: item.dataId, title: item.member?.name ?? item.receiverName ?? '계약' },
+                  }))
+                }
+              >
+                <td>
+                  <button className="contract-table__id" onClick={(e) => { e.stopPropagation(); navigate(`/fitb/contract/${item.dataId}`); }}>{item.dataId}</button>
+                </td>
+                <td>{CONTRACT_LABEL[item.contract] ?? item.contract}</td>
+                <td>{item.member?.name ?? item.receiverName}</td>
+                <td><span className={badgeClass(item.status)}>{item.status}</span></td>
+                {/* 제휴(1)는 amount가 없어 수수료율(contractRate)을 % 표시 */}
+                <td>{item.contract === 1 ? (item.contractRate != null ? `${item.contractRate}%` : '') : item.amount}</td>
+                <td className="contract-table__muted">{item.startDate}</td>
+                <td className="contract-table__muted">{item.endDate}</td>
+                <td className="contract-table__muted">{item.issueDate}</td>
+                <td>
+                  {/* 갱신: 재계약(previous) 또는 연계(related) 이력이 있으면 해당 계약으로 이동 */}
+                  {item.previousDataId && (
+                    <button className="contract-renew-link" onClick={(e) => { e.stopPropagation(); navigate(`/fitb/contract/${item.previousDataId}`); }}>
+                      재계약 #{item.previousDataId}
+                    </button>
+                  )}
+                  {item.relatedDataId && (
+                    <button className="contract-renew-link" onClick={(e) => { e.stopPropagation(); navigate(`/fitb/contract/${item.relatedDataId}`); }}>
+                      연계 #{item.relatedDataId}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
