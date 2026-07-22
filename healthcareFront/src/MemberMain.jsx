@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import B2cAvatar from './b2c_mypage/B2cAvatar.jsx';
 
 // 일반 회원(member) 로그인 직후 도달하는 메인 포털 컴포넌트 (Plain 버전 - 탭 이관 완료)
@@ -7,14 +6,6 @@ function MemberMain() {
 
   return (
     <div style={{ padding: '16px 16px 32px', position: 'relative' }}>
-
-      {/* 마이페이지 이동 버튼 */}
-
-      <div style={{ margin: '16px 0', display: 'flex', gap: '15px' }}>
-        <Link to="/fitc/mypage" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', minHeight: '48px', padding: '0 16px', backgroundColor: 'var(--b2c-accent)', color: '#fff', textDecoration: 'none', borderRadius: '10px', fontWeight: '600', fontSize: '15px' }}>
-          마이페이지 이동 (멤버십/쿠폰/출석/건의)
-        </Link>
-      </div>
 
       <div style={{ padding: '32px 20px', backgroundColor: '#fff', borderRadius: '14px', border: '1px solid var(--gray-200)', boxShadow: '0 1px 3px rgba(23,23,23,.06)', marginTop: '16px', textAlign: 'center' }}>
         {/* 아바타 컴포넌트 배치 */}
@@ -58,7 +49,7 @@ function MemberMain() {
           maxWidth: '460px'
         }}>
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--b2c-accent)', lineHeight: '1.5' }}>
-            ℹ️ 회원님의 상세 <strong>이용권 기간, 입·퇴실 기록, 보유 쿠폰 및 건의사항</strong>은 상단 <strong>[마이페이지]</strong> 메뉴에서 간편하게 통합 조회하실 수 있습니다.
+            ℹ️ 회원님의 상세 <strong>이용권 기간, 입·퇴실 기록, 보유 쿠폰 및 건의사항</strong>은 하단 <strong>[탭바]</strong> 메뉴에서 간편하게 통합 조회하실 수 있습니다.
           </p>
         </div>
       </div>

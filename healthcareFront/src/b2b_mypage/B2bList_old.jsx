@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './B2bList.css';
+import './B2bList_old.css';
+
+// 바 이름은 모델 피처키(컬럼명, statKey)를 그대로 노출한다.
 
 // 이탈 요인 표시 고정 순서 (이 순서대로 위→아래로 노출, 목록에 없는 요인은 뒤로)
 const FACTOR_ORDER = [
@@ -43,14 +45,14 @@ const FACTOR_LABEL = {
 };
 const factorLabel = (k) => FACTOR_LABEL[k] || String(k || '').replace(/_/g, ' ');
 
-// 불만족 요인별 액션 버튼 라벨
+// 불만족 요인별 액션 버튼 라벨 (기능 미구현 — 버튼만 노출)
 const FACTOR_ACTION = {
   '서비스불만_환경불편': '헬퍼 요청',
   '직원불만_불친절': '교육 프로그램 제공',
-  '가격불만': '할인 쿠폰 발행',
-  'PT_가입여부': 'PT 체험권 보내기',
-  '최근한달_부상경험': 'PT 체험권 보내기',
-  '일평균_운동시간': '목표 알림 발송',
+  '가격불만': '쿠폰',
+  'PT_가입여부': 'PT체험권 발송',
+  '최근한달_부상경험': 'PT체험권 발송',
+  '일평균_운동시간': '목표 설정 알림 발송',
 };
 
 // 이 요인은 버튼 대신 '그 요인을 가진 회원들의 방문 시간대 분포'를 옆에 띄운다
@@ -153,8 +155,8 @@ function MonthList({ periods, value, onPick }) {
   );
 }
 
-// 기간(날짜/월) 선택 — 통제 영역의 명시적 컨트롤 (전체 회원 표시와 분리)
-function PeriodPicker({ mode, periods, value, onPick }) {
+// 날짜 선택 겸 '전체 회원' KPI — variant: 'card'(KPI 카드) | 'compact'(고정 헤더바)
+function PeriodPicker({ mode, periods, value, onPick, total, variant }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -166,13 +168,25 @@ function PeriodPicker({ mode, periods, value, onPick }) {
   const pick = (v) => { onPick(v); setOpen(false); };
 
   return (
-    <div className="cs-periodpick" ref={ref}>
-      <button type="button" className="cs-period-ctl" aria-expanded={open} title={mode === 'daily' ? '날짜 선택' : '월 선택'}
-              onClick={() => setOpen((o) => !o)}>
-        <span className="cs-period-cal" aria-hidden="true">📅</span>
-        <span className="cs-period-val cs-num">{value || (mode === 'daily' ? '날짜' : '월')}</span>
-        <span className="cs-period-chev" aria-hidden="true">▾</span>
-      </button>
+    <div className={`cs-periodpick${variant === 'compact' ? ' compact' : ''}`} ref={ref}>
+      {variant === 'compact' ? (
+        <button type="button" className="cs-kpi-float-item is-btn" aria-expanded={open} title="날짜 선택"
+                onClick={() => setOpen((o) => !o)}>
+          <span className="cs-kpi-float-ico">📅</span>
+          <span className="cs-kpi-float-label">{value || '날짜'}</span>
+          <span className="cs-kpi-float-val cs-num">{total}명</span>
+        </button>
+      ) : (
+        <button type="button" className="cs-kpi cs-kpi-btn" aria-expanded={open} title="날짜 선택"
+                onClick={() => setOpen((o) => !o)}>
+          <div className="cs-kpi-ico">📅</div>
+          <div className="cs-kpi-body">
+            <div className="cs-kpi-label">전체 회원</div>
+            <div className="cs-kpi-value cs-num">{total}<small>명</small></div>
+            <div className="cs-kpi-sub">{value || '날짜 선택'}</div>
+          </div>
+        </button>
+      )}
       {open && (
         <div className="cs-period-pop">
           {mode === 'daily'
@@ -391,8 +405,8 @@ function ServiceCenterPanel() {
   );
 }
 
-// 요인 아코디언 펼침 시 인라인 상세 — 회원 명단 + 조치 버튼/팝업 + 정보 패널
-function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
+// 요인 선택 시 오른쪽 칸에 뜨는 상세 — 회원 명단 + 액션 버튼/팝업 + 사이드 패널
+function FactorDetail({ statKey, factor, members, loading, gymId, mode, period, onClose }) {
   const navigate = useNavigate();
   const action = FACTOR_ACTION[statKey];
   const showVisitTime = statKey === VISIT_TIME_FACTOR;
@@ -481,52 +495,71 @@ function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
   };
 
   const showActionBtn = action && !showVisitTime && !showEquip && !showManager && !showServiceCenter;
-  const actionCopy = isPtTrial ? 'PT 미가입·부상 위험군에게 체험권으로 전환을 유도합니다.'
-    : isCoupon ? '가격에 민감한 위험군에게 재등록 할인 쿠폰을 제공합니다.'
-    : isHelper ? '환경 불편을 겪는 회원을 위해 헬퍼를 요청합니다.'
-    : '이 요인 위험군에게 조치를 실행합니다.';
-  const onAction = isCoupon ? () => navigate('/fitb/promotion')
-    : isHelper ? () => setHelperOpen(true)
-    : isPtTrial ? () => setPtOpen(true)
-    : undefined;
+  const hasPanel = showVisitTime || showEquip || showManager || showServiceCenter;
 
   return (
-    <div className="cs-fd-body">
-      {loading ? (
-        <p className="cs-loading cs-muted">명단 불러오는 중…</p>
-      ) : members.length === 0 ? (
-        <p className="cs-empty cs-muted">해당 회원 없음</p>
-      ) : (
-        <div className="cs-fd-members">
-          <table className="cs-mtable">
-            <thead><tr><th>회원</th><th>ID</th><th className="r">이탈률</th></tr></thead>
-            <tbody>
-              {members.map((m) => {
-                const t = tierOf(m.churnRate);
-                return (
-                  <tr key={m.username}>
-                    <td>{m.name}</td>
-                    <td className="cs-muted cs-num">{m.username}</td>
-                    <td className={`r cs-num cs-${t.cls}`}>{(m.churnRate * 100).toFixed(1)}%</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* 조치 버튼 (결과지향 문구) — 발송/이동형 요인 */}
-      {showActionBtn && (
-        <div className="cs-fd-action">
-          <span className="cs-fd-action-copy">{actionCopy}</span>
-          <button type="button" className="cs-action-solid" onClick={onAction}>
-            {members.length > 0 ? `이 ${members.length}명에게 ` : ''}{action} →
+    <div className="cs-detailstack">
+      <div className="cs-riskcard">
+        <div className="cs-detail-head">
+          <h4>🔍 {factorLabel(statKey)}</h4>
+          <button type="button" className="cs-btn-ghost cs-back-btn" onClick={onClose}>
+            ← 닫기
           </button>
         </div>
-      )}
+        {factor && factor.pct != null && (
+          <div className="cs-factor-summary">
+            <div className="cs-bar"><i style={{ width: `${Math.min(factor.pct, 100)}%` }} /></div>
+            <span className="cs-factor-summary-pct cs-num">
+              <b>{factor.pct}%</b> <span className="cs-fmeta">({factor.memberCount}명)</span>
+            </span>
+          </div>
+        )}
+        <p className="cs-hint">이 요인을 이탈이유로 가진 위험군 회원 명단입니다.</p>
 
-      {/* 정보형 요인 = 조치 버튼 대신 참고 데이터 패널 */}
+        {loading ? (
+          <p className="cs-loading cs-muted">명단 불러오는 중…</p>
+        ) : members.length === 0 ? (
+          <p className="cs-empty cs-muted">해당 회원 없음</p>
+        ) : (
+          <div className={`cs-mscroll${hasPanel ? ' half' : ''}${showServiceCenter ? ' sc' : ''}`}>
+            <table className="cs-mtable">
+              <thead><tr><th>회원</th><th>ID</th><th className="r">이탈률</th></tr></thead>
+              <tbody>
+                {members.map((m) => {
+                  const t = tierOf(m.churnRate);
+                  return (
+                    <tr key={m.username}>
+                      <td>{m.name}</td>
+                      <td className="cs-muted cs-num">{m.username}</td>
+                      <td className={`r cs-num cs-${t.cls}`}>{(m.churnRate * 100).toFixed(1)}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 이탈 방지 액션 버튼 — 스크롤 명단 밖, 카드 오른쪽 아래 */}
+        {showActionBtn && (
+          <div className="cs-detail-actions">
+            <button
+              type="button"
+              className="cs-action-btn"
+              onClick={
+                isCoupon ? () => navigate('/fitb/promotion')
+                : isHelper ? () => setHelperOpen(true)
+                : isPtTrial ? () => setPtOpen(true)
+                : undefined
+              }
+            >
+              {action}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* 사이드 패널 = 회원 명단과 분리된 별도 카드 */}
       {showVisitTime && <VisitTimePanel gymId={gymId} mode={mode} period={period} statKey={statKey} />}
       {showEquip && <EquipmentPanel gymId={gymId} />}
       {showManager && <ManagerPanel gymId={gymId} mode={mode} period={period} statKey={statKey} />}
@@ -597,14 +630,150 @@ function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
   );
 }
 
-// 이탈 요인 아코디언 (FACTOR_ORDER 고정 순서, 펼치면 회원 명단+조치 인라인)
-function FactorList({ items, gymId, mode, period }) {
-  const [openKey, setOpenKey] = useState(null);
+// 신규 위험군 회원 명단 (오른쪽 칸 기본 표시)
+function RiskMembers({ riskList, loading, mode }) {
+  return (
+    <>
+      <div className="cs-panel-head">
+        <h4 className="cs-riskcard-title">
+          🚨 신규 위험군 <span className="cs-crit cs-riskcard-count">({riskList.length}명)</span>
+        </h4>
+        <p className="cs-hint cs-hint-inline">
+          직전 {mode === 'daily' ? '날' : '달'} 대비 새로 진입한 위험군
+          <span className="cs-info" tabIndex={0} data-tip={"개입·긴급 등급에 새로 진입한 회원 + 이탈이유 Top3.\n평균 이탈률 KPI를 누르면\n이탈 요인 비율로 돌아갑니다."}>ⓘ</span>
+        </p>
+      </div>
+      {loading ? (
+        <p className="cs-loading cs-muted">명단 불러오는 중…</p>
+      ) : riskList.length === 0 ? (
+        <p className="cs-empty cs-muted">새로 진입한 위험군 회원이 없습니다.</p>
+      ) : (
+        <div className="cs-risklist">
+          {riskList.map((m) => {
+            const t = tierOf(m.churnRate);
+            const reasons = [m.top1Reason, m.top2Reason, m.top3Reason].filter(Boolean);
+            return (
+              <div key={m.username} className="cs-rmember">
+                <div className="cs-rmember-main">
+                  <div className="cs-rname">{m.name} <span className="cs-rid cs-num">{m.username}</span></div>
+                  <div className="cs-chips">
+                    {reasons.map((rsn, i) => (
+                      <span key={i} className="cs-chip">{factorLabel(rsn)}</span>
+                    ))}
+                  </div>
+                </div>
+                <span className={`cs-rrate cs-${t.cls}`}>{(m.churnRate * 100).toFixed(1)}%</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
+
+// 위험도 4단계(안정/관찰/개입/긴급) 분포 도넛 + 섹터별 인원 범례 (순수 SVG)
+function TierDonut({ dist }) {
+  // 색은 대시보드(gymChurn) 도넛과 동일: 안정 초록 / 관찰 노랑 / 개입 주황 / 긴급 빨강
+  const tiers = [
+    { key: 'good', label: '안정', desc: '25% 미만', count: dist?.stableCount || 0, color: '#10b981' },
+    { key: 'warn', label: '관찰', desc: '25~45%', count: dist?.watchCount || 0, color: '#facc15' },
+    { key: 'serious', label: '개입', desc: '45~65%', count: dist?.interveneCount || 0, color: '#f59e0b' },
+    { key: 'crit', label: '긴급', desc: '65% 이상', count: dist?.critCount || 0, color: '#ef4444' },
+  ];
+  const total = tiers.reduce((a, t) => a + t.count, 0);
+  const sum = total || 1;
+
+  const size = 280;
+  const stroke = 40;
+  const r = (size - stroke) / 2;
+  const c = size / 2;
+  const circ = 2 * Math.PI * r;
+
+  // 전체 한 바퀴를 SWEEP초에 걸쳐 채우되, 각 구간의 딜레이·지속시간을 호 길이에 비례 분배
+  // → 각속도가 일정해 경계에서 끊기지 않고 연속으로 채워진다 (linear 타이밍)
+  const SWEEP = 0.3;
+  let offset = 0;
+  let accFrac = 0;
+  const segs = tiers.map((t) => {
+    const frac = t.count / sum;
+    const len = frac * circ;
+    const seg = (
+      <circle
+        key={t.key}
+        className="cs-donut-seg"
+        cx={c} cy={c} r={r} stroke={t.color} strokeWidth={stroke}
+        strokeDashoffset={-offset}
+        style={{
+          '--seg-len': `${len}px`,
+          '--seg-circ': `${circ}px`,
+          animationDelay: `${(accFrac * SWEEP).toFixed(3)}s`,
+          animationDuration: `${(frac * SWEEP).toFixed(3)}s`,
+        }}
+      />
+    );
+    offset += len;
+    accFrac += frac;
+    return seg;
+  });
+
+  return (
+    <>
+      <div className="cs-panel-head">
+        <h4>🧭 위험도 분포 <span className="cs-panel-count cs-muted">(전체 {total}명)</span></h4>
+        <p className="cs-hint cs-hint-inline">
+          전체 회원의 이탈 위험 등급 분포
+          <span className="cs-info" tabIndex={0} data-tip={"모델 등급 경계(25 / 45 / 65%) 기준.\n안정 · 관찰 · 개입 · 긴급 4단계로\n전체 회원을 분류합니다."}>ⓘ</span>
+        </p>
+      </div>
+      {total === 0 ? (
+        <p className="cs-empty cs-muted">분포 데이터가 없습니다.</p>
+      ) : (
+        <div className="cs-donut-wrap">
+          <svg className="cs-donut" viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
+            {/* translate+scale(-1,1) 로 좌우 반전 → 12시부터 반시계방향으로 채워짐 */}
+            <g transform={`translate(${size} 0) scale(-1 1) rotate(-90 ${c} ${c})`}>
+              <circle className="cs-donut-track" cx={c} cy={c} r={r} strokeWidth={stroke} />
+              {segs}
+            </g>
+            <text className="cs-donut-cap" x={c} y={c - 6} textAnchor="middle">전체 회원</text>
+            <text className="cs-donut-total" x={c} y={c + 22} textAnchor="middle">{total}명</text>
+          </svg>
+          <ul className="cs-donut-legend">
+            {tiers.map((t) => (
+              <li key={t.key}>
+                <i style={{ background: t.color }} />
+                <span className="cs-dl-label">{t.label}</span>
+                <span className="cs-dl-desc">{t.desc}</span>
+                <span className="cs-dl-val cs-num"><b>{Math.round((t.count / sum) * 100)}%</b> ({t.count}명)</span>
+              </li>
+            ))}
+          </ul>
+          {/* 위험군 구성 = 개입 + 긴급 (범례에서 정의한 두 등급을 묶은 결론) */}
+          <div className="cs-risk-summary">
+            <div className="cs-risk-summary-eq">
+              <span className="cs-risk-summary-title">⚠ 위험군</span>
+              <span>= <b className="cs-serious">개입 {tiers[2].count}</b> + <b className="cs-crit">긴급 {tiers[3].count}</b></span>
+            </div>
+            <div className="cs-risk-summary-total cs-num">
+              = <b>{tiers[2].count + tiers[3].count}명</b>
+              <span className="cs-muted"> (전체의 {(((tiers[2].count + tiers[3].count) / sum) * 100).toFixed(1)}%)</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// 펼침 상세 — 이탈요인 비율 / 위험도 분포(도넛) / 신규 위험군 · 요인 상세 (뷰 전환)
+function Breakdown({ items, riskMembers, riskList, riskLoading, view, dist, gymId, mode, period }) {
+  const [openKey, setOpenKey] = useState(null);   // 선택된 요인 statKey
   const [members, setMembers] = useState([]);
   const [mLoading, setMLoading] = useState(false);
 
-  // 기간 변경 시 열린 요인 닫기
-  useEffect(() => { setOpenKey(null); setMembers([]); }, [period]);
+  // 뷰(KPI) 전환·기간 변경 시 열려 있던 요인 상세는 닫는다 (key 재마운트 없이 리셋)
+  useEffect(() => { setOpenKey(null); setMembers([]); }, [view, period]);
 
   const toggle = async (statKey) => {
     if (openKey === statKey) { setOpenKey(null); setMembers([]); return; }
@@ -619,105 +788,79 @@ function FactorList({ items, gymId, mode, period }) {
     } finally { setMLoading(false); }
   };
 
+  // 이탈 요인(factor)만 FACTOR_ORDER 고정 순서로 정렬 (퍼센트 정렬 아님)
   const factorRank = (k) => { const i = FACTOR_ORDER.indexOf(k); return i === -1 ? FACTOR_ORDER.length : i; };
   const factors = items
     .filter((b) => b.statType === 'factor')
     .sort((a, b) => factorRank(a.statKey) - factorRank(b.statKey));
 
-  if (factors.length === 0) return <p className="cs-empty cs-muted cs-pad">데이터 없음</p>;
-
-  return (
-    <div className="cs-factor-acc">
-      {factors.map((f) => {
-        const open = openKey === f.statKey;
-        return (
-          <div key={f.statKey} className={`cs-facc${open ? ' open' : ''}`}>
-            <button type="button" className="cs-facc-row" aria-expanded={open} onClick={() => toggle(f.statKey)}>
-              <span className="cs-facc-name"><span className="cs-facc-chev" aria-hidden="true">▸</span>{factorLabel(f.statKey)}</span>
-              <span className="cs-facc-bar">
-                {f.pct != null ? <i style={{ width: `${Math.min(f.pct, 100)}%` }} /> : null}
-              </span>
-              <span className="cs-facc-pct cs-num">
-                {f.pct != null ? (<><b>{f.pct}%</b><span className="cs-facc-cnt">{f.memberCount}명</span></>) : '-'}
-              </span>
-            </button>
-            {open && (
-              <div className="cs-facc-detail">
-                <FactorDetail statKey={f.statKey} members={members} loading={mLoading}
-                              gymId={gymId} mode={mode} period={period} />
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// 위험도 4단계 분포 — 요약 스트립의 미니 누적 막대 + 범례
-function RiskDistBar({ dist }) {
-  const tiers = [
-    { key: 'good', label: '안정', count: dist?.stableCount || 0, color: 'var(--tier-good)' },
-    { key: 'warn', label: '관찰', count: dist?.watchCount || 0, color: 'var(--tier-warn)' },
-    { key: 'serious', label: '개입', count: dist?.interveneCount || 0, color: 'var(--tier-serious)' },
-    { key: 'crit', label: '긴급', count: dist?.critCount || 0, color: 'var(--tier-crit)' },
-  ];
-  const total = tiers.reduce((a, t) => a + t.count, 0);
-  const sum = total || 1;
-
-  return (
-    <>
-      <div className="cs-distcard-head">
-        <span className="cs-skpi-label">위험도 분포</span>
-        <span className="cs-dist-hint">경계 25 / 45 / 65%</span>
+  // '위험군' 뷰: 위험도 4단계 분포 도넛만 단독 표시
+  if (view === 'dist') {
+    return (
+      <div className="cs-detail-inner is-single">
+        <div className="cs-panel">
+          <TierDonut key={period} dist={dist} />
+        </div>
       </div>
-      {total === 0 ? (
-        <p className="cs-empty cs-muted">분포 데이터 없음</p>
-      ) : (
-        <>
-          <div className="cs-distbar" role="img"
-               aria-label={tiers.map((t) => `${t.label} ${t.count}`).join(', ')}>
-            {tiers.map((t) => (t.count > 0
-              ? <span key={t.key} style={{ width: `${(t.count / sum) * 100}%`, background: t.color }} />
-              : null))}
-          </div>
-          <ul className="cs-dist-legend">
-            {tiers.map((t) => (
-              <li key={t.key}>
-                <i style={{ background: t.color }} />{t.label}
-                <b className="cs-num">{t.count}</b>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </>
-  );
-}
+    );
+  }
 
-// 신규 위험군 명단 (우측 레일 본문) — 헤더는 부모 카드에서 렌더
-function RiskMembers({ riskList, loading }) {
-  if (loading) return <p className="cs-loading cs-muted cs-pad">명단 불러오는 중…</p>;
-  if (!riskList.length) return <p className="cs-empty cs-muted cs-pad">새로 진입한 위험군 회원이 없습니다.</p>;
+  // '신규 위험군' 뷰: 신규 위험군 카드만 단독 표시
+  if (view === 'risk') {
+    return (
+      <div className="cs-detail-inner is-single">
+        <div className="cs-panel">
+          <RiskMembers riskList={riskList} loading={riskLoading} mode={mode} />
+        </div>
+      </div>
+    );
+  }
+
+  // 기본 뷰: 이탈 요인 비율 — 요인 클릭 시 그 요인이 맨 위(나이 행 위치)로 올라오고 그 아래 상세 창
   return (
-    <div className="cs-risklist">
-      {riskList.map((m) => {
-        const t = tierOf(m.churnRate);
-        const reasons = [m.top1Reason, m.top2Reason, m.top3Reason].filter(Boolean);
-        return (
-          <div key={m.username} className="cs-rmember">
-            <div className="cs-rmember-main">
-              <div className="cs-rname">{m.name} <span className="cs-rid cs-num">{m.username}</span></div>
-              <div className="cs-chips">
-                {reasons.map((rsn, i) => (
-                  <span key={i} className="cs-chip">{factorLabel(rsn)}</span>
-                ))}
-              </div>
-            </div>
-            <span className={`cs-rrate cs-${t.cls}`}>{(m.churnRate * 100).toFixed(1)}%</span>
+    <div className="cs-detail-inner is-single">
+      <div className="cs-panel">
+        <div className="cs-panel-head">
+          <h4>📌 이탈 요인 비율 <span className="cs-crit cs-panel-count">(위험군 {riskMembers ?? 0}명)</span></h4>
+          <p className="cs-hint cs-hint-inline">
+            요인을 누르면 회원 명단
+            <span className="cs-info" tabIndex={0} data-tip={"위험군(개입·긴급) 회원 대상.\n막대 = 요인 비율 (위험군 대비).\n회원 1명당 이탈요인 Top3를 각각 집계하므로 한 명이\n최대 3개 요인에 중복 카운트됩니다."}>ⓘ</span>
+          </p>
+        </div>
+        {factors.length === 0 ? (
+          <p className="cs-muted">데이터 없음</p>
+        ) : openKey ? (
+          /* 선택 모드: 선택 요인이 클릭 위치에서 맨 위로 올라오고(FLIP) 그 아래 상세 창 */
+          <div className="cs-factor-detail-wrap">
+            <FactorDetail statKey={openKey} factor={factors.find((f) => f.statKey === openKey) || null}
+                          members={members} loading={mLoading}
+                          gymId={gymId} mode={mode} period={period}
+                          onClose={() => { setOpenKey(null); setMembers([]); }} />
           </div>
-        );
-      })}
+        ) : (
+          <div className="cs-factors-scroll">
+            <table className="cs-factors">
+              <tbody>
+                {factors.map((f) => (
+                  <tr key={f.statKey} className="cs-frow" onClick={() => toggle(f.statKey)} aria-expanded={false}>
+                    <td className="cs-fname">
+                      {factorLabel(f.statKey)}<span className="cs-fcaret">▶</span>
+                    </td>
+                    <td className="cs-fbar-cell">
+                      {f.pct != null ? <div className="cs-bar"><i style={{ width: `${Math.min(f.pct, 100)}%` }} /></div> : null}
+                    </td>
+                    <td className="cs-fpct cs-num">
+                      {f.pct != null ? (
+                        <><b>{f.pct}%</b> <span className="cs-fmeta">({f.memberCount}명)</span></>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -726,17 +869,31 @@ function B2bList() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const gymId = user.gymId;
 
-  const [mode, setMode] = useState('daily');       // 'daily' | 'monthly'
-  const [periods, setPeriods] = useState([]);
-  const [periodsLoading, setPeriodsLoading] = useState(true);
+  const [mode, setMode] = useState('daily');       // 'daily' | 'monthly' (페이지 내 칩 탭)
+  const [periods, setPeriods] = useState([]);      // [{period, totalMembers, riskMembers, avgChurnRate}]
+  const [periodsLoading, setPeriodsLoading] = useState(true); // 로딩과 '데이터 없음' 구분
   const [openPeriod, setOpenPeriod] = useState(null);
   const [breakdown, setBreakdown] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [detailView, setDetailView] = useState('factors'); // 'factors'(기본) | 'risk'(신규 위험군 동반 표시) — KPI 클릭으로 전환
 
-  // 기준 기간: 선택 기간 ?? 최신 기간
+  // KPI 카드 위쪽 센티넬이 화면 밖으로 나가면(=KPI가 상단에 닿으면) 컴팩트 아이콘 바 표시.
+  // IntersectionObserver는 스크롤 이벤트에 의존하지 않아 중첩 스크롤 구조에서도 안정적으로 발화한다.
+  const kpiSentinelRef = useRef(null);
+  const [kpiStuck, setKpiStuck] = useState(false);
+  useEffect(() => {
+    const el = kpiSentinelRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined;
+    const io = new IntersectionObserver(([e]) => setKpiStuck(!e.isIntersecting), { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // KPI 기준 기간: 펼친 기간 ?? 최신 기간
   const focusObj = periods.find((p) => p.period === openPeriod) || periods[0] || null;
   const focusPeriod = focusObj?.period;
 
+  // 신규 위험군 명단 (KPI 카운트 + 오른쪽 칸 기본 표시에 공유) — 기준 기간에 연동
   const [riskList, setRiskList] = useState([]);
   const [riskLoading, setRiskLoading] = useState(false);
 
@@ -745,7 +902,7 @@ function B2bList() {
     if (!gymId) return;
     setOpenPeriod(null);
     setBreakdown([]);
-    setPeriods([]);
+    setPeriods([]);          // 이전 모드의 기간 목록을 비워 자동선택이 옛 데이터로 잘못 잡히는 것 방지
     setPeriodsLoading(true);
     fetch(`${import.meta.env.VITE_BACKEND_URL}/result/stats/periods?gymId=${gymId}&mode=${mode}`)
       .then((r) => (r.ok ? r.json() : []))
@@ -754,7 +911,7 @@ function B2bList() {
       .finally(() => setPeriodsLoading(false));
   }, [gymId, mode]);
 
-  // 자동 선택: 일별=오늘 / 월별=이번 달, 없으면 최신 기간
+  // 자동 선택: 일별=오늘 / 월별=이번 달을 우선 선택, 없으면 최신 기간
   useEffect(() => {
     if (!periods.length) return;
     if (openPeriod && periods.some((p) => p.period === openPeriod)) return;
@@ -793,7 +950,6 @@ function B2bList() {
     return <div className="cs-wrap"><div className="cs-inner"><p className="cs-empty-state">로그인한 사장님의 헬스장 정보를 찾을 수 없습니다.</p></div></div>;
   }
 
-  const unit = mode === 'daily' ? '날' : '달';
   const focusTier = focusObj ? tierOf(focusObj.avgChurnRate) : null;
   const total = focusObj?.totalMembers ?? 0;
   const risk = focusObj?.riskMembers ?? 0;
@@ -804,94 +960,119 @@ function B2bList() {
     <div className="cs-wrap">
       <div className="cs-inner">
 
-        {/* ── 통제: 제목 + 일별/월별 탭 + 기간 선택 ── */}
-        <div className="cs-head">
-          <h2 className="b2blist-title">
-            📊 헬스장 이탈 통계
-            <span className="b2blist-title-sub">{user.name} 사장님</span>
-          </h2>
-          <div className="cs-controls">
-            <div className="b2b-tabs" role="tablist" aria-label="집계 단위">
-              {[['daily', '일별'], ['monthly', '월별']].map(([m, label]) => (
-                <button
-                  key={m}
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === m}
-                  className={`b2b-chip${mode === m ? ' is-active' : ''}`}
-                  onClick={() => setMode(m)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <PeriodPicker mode={mode} periods={periods} value={openPeriod} onPick={setOpenPeriod} />
-          </div>
-        </div>
+        {/* 제목 + 일별/월별 칩 탭 (위치 유지) */}
+        <h2 className="b2blist-title">
+          📊 헬스장 이탈 통계
+          <span className="b2blist-title-sub">{user.name} 사장님</span>
+        </h2>
         <p className="b2blist-desc">
-          선택한 {unit}의 위험군과 이탈 요인, 조치를 한 화면에서 확인합니다.
+          기간을 선택하면 그 {mode === 'daily' ? '날' : '달'}의 이탈 요인 비율과 위험군이 표시됩니다.
         </p>
+        <div className="b2b-tabs" role="tablist">
+          {[['daily', '일별'], ['monthly', '월별']].map(([m, label]) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={mode === m}
+              className={`b2b-chip${mode === m ? ' is-active' : ''}`}
+              onClick={() => setMode(m)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div ref={kpiSentinelRef} className="cs-kpi-sentinel" aria-hidden="true" />
+        <div className="cs-kpis">
+          <PeriodPicker variant="card" mode={mode} periods={periods} value={openPeriod} onPick={setOpenPeriod} total={total} />
+          <button
+            type="button"
+            className={`cs-kpi cs-kpi-btn${detailView === 'dist' ? ' is-active' : ''}`}
+            aria-pressed={detailView === 'dist'}
+            title="위험군"
+            onClick={() => setDetailView('dist')}
+          >
+            <div className="cs-kpi-ico">⚠️</div>
+            <div className="cs-kpi-body">
+              <div className="cs-kpi-label">위험군</div>
+              <div className="cs-kpi-value cs-num cs-crit">{risk}<small>명</small></div>
+              <div className="cs-kpi-sub cs-num">전체의 {riskPct}%</div>
+            </div>
+          </button>
+          <button
+            type="button"
+            className={`cs-kpi cs-kpi-btn${detailView === 'factors' ? ' is-active' : ''}`}
+            aria-pressed={detailView === 'factors'}
+            title="평균 이탈률"
+            onClick={() => setDetailView('factors')}
+          >
+            <div className="cs-kpi-ico">📈</div>
+            <div className="cs-kpi-body">
+              <div className="cs-kpi-label">평균 이탈률</div>
+              <div className={`cs-kpi-value cs-num cs-${focusTier?.cls || 'good'}`}>{avgPct}<small>%</small></div>
+              <div className="cs-kpi-sub">{focusTier && <span className={`cs-badge ${focusTier.cls}`}>{focusTier.label}</span>}</div>
+            </div>
+          </button>
+          <button
+            type="button"
+            className={`cs-kpi cs-kpi-btn${detailView === 'risk' ? ' is-active' : ''}`}
+            aria-pressed={detailView === 'risk'}
+            title="신규 위험군"
+            onClick={() => setDetailView('risk')}
+          >
+            <div className="cs-kpi-ico">🔔</div>
+            <div className="cs-kpi-body">
+              <div className="cs-kpi-label">신규 위험군</div>
+              <div className="cs-kpi-value cs-num">{riskLoading ? '…' : riskList.length}<small>명</small></div>
+              <div className="cs-kpi-sub">직전 {mode === 'daily' ? '날' : '달'} 대비</div>
+            </div>
+          </button>
+        </div>
+
+        {/* KPI 카드가 스크롤로 사라지면 뜨는 컴팩트 아이콘 바.
+            document.body로 포털 → 어떤 조상의 overflow/transform에도 안 잘리고 뷰포트 기준 고정 */}
+        {kpiStuck && (
+          <div className="cs-kpi-float" aria-label="KPI 빠른 전환">
+            <div className="cs-kpi-float-inner">
+              <PeriodPicker variant="compact" mode={mode} periods={periods} value={openPeriod} onPick={setOpenPeriod} total={total} />
+              <button type="button" className={`cs-kpi-float-item is-btn${detailView === 'dist' ? ' is-active' : ''}`}
+                      aria-pressed={detailView === 'dist'} onClick={() => setDetailView('dist')}>
+                <span className="cs-kpi-float-ico">⚠️</span>
+                <span className="cs-kpi-float-label">위험군</span>
+                <span className="cs-kpi-float-val cs-num is-crit">{risk}명 · {riskPct}%</span>
+              </button>
+              <button type="button" className={`cs-kpi-float-item is-btn${detailView === 'factors' ? ' is-active' : ''}`}
+                      aria-pressed={detailView === 'factors'} onClick={() => setDetailView('factors')}>
+                <span className="cs-kpi-float-ico">📈</span>
+                <span className="cs-kpi-float-label">평균 이탈률</span>
+                <span className={`cs-kpi-float-val cs-num is-${focusTier?.cls || 'good'}`}>{avgPct}%</span>
+              </button>
+              <button type="button" className={`cs-kpi-float-item is-btn${detailView === 'risk' ? ' is-active' : ''}`}
+                      aria-pressed={detailView === 'risk'} onClick={() => setDetailView('risk')}>
+                <span className="cs-kpi-float-ico">🔔</span>
+                <span className="cs-kpi-float-label">신규 위험군</span>
+                <span className="cs-kpi-float-val cs-num">{riskLoading ? '…' : riskList.length}명</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {periodsLoading ? (
           <p className="cs-empty-state">불러오는 중…</p>
         ) : periods.length === 0 ? (
           <p className="cs-empty-state">집계된 통계 데이터가 없습니다. (배치 실행 후 표시됩니다)</p>
         ) : (
-          <>
-            {/* ── 요약: 읽기 전용 KPI 스트립 + 위험도 분포 ── */}
-            <div className="cs-summary">
-              <div className="cs-skpi">
-                <div className="cs-skpi-label">전체 회원</div>
-                <div className="cs-skpi-value cs-num">{total}<small>명</small></div>
-                <div className="cs-skpi-sub">이 {unit} 기준</div>
-              </div>
-              <div className="cs-skpi">
-                <div className="cs-skpi-label">위험군</div>
-                <div className="cs-skpi-value cs-num cs-crit">{risk}<small>명</small></div>
-                <div className="cs-skpi-sub cs-num">전체의 {riskPct}%</div>
-              </div>
-              <div className="cs-skpi">
-                <div className="cs-skpi-label">평균 이탈률</div>
-                <div className={`cs-skpi-value cs-num cs-${focusTier?.cls || 'good'}`}>{avgPct}<small>%</small></div>
-                <div className="cs-skpi-sub">{focusTier && <span className={`cs-badge ${focusTier.cls}`}>{focusTier.label}</span>}</div>
-              </div>
-              <div className="cs-skpi">
-                <div className="cs-skpi-label">신규 위험군</div>
-                <div className="cs-skpi-value cs-num">{riskLoading ? '…' : riskList.length}<small>명</small></div>
-                <div className="cs-skpi-sub">직전 {unit} 대비</div>
-              </div>
-              <div className="cs-distcard">
-                <RiskDistBar dist={focusObj} />
-              </div>
-            </div>
-
-            {/* ── 조치(좌) + 신규 위험군(우) ── */}
-            <div className="cs-main" aria-busy={loading}>
-              <section className="cs-panel-card">
-                <div className="cs-cardhead">
-                  <h3>🎯 이탈 요인별 조치 <span className="cs-crit cs-cardhead-count">위험군 {risk}명</span></h3>
-                  <p className="cs-cardhead-sub">
-                    요인을 펼치면 회원 명단과 조치가 함께 나옵니다.
-                    <span className="cs-info" tabIndex={0} data-tip={"위험군(개입·긴급) 회원 대상.\n막대 = 요인 비율 (위험군 대비).\n한 회원이 이탈이유 Top3에 각각 집계되어\n최대 3개 요인에 중복될 수 있습니다."}>ⓘ</span>
-                  </p>
-                </div>
-                {openPeriod
-                  ? <FactorList items={breakdown} gymId={gymId} mode={mode} period={openPeriod} />
-                  : <p className="cs-muted cs-pad">상단에서 기간을 선택하세요.</p>}
-              </section>
-
-              <aside className="cs-rail">
-                <section className="cs-panel-card">
-                  <div className="cs-cardhead">
-                    <h3>🔔 신규 위험군 <span className="cs-crit cs-cardhead-count">{riskLoading ? '…' : riskList.length}명</span></h3>
-                    <p className="cs-cardhead-sub">직전 {unit} 대비 개입·긴급에 새로 진입</p>
-                  </div>
-                  <RiskMembers riskList={riskList} loading={riskLoading} />
-                  <div className="cs-trust">🔒 우리 지점 데이터만 보여줍니다</div>
-                </section>
-              </aside>
-            </div>
-          </>
+          /* 상세 카드 전체 폭 (이탈요인 비율 / 위험도 분포 / 신규 위험군) */
+          <div className="cs-detailpane" aria-busy={loading}>
+            {openPeriod ? (
+              <Breakdown items={breakdown} riskMembers={focusObj?.riskMembers}
+                         riskList={riskList} riskLoading={riskLoading} view={detailView} dist={focusObj}
+                         gymId={gymId} mode={mode} period={openPeriod} />
+            ) : (
+              <p className="cs-muted cs-pane-msg">상단에서 기간을 선택하세요.</p>
+            )}
+          </div>
         )}
 
       </div>

@@ -20,8 +20,8 @@ public class DashboardService {
     private static final Map<String, List<String>> DEFAULT_WIDGETS = Map.of(
             // 관계사: 계약 체육관 수 / 다가오는 구독 만료 / 월별 총 매출 / 월별 총 지출 / 체육관 만족도
             "ADMIN", List.of("gymCount", "expiringSubscription", "monthlyRevenue", "monthlyExpense", "gymNps"),
-            // 사장님: 계약 회원 수 / 다가오는 계약 만료 / 월별 총 매출 / 월별 총 지출 / 체성분(운동 데이터) 추이 / 헬스장 이탈율 / 월별 예측 이탈률 추이
-            "OWNER", List.of("memberCount", "expiringContract", "monthlyRevenue", "monthlyExpense", "bodyComposition", "gymChurn", "gymChurnTrend", "gymRiskTrend"),
+            // 사장님: 계약 회원 수 / PT 회원수 / 오늘 출석한 회원수 / 쿠폰 사용 이력 / 월별 총 매출 / 월별 총 지출 / 다가오는 계약 만료 / 헬스장 이탈율 / 월별 예측 이탈률 추이 / 월별 위험군 추이 / 체성분 변화 추이
+            "OWNER", List.of("memberCount", "ptMemberCount", "todayAttendance", "couponUsage", "monthlyRevenue", "monthlyExpense", "expiringContract", "gymChurn", "gymChurnTrend", "gymRiskTrend", "bodyComposition"),
             // 트레이너: 담당 회원 수 / 세션 소진 임박 / 월별 세션 수행 / 회원 이탈 예측 / 목표 달성률
             "TRAINER", List.of("managedMemberCount", "lowSessionMembers", "monthlySession", "memberChurn", "goalRate"));
 
@@ -140,6 +140,13 @@ public class DashboardService {
             case "memberCount":
             case "expiringContract":
                 return countOf(dashboardMapper.ownerMemberCount(gymId)) > 0;
+            case "ptMemberCount":
+                return countOf(dashboardMapper.ownerPtMemberCount(gymId)) > 0;
+            case "todayAttendance":
+                // 오늘 0명이어도 위젯은 노출되도록, 지점에 체크인 기록이 하나라도 있으면 활성
+                return countOf(dashboardMapper.ownerAttendanceHasData(gymId)) > 0;
+            case "couponUsage":
+                return countOf(dashboardMapper.ownerCouponUsage(username)) > 0;
             case "bodyComposition":
                 return countOf(dashboardMapper.ownerModelSummary(gymId)) > 0;
             case "gymChurn":
@@ -177,6 +184,12 @@ public class DashboardService {
                 return dashboardMapper.adminNpsSummary();
             case "memberCount":
                 return dashboardMapper.ownerMemberCount(gymId);
+            case "ptMemberCount":
+                return dashboardMapper.ownerPtMemberCount(gymId);
+            case "todayAttendance":
+                return dashboardMapper.ownerTodayAttendance(gymId);
+            case "couponUsage":
+                return dashboardMapper.ownerCouponUsage(username);
             case "expiringContract":
                 return dashboardMapper.ownerExpiringContract(gymId);
             case "bodyComposition":

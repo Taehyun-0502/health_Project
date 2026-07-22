@@ -13,11 +13,11 @@ public interface ItemMapper {
     // 아이템 등록 쿼리 호출
     public int itemAdd(ItemDTO itemDTO) throws Exception;
 
-    // 아이템 리스트 페이징 조회 쿼리 호출 (gymId + Pager(페이지/검색어) + 정렬조건(sort: count_desc/count_asc/price_desc/price_asc, 기본은 이름순))
-    public List<ItemDTO> itemList(@Param("gymId") Long gymId, @Param("pager") Pager pager, @Param("sort") String sort) throws Exception;
+    // 아이템 리스트 페이징 조회 쿼리 호출 (gymId + Pager(페이지/검색어) + 카테고리 필터 + 정렬조건(sort: count_desc/count_asc/price_desc/price_asc, 기본은 이름순))
+    public List<ItemDTO> itemList(@Param("gymId") Long gymId, @Param("pager") Pager pager, @Param("sort") String sort, @Param("category") String category) throws Exception;
 
-    // 아이템 리스트 전체 건수 조회 쿼리 호출 (Pager의 총 페이지/블록 계산용)
-    public long itemListCount(@Param("gymId") Long gymId, @Param("pager") Pager pager) throws Exception;
+    // 아이템 리스트 전체 건수 조회 쿼리 호출 (Pager의 총 페이지/블록 계산용, 카테고리 필터 동일 적용)
+    public long itemListCount(@Param("gymId") Long gymId, @Param("pager") Pager pager, @Param("category") String category) throws Exception;
 
     // 물품 등록 폼 자동완성용 물품명 전체 조회 쿼리 호출 (페이징 없음)
     public List<ItemDTO> itemNames(Long gymId) throws Exception;

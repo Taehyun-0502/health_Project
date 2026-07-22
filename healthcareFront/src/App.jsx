@@ -86,6 +86,8 @@ function App() {
         <Route path="itempage" element={<Itempage />} />
         <Route path="promotion" element={<B2bPromotion />} />
         <Route path="management" element={<B2bManagementPage />} />
+        <Route path="b2bmanagement" element={<B2bManagementPage />} />
+        <Route path="ownermanagement" element={<B2bManagementPage />} />
         <Route path="/fitb/contractpage" element={<ContractLayout />}>
           <Route index element={<Contractpage />} />
           <Route path="member" element={<RosterPage />} />

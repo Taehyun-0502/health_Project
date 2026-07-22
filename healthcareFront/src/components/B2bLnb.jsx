@@ -19,6 +19,14 @@ function B2bLnb() {
   const itemView = new URLSearchParams(location.search).get('view') === 'form' ? 'form' : 'list';
   const isProfilePage = location.pathname.startsWith('/fitb/b2bmypage');
 
+  // admin 권한일 경우 물품(item) 탭 필터링 제외
+  const primaryNav = B2B_PRIMARY_NAV.filter((item) => {
+    if (normalizeRole(user.role) === 'admin' && item.id === 'item') {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <aside className="b2b-lnb" aria-label="B2B 관리 메뉴">
       <Link to="/fitb" className="b2b-lnb__brand" aria-label="Haru Health Home">
@@ -30,7 +38,7 @@ function B2bLnb() {
 
       <nav className="b2b-lnb__nav" aria-label="주요 메뉴">
         <span className="b2b-lnb__section-label">MENU</span>
-        {B2B_PRIMARY_NAV.map((item) => (
+        {primaryNav.map((item) => (
           <div key={item.id} className="b2b-lnb__nav-group">
             <NavLink
               to={item.to}

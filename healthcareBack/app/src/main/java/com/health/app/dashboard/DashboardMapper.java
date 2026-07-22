@@ -48,6 +48,18 @@ public interface DashboardMapper {
     // 사장님: 계약 회원 수 집계 쿼리 호출
     public Map<String, Object> ownerMemberCount(Long gymId) throws Exception;
 
+    // 사장님: 활성 PT(4) 계약 회원 수 쿼리 호출
+    public Map<String, Object> ownerPtMemberCount(Long gymId) throws Exception;
+
+    // 사장님: 오늘 출석(체크인) 회원 수 쿼리 호출
+    public Map<String, Object> ownerTodayAttendance(Long gymId) throws Exception;
+
+    // 사장님: 출석 위젯 hasData(지점 체크인 기록 존재 여부) 쿼리 호출
+    public Map<String, Object> ownerAttendanceHasData(Long gymId) throws Exception;
+
+    // 사장님: 본인이 발행한 쿠폰 총 개수 + 사용완료 개수 쿼리 호출
+    public Map<String, Object> ownerCouponUsage(Long fromId) throws Exception;
+
     // 사장님: 30일 내 계약 만료 회원 목록 쿼리 호출
     public List<Map<String, Object>> ownerExpiringContract(Long gymId) throws Exception;
 

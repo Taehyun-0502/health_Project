@@ -10,6 +10,9 @@ const WIDGET_LABEL = {
   monthlyExpense: '월별 총 지출',
   gymNps: '체육관 만족도',
   memberCount: '계약 회원 수',
+  ptMemberCount: 'PT 회원수',
+  todayAttendance: '오늘 출석한 회원수',
+  couponUsage: '쿠폰 사용 이력',
   expiringContract: '다가오는 계약 만료',
   bodyComposition: '체성분 변화 추이',
   gymChurn: '헬스장 이탈율',
@@ -26,7 +29,7 @@ const ROLE_LABEL = { ADMIN: '관계사', OWNER: '사장님', TRAINER: '트레이
 
 // 헬스장 이탈율 위젯 — 위험도 분포 도넛 차트 (순수 SVG)
 function ChurnDonut({ tiers, centerLabel, centerValue }) {
-  const size = 124;
+  const size = 132;
   const stroke = 20;
   const r = (size - stroke) / 2;
   const c = size / 2;
@@ -59,8 +62,8 @@ function ChurnDonut({ tiers, centerLabel, centerValue }) {
         <circle cx={c} cy={c} r={r} fill="none" stroke="#eef0f4" strokeWidth={stroke} />
         {segments}
       </g>
-      <text x={c} y={c - 4} textAnchor="middle" fontSize="11" fill="#94a3b8">{centerLabel}</text>
-      <text x={c} y={c + 20} textAnchor="middle" fontSize="22" fontWeight="800" fill="#ef4444">{centerValue}명</text>
+      <text x={c} y={c - 4} textAnchor="middle" fontSize="10" fill="#94a3b8">{centerLabel}</text>
+      <text x={c} y={c + 15} textAnchor="middle" fontSize="16" fontWeight="800" fill="#ef4444">{centerValue}명</text>
     </svg>
   );
 }
@@ -194,7 +197,9 @@ function GymChurnCard({ value }) {
         <p className="dash-kpi">{(Number(value.averageChurnRate) * 100).toFixed(1)}<span> %</span></p>
         <p className="dash-sub">위험군 {value.highRiskCount || 0}명 · {value.total || 0}명 분석</p>
       </div>
-      <ChurnDonut tiers={tiers} centerLabel="위험군" centerValue={value.highRiskCount || 0} />
+      <div className="gymchurn-donut">
+        <ChurnDonut tiers={tiers} centerLabel="위험군" centerValue={value.highRiskCount || 0} />
+      </div>
     </div>
   );
 }
@@ -336,6 +341,27 @@ function Dashboard() {
             <p className="dash-sub">이번 달 신규 +{value.newThisMonth}</p>
           </div>
         );
+      case 'ptMemberCount':
+        return (
+          <div>
+            <p className="dash-kpi">{value.total}<span> 명</span></p>
+            <p className="dash-sub">활성 PT 계약 회원</p>
+          </div>
+        );
+      case 'todayAttendance':
+        return (
+          <div>
+            <p className="dash-kpi">{value.total}<span> 명</span></p>
+            <p className="dash-sub">오늘 출석</p>
+          </div>
+        );
+      case 'couponUsage':
+        return (
+          <div>
+            <p className="dash-kpi">{value.total}<span> 건 발행</span></p>
+            <p className="dash-sub">사용 완료 {value.usedCount}건</p>
+          </div>
+        );
       case 'expiringSubscription':
       case 'expiringContract':
         return (
@@ -349,7 +375,29 @@ function Dashboard() {
           </ul>
         );
       case 'monthlyRevenue':
-      case 'monthlyExpense':
+      case 'monthlyExpense': {
+        // 그래프 대신 최신 달 금액(₩) + 전월 대비 증감% (오름 초록 / 내림 빨강)
+        const rows = Array.isArray(value) ? [...value].sort((a, b) => (a.month < b.month ? -1 : 1)) : [];
+        const latest = rows[rows.length - 1];
+        const prev = rows[rows.length - 2];
+        const cur = Number(latest?.total || 0);
+        const prevTotal = Number(prev?.total || 0);
+        const diffPct = prevTotal > 0 ? ((cur - prevTotal) / prevTotal) * 100 : null;
+        const up = diffPct != null && diffPct >= 0;
+        return (
+          <div>
+            <p className="dash-kpi">₩{cur.toLocaleString()}</p>
+            {latest && <p className="dash-sub">{latest.month.slice(5)}월 기준</p>}
+            {diffPct != null ? (
+              <p className={`dash-sub dash-delta ${up ? 'up' : 'down'}`}>
+                전월 대비 {up ? '▲' : '▼'} {Math.abs(diffPct).toFixed(1)}%
+              </p>
+            ) : (
+              <p className="dash-sub">전월 데이터 없음</p>
+            )}
+          </div>
+        );
+      }
       case 'monthlySession': {
         const max = Math.max(...value.map((row) => Number(row.total))) || 1;
         return (
