@@ -54,11 +54,11 @@ public class ItemService {
 
     // 아이템 리스트 맵퍼 호출: 페이지 목록 조회 -> 전체 건수 조회 -> Pager에 offset/블록 정보 계산 후 목록+Pager를 함께 반환
     // sort: count_desc/count_asc/price_desc/price_asc, null이면 기본(이름순)
-    public ItemListResponse itemList(Long gymId, Pager pager, String sort) throws Exception {
+    public ItemListResponse itemList(Long gymId, Pager pager, String sort, String category) throws Exception {
 
         pager.makeOffset();
-        List<ItemDTO> items = itemMapper.itemList(gymId, pager, sort);
-        long totalCount = itemMapper.itemListCount(gymId, pager);
+        List<ItemDTO> items = itemMapper.itemList(gymId, pager, sort, category);
+        long totalCount = itemMapper.itemListCount(gymId, pager, category);
         pager.makeBlock(totalCount);
 
         return new ItemListResponse(items, pager, totalCount);

@@ -35,14 +35,15 @@ public class ItemController {
             @RequestParam(required = false) Long page,
             @RequestParam(required = false) Long pageSize,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String sort) throws Exception {
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String category) throws Exception {
 
         Pager pager = new Pager();
         pager.setCurrentPage(page);
         pager.setPageSize(pageSize);
         pager.setSearchKeyword(keyword);
 
-        return itemService.itemList(gymId, pager, sort);
+        return itemService.itemList(gymId, pager, sort, category);
     }
 
     // 물품 등록 폼 자동완성용 물품명 전체 조회 메서드 (페이징 없음)

@@ -83,21 +83,81 @@
         FROM "h_settlement"
     </select>
 
-    <!-- 개별 커미션 정산 상세 단건 조회 (상태 변경용) -->
-    <select id="getCommissionById" parameterType="Long" resultType="com.health.app.settle.CommissionDTO">
-        SELECT 
-            s.settlement_id as settlementId,
-            s.gym_id as gymId,
-            g.gym_name as gymName,
+    <!-- 사장님용: 정산 페이지 우측 "이번 달 요약" 레일 집계 (username→gym_id로 강제 스코프, 테넌트 격리)
+         한 행에 매출/지출/커미션/월급 집계를 서브쿼리로 모아 단일 조회로 반환 -->
+    <select id="ownerSettleSummary" resultType="com.health.app.settle.OwnerSummaryDTO">
+        SELECT
+            COALESCE((SELECT SUM(p.pay_price) FROM "h_payment" p
+                      WHERE p.gym_id = g.gym_id
+                      <if test="month != null and month != ''">AND TO_CHAR(p.pay_date, 'YYYY-MM') = #{month}</if>
+                     ), 0) AS salesTotal,
+            COALESCE((SELECT SUM(COALESCE(NULLIF(e.expense_price, 0), s.commission, 0))
+                      FROM "h_expense" e
+                      LEFT JOIN "h_settlement" s ON s.expense_id = e.expense_id
+                      WHERE e.gym_id = g.gym_id
+                      <if test="month != null and month != ''">AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{month}</if>
+                     ), 0) AS expenseTotal,
+            COALESCE((SELECT SUM(CASE WHEN s.status = '지급' THEN s.commission ELSE 0 END) FROM "h_settlement" s
+                      WHERE s.gym_id = g.gym_id
+                      <if test="month != null and month != ''">AND TO_CHAR(s.settle_month, 'YYYY-MM') = #{month}</if>
+                     ), 0) AS commissionPaid,
+            COALESCE((SELECT COUNT(*) FROM "h_settlement" s
+                      WHERE s.gym_id = g.gym_id AND s.status = '미지급'
+                      <if test="month != null and month != ''">AND TO_CHAR(s.settle_month, 'YYYY-MM') = #{month}</if>
+                     ), 0) AS commissionPending,
+            COALESCE((SELECT SUM(e.expense_price) FROM "h_expense" e
+                      JOIN "h_contract_data" d ON e.data_id = d.data_id
+                      WHERE d.contract = 2 AND e.gym_id = g.gym_id
+                      <if test="month != null and month != ''">AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{month}</if>
+                     ), 0) AS wagePaid,
+            COALESCE((SELECT COUNT(*) FROM "h_contract_data" d
+                      WHERE d.sender_id = #{username} AND d.contract = 2
+                        AND d.status IN ('SIGNED', 'ACTIVE')
+                        AND d.data_id NOT IN (SELECT data_id FROM "h_expense" WHERE data_id IS NOT NULL)
+                     ), 0) AS wagePending
+        FROM "h_member" g
+        WHERE g.username = #{username}
+    </select>
+
+    <!-- OWNER 본인 gym의 월별 미지급 커미션. 클라이언트 gym_id를 받지 않고 username으로 제한한다. -->
+    <select id="ownerUnpaidCommissionList" resultType="com.health.app.settle.CommissionDTO">
+        SELECT
+            s.settlement_id AS settlementId,
+            s.gym_id AS gymId,
             s.commission,
-            s.settled_at as settledAt,
-            s.commission_rate as commissionRate,
-            s.settle_month as settleMonth,
-            s.status,
-            s.expense_id as expenseId
+            s.commission_rate AS commissionRate,
+            s.settle_month AS settleMonth,
+            s.status
         FROM "h_settlement" s
-        LEFT JOIN "h_gym" g ON s.gym_id = g.gym_id
-        WHERE s.settlement_id = #{settlementId}
+        JOIN "h_member" m ON m.gym_id = s.gym_id
+        WHERE m.username = #{username}
+          AND UPPER(m.role) = 'OWNER'
+          AND s.status = '미지급'
+          AND s.expense_id IS NULL
+        ORDER BY s.settle_month DESC, s.settlement_id DESC
+    </select>
+
+    <select id="getOwnerUnpaidCommission" resultType="com.health.app.settle.CommissionDTO">
+        SELECT
+            s.settlement_id AS settlementId,
+            s.gym_id AS gymId,
+            s.commission,
+            s.commission_rate AS commissionRate,
+            s.settle_month AS settleMonth,
+            s.status
+        FROM "h_settlement" s
+        JOIN "h_member" m ON m.gym_id = s.gym_id
+        WHERE m.username = #{username}
+          AND UPPER(m.role) = 'OWNER'
+          AND s.settlement_id = #{settlementId}
+          AND s.status = '미지급'
+          AND s.expense_id IS NULL
+    </select>
+
+    <select id="getOwnerGymId" resultType="long">
+        SELECT gym_id
+        FROM "h_member"
+        WHERE username = #{username} AND UPPER(role) = 'OWNER'
     </select>
 
     <!-- 가맹점+정산월 기준 커미션 단건 조회 (매출 삭제 후 재계산 대상 확인용) -->
@@ -117,14 +177,6 @@
         WHERE s.gym_id = #{gymId} AND s.settle_month = #{month}
     </select>
 
-    <!-- 관리자용: 커미션 정산 지급 상태 업데이트 -->
-    <update id="updateCommissionStatus" parameterType="com.health.app.settle.CommissionDTO">
-        UPDATE "h_settlement"
-        SET status = #{status},
-            settled_at = #{settledAt}
-        WHERE settlement_id = #{settlementId}
-    </update>
-
     <!-- 특정 가맹점의 특정 기간 매출 합계 * 커미션율로 재계산된 정산 금액 조회 (매출 삭제 후 재계산용) -->
     <select id="sumGymSalesForMonth" resultType="long">
         SELECT CAST(COALESCE(SUM(pay_price), 0) * #{rate} AS int8)
@@ -140,26 +192,28 @@
     <!-- 사장님용: 해당 지점(gym_id)의 운영 비용 지출 목록 페이징 조회 -->
     <select id="expenseList" resultType="com.health.app.settle.ExpenseDTO">
         SELECT
-            expense_id as expenseId,
-            gym_id as gymId,
-            data_id as dataId,
-            expense_name as expenseName,
-            expense_date as expenseDate,
-            expense_price as expensePrice,
-            expense_rate as expenseRate
-        FROM "h_expense"
-        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+            e.expense_id as expenseId,
+            e.gym_id as gymId,
+            e.data_id as dataId,
+            s.settlement_id as settlementId,
+            e.expense_name as expenseName,
+            e.expense_date as expenseDate,
+            COALESCE(NULLIF(e.expense_price, 0), s.commission, 0) as expensePrice,
+            COALESCE(NULLIF(e.expense_rate, 0), s.commission_rate, 0) as expenseRate
+        FROM "h_expense" e
+        LEFT JOIN "h_settlement" s ON s.expense_id = e.expense_id
+        WHERE e.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
         <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(expense_date, 'YYYY-MM') = #{pager.month}
+            AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{pager.month}
         </if>
         <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
+            AND e.expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
         </if>
         <choose>
-            <when test="sort == 'price_desc'">ORDER BY expense_price DESC</when>
-            <when test="sort == 'price_asc'">ORDER BY expense_price ASC</when>
-            <when test="sort == 'date_asc'">ORDER BY expense_date ASC, expense_id ASC</when>
-            <otherwise>ORDER BY expense_date DESC, expense_id DESC</otherwise>
+            <when test="sort == 'price_desc'">ORDER BY COALESCE(NULLIF(e.expense_price, 0), s.commission, 0) DESC</when>
+            <when test="sort == 'price_asc'">ORDER BY COALESCE(NULLIF(e.expense_price, 0), s.commission, 0) ASC</when>
+            <when test="sort == 'date_asc'">ORDER BY e.expense_date ASC, e.expense_id ASC</when>
+            <otherwise>ORDER BY e.expense_date DESC, e.expense_id DESC</otherwise>
         </choose>
         LIMIT #{pager.pageSize} OFFSET #{pager.offset}
     </select>
@@ -178,35 +232,39 @@
 
     <!-- 사장님용: 지출 내역 전체 합계 금액 조회 (필터 조건 적용, 페이지 무관) -->
     <select id="expenseListSum" resultType="long">
-        SELECT COALESCE(SUM(expense_price), 0) FROM "h_expense"
-        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+        SELECT COALESCE(SUM(COALESCE(NULLIF(e.expense_price, 0), s.commission, 0)), 0)
+        FROM "h_expense" e
+        LEFT JOIN "h_settlement" s ON s.expense_id = e.expense_id
+        WHERE e.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
         <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(expense_date, 'YYYY-MM') = #{pager.month}
+            AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{pager.month}
         </if>
         <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
+            AND e.expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
         </if>
     </select>
 
     <!-- CSV 내보내기용: expenseList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환 -->
     <select id="expenseListAll" resultType="com.health.app.settle.ExpenseDTO">
         SELECT
-            expense_id as expenseId,
-            gym_id as gymId,
-            data_id as dataId,
-            expense_name as expenseName,
-            expense_date as expenseDate,
-            expense_price as expensePrice,
-            expense_rate as expenseRate
-        FROM "h_expense"
-        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+            e.expense_id as expenseId,
+            e.gym_id as gymId,
+            e.data_id as dataId,
+            s.settlement_id as settlementId,
+            e.expense_name as expenseName,
+            e.expense_date as expenseDate,
+            COALESCE(NULLIF(e.expense_price, 0), s.commission, 0) as expensePrice,
+            COALESCE(NULLIF(e.expense_rate, 0), s.commission_rate, 0) as expenseRate
+        FROM "h_expense" e
+        LEFT JOIN "h_settlement" s ON s.expense_id = e.expense_id
+        WHERE e.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
         <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(expense_date, 'YYYY-MM') = #{pager.month}
+            AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{pager.month}
         </if>
         <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
+            AND e.expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
         </if>
-        ORDER BY expense_date DESC, expense_id DESC
+        ORDER BY e.expense_date DESC, e.expense_id DESC
     </select>
 
     <!-- 사장님용: 신규 지출 항목 등록. origin_item_id는 item 등록에서 자동 생성된 지출일 때만 채워지고, settle에서 직접 입력한 지출은 null(해당 없음) -->
@@ -216,41 +274,80 @@
         VALUES (default, #{gymId}, #{dataId}, #{expenseName}, #{expenseDate}, #{expensePrice}, #{expenseRate}, #{originItemId})
     </insert>
 
+    <update id="markSettlementPaid">
+        UPDATE "h_settlement"
+        SET status = '지급',
+            settled_at = #{settledAt},
+            expense_id = #{expenseId}
+        WHERE settlement_id = #{settlementId}
+          AND status = '미지급'
+          AND expense_id IS NULL
+    </update>
+
+    <select id="checkOwnerExpenseContract" resultType="int">
+        SELECT COUNT(*)
+        FROM "h_contract_data"
+        WHERE data_id = #{dataId}
+          AND sender_id = #{username}
+          AND contract = 2
+          AND status IN ('SIGNED', 'ACTIVE')
+          AND NOT EXISTS (
+              SELECT 1 FROM "h_expense" e WHERE e.data_id = #{dataId}
+          )
+    </select>
+
+    <select id="lockExpenseContract" resultType="long">
+        WITH locked AS (SELECT pg_advisory_xact_lock(-#{dataId}))
+        SELECT CAST(#{dataId} AS bigint) FROM locked
+    </select>
+
     <!-- 사장님용: 지출 비용 항목 삭제 -->
-    <delete id="expenseDelete" parameterType="Long">
-        DELETE FROM "h_expense" WHERE expense_id = #{expenseId}
+    <delete id="expenseDelete">
+        DELETE FROM "h_expense" e
+        USING "h_member" m
+        WHERE e.expense_id = #{expenseId}
+          AND e.gym_id = m.gym_id
+          AND m.username = #{username}
+          AND UPPER(m.role) = 'OWNER'
     </delete>
 
-    <!-- 지출이 이미 정산(h_settlement)에 연결되어 있는지 확인 (h_settlement_expense_id_fkey 제약으로 삭제 불가 사전 차단용) -->
-    <select id="checkExpenseLinkedToSettlement" parameterType="Long" resultType="int">
-        SELECT COUNT(*) FROM "h_settlement" WHERE expense_id = #{expenseId}
-    </select>
+    <!-- 커미션 지출 삭제 전, 본인 지점의 연결된 정산을 다시 미지급으로 돌려 재확정할 수 있게 한다. -->
+    <update id="resetSettlementForExpense">
+        UPDATE "h_settlement" s
+        SET status = '미지급',
+            settled_at = NULL,
+            expense_id = NULL
+        FROM "h_expense" e, "h_member" m
+        WHERE s.expense_id = e.expense_id
+          AND e.expense_id = #{expenseId}
+          AND e.gym_id = m.gym_id
+          AND m.username = #{username}
+          AND UPPER(m.role) = 'OWNER'
+    </update>
 
     <!-- 스케줄러/수동용: 특정 기간 내 가맹점별 총 매출 및 제휴 수수료율 기반의 커미션 정보 집계 -->
     <select id="calculateMonthlyGymSales" resultType="com.health.app.settle.CommissionDTO">
-        SELECT 
-            p.gym_id as gymId,
-            CAST(SUM(p.pay_price) * COALESCE(
-                (SELECT c.contract_rate 
-                 FROM "h_contract_data" c 
-                 WHERE c.gym_id = p.gym_id 
-                   AND c.contract = 1 
-                   AND c.status = 'SIGNED' 
-                 ORDER BY c.signed_at DESC 
-                 LIMIT 1), 
-                0.10
-            ) AS int8) as commission,
-            COALESCE(
-                (SELECT c.contract_rate 
-                 FROM "h_contract_data" c 
-                 WHERE c.gym_id = p.gym_id 
-                   AND c.contract = 1 
-                   AND c.status = 'SIGNED' 
-                 ORDER BY c.signed_at DESC 
-                 LIMIT 1), 
-                0.10
-            ) as commissionRate
+        SELECT
+            p.gym_id AS gymId,
+            CAST(SUM(p.pay_price * contract.normalized_rate) AS int8) AS commission,
+            SUM(p.pay_price * contract.normalized_rate) / NULLIF(SUM(p.pay_price), 0) AS commissionRate
         FROM "h_payment" p
+        JOIN LATERAL (
+            SELECT CASE
+                       WHEN c.contract_rate &gt;= 1 THEN c.contract_rate / 100.0
+                       ELSE c.contract_rate
+                   END AS normalized_rate
+            FROM "h_contract_data" c
+            WHERE c.gym_id = p.gym_id
+              AND c.contract = 1
+              AND c.contract_rate IS NOT NULL
+              AND c.signed_at IS NOT NULL
+              AND c.signed_at::date &lt;= p.pay_date
+              AND c.start_date &lt;= p.pay_date
+              AND (c.end_date IS NULL OR c.end_date &gt;= p.pay_date)
+            ORDER BY c.start_date DESC, c.signed_at DESC, c.data_id DESC
+            LIMIT 1
+        ) contract ON TRUE
         WHERE p.pay_date &gt;= #{startDate} AND p.pay_date &lt;= #{endDate}
         GROUP BY p.gym_id
     </select>
@@ -263,13 +360,18 @@
           AND settle_month = #{settleMonth}
     </select>
 
+    <select id="lockCommissionGeneration" resultType="long">
+        WITH locked AS (SELECT pg_advisory_xact_lock(#{gymId}))
+        SELECT CAST(#{gymId} AS bigint) FROM locked
+    </select>
+
     <!-- 신규 플랫폼 커미션 정산 등록 -->
     <insert id="insertCommission" parameterType="com.health.app.settle.CommissionDTO">
         INSERT INTO "h_settlement" (gym_id, commission, commission_rate, settle_month, status)
         VALUES (#{gymId}, #{commission}, #{commissionRate}, #{settleMonth}, '미지급')
     </insert>
 
-    <!-- 사장님용: 지출 처리해야 할 임금/제휴 계약서 목록 페이징 조회 (지출 등록 연동용) -->
+    <!-- 사장님용: 지출 처리해야 할 임금 계약서 목록 페이징 조회 (커미션은 settlement 목록으로 별도 제공) -->
     <select id="unpaidExpenseContractList" resultType="com.health.app.contract.ContractDTO">
         SELECT
             d.data_id as dataId,
@@ -281,28 +383,15 @@
             d.status,
             d.start_date as startDate,
             d.end_date as endDate,
-            CASE
-                WHEN d.contract = 1 THEN
-                    COALESCE(
-                        (SELECT CAST(SUM(p.pay_price) * d.contract_rate AS int8)
-                         FROM "h_payment" p
-                         WHERE p.gym_id = d.gym_id
-                           AND TO_CHAR(p.pay_date, 'YYYY-MM') = TO_CHAR(d.start_date, 'YYYY-MM')),
-                        0
-                    )
-                ELSE d.amount
-            END as amount,
+            d.amount,
             d.contract_rate as contractRate,
             d.quantity,
             d.issue_date as issueDate,
             d.signed_at as signedAt,
             d.manager_id as managerId
         FROM "h_contract_data" d
-        WHERE (
-            (d.sender_id = #{username} AND d.contract = 2)
-            OR
-            (d.receiver_id = #{username} AND d.contract = 1)
-          )
+        WHERE d.sender_id = #{username}
+          AND d.contract = 2
           AND d.status IN ('SIGNED', 'ACTIVE')
           AND d.data_id NOT IN (
               SELECT data_id FROM "h_expense" WHERE data_id IS NOT NULL
@@ -315,11 +404,8 @@
     <select id="unpaidExpenseContractListCount" resultType="long">
         SELECT COUNT(*)
         FROM "h_contract_data" d
-        WHERE (
-            (d.sender_id = #{username} AND d.contract = 2)
-            OR
-            (d.receiver_id = #{username} AND d.contract = 1)
-          )
+        WHERE d.sender_id = #{username}
+          AND d.contract = 2
           AND d.status IN ('SIGNED', 'ACTIVE')
           AND d.data_id NOT IN (
               SELECT data_id FROM "h_expense" WHERE data_id IS NOT NULL
@@ -344,23 +430,5 @@
           )
         ORDER BY d.data_id DESC
     </select>
-
-    <!-- 사장님 지출 등록 시 연동된 제휴 계약서에 매핑되는 수수료 정산 건을 자동 지급 완료(지급)로 업데이트 -->
-    <update id="updateSettlementStatusByContract">
-        UPDATE "h_settlement"
-        SET status = '지급',
-            settled_at = CURRENT_DATE,
-            expense_id = #{expenseId}
-        WHERE settlement_id = (
-            SELECT s.settlement_id
-            FROM "h_settlement" s
-            JOIN "h_contract_data" c ON s.gym_id = c.gym_id
-            WHERE c.data_id = #{dataId}
-              AND c.contract = 1
-              AND s.status = '미지급'
-            ORDER BY s.settle_month ASC
-            LIMIT 1
-        )
-    </update>
 
 </mapper>
