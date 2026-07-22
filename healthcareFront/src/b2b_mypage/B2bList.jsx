@@ -745,6 +745,52 @@ function RiskMembers({ riskList, loading }) {
   );
 }
 
+// 탭 전환 로딩 시 스켈레톤 — 요약 스트립 + 조치 카드 레이아웃을 모사
+function StatsSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="불러오는 중">
+      <div className="cs-summary">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="cs-skpi">
+            <span className="cs-skel" style={{ width: '52%', height: 12 }} />
+            <span className="cs-skel" style={{ width: '70%', height: 24, marginTop: 8 }} />
+            <span className="cs-skel" style={{ width: '40%', height: 11, marginTop: 10 }} />
+          </div>
+        ))}
+        <div className="cs-distcard">
+          <span className="cs-skel" style={{ width: '45%', height: 12 }} />
+          <span className="cs-skel" style={{ width: '100%', height: 12, marginTop: 12, borderRadius: 999 }} />
+          <div className="cs-skel-legend">
+            {[0, 1, 2, 3].map((i) => <span key={i} className="cs-skel" style={{ height: 11 }} />)}
+          </div>
+        </div>
+        <div className="cs-skpi">
+          <span className="cs-skel" style={{ width: '60%', height: 12 }} />
+          <span className="cs-skel" style={{ width: '55%', height: 24, marginTop: 8 }} />
+          <span className="cs-skel" style={{ width: '45%', height: 11, marginTop: 10 }} />
+        </div>
+      </div>
+      <div className="cs-main">
+        <section className="cs-panel-card">
+          <div className="cs-cardhead">
+            <span className="cs-skel" style={{ width: 180, height: 16 }} />
+            <span className="cs-skel" style={{ width: '70%', height: 11, marginTop: 8 }} />
+          </div>
+          <div className="cs-skel-rows">
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+              <div key={i} className="cs-skel-row">
+                <span className="cs-skel" style={{ width: 120, height: 13 }} />
+                <span className="cs-skel" style={{ flex: 1, height: 9, borderRadius: 999 }} />
+                <span className="cs-skel" style={{ width: 40, height: 13 }} />
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function B2bList() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const gymId = user.gymId;
@@ -865,8 +911,8 @@ function B2bList() {
           <PeriodPicker mode={mode} periods={periods} value={openPeriod} onPick={setOpenPeriod} />
         </div>
 
-        {periodsLoading ? (
-          <p className="cs-empty-state">불러오는 중…</p>
+        {periodsLoading || (periods.length > 0 && (!openPeriod || loading)) ? (
+          <StatsSkeleton />
         ) : periods.length === 0 ? (
           <p className="cs-empty-state">집계된 통계 데이터가 없습니다. (배치 실행 후 표시됩니다)</p>
         ) : (

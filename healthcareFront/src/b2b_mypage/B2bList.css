@@ -100,6 +100,8 @@
 
 /* ── 요약: 읽기 전용 KPI 스트립 + 위험도 분포 ── */
 .cs-summary { display: grid; grid-template-columns: repeat(3, 1fr) 1.35fr 1fr; gap: 14px; margin: 18px 0 16px; }
+/* 요약 카드 높이 고정 — 스켈레톤/실데이터 전환 시 행 높이가 바뀌어 KPI 카드가 줄었다 늘어나는 것 방지 */
+.cs-skpi, .cs-distcard { min-height: 130px; }
 .cs-skpi { background: var(--cs-surface); border: 1px solid var(--cs-border); border-radius: var(--cs-radius); box-shadow: var(--cs-shadow); padding: 15px 16px; }
 .cs-skpi-label { font-size: var(--text-xs); font-weight: 600; color: var(--cs-ink-2); }
 .cs-skpi-value { font-size: 25px; font-weight: 700; letter-spacing: -.01em; margin-top: 4px; line-height: 1.1; }
@@ -115,6 +117,19 @@
 .cs-dist-legend li { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--cs-ink-2); }
 .cs-dist-legend i { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
 .cs-dist-legend b { margin-left: auto; color: var(--cs-ink); font-variant-numeric: tabular-nums; }
+
+/* 스켈레톤 (탭 전환 로딩) */
+.cs-skel { display: block; border-radius: 6px; background: var(--cs-surface-2); position: relative; overflow: hidden; }
+.cs-skel::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: cs-shimmer 1.3s infinite;
+}
+@keyframes cs-shimmer { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .cs-skel::after { animation: none; } }
+.cs-skel-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 11px; }
+.cs-skel-rows { padding: 12px 14px; display: flex; flex-direction: column; gap: 16px; }
+.cs-skel-row { display: flex; align-items: center; gap: 14px; }
 
 /* 등급 배지 */
 .cs-badge { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-xs); font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
@@ -180,7 +195,7 @@
 .cs-facc-row {
   width: 100%; display: grid; grid-template-columns: 132px 1fr auto; align-items: center; gap: 14px;
   background: transparent; border: 0; border-radius: 10px; font: inherit; text-align: left;
-  padding: 11px 12px; cursor: pointer; color: var(--cs-ink); transition: background-color .13s;
+  padding: 7px 12px; cursor: pointer; color: var(--cs-ink); transition: background-color .13s;
 }
 .cs-facc-row:hover { background: var(--cs-surface-2); }
 .cs-facc.open > .cs-facc-row { background: var(--cs-accent-weak); }

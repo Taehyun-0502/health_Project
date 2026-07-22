@@ -74,6 +74,12 @@
   padding: 0;
 }
 
+html {
+  /* 스크롤바 자리를 항상 예약 — 콘텐츠 높이 변화로 세로 스크롤바가 생겼다 사라지며
+     가운데 정렬 본문이 좌우로 밀리는 현상(탭 전환 시 덜컹) 방지 */
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: var(--font-family);
   background-color: var(--bg-primary);
