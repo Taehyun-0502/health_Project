@@ -192,7 +192,7 @@
 
 .item-table td {
   padding: 13px 16px;
-  border-bottom: 1px solid var(--gray-100);
+  border-bottom: 1px solid var(--gray-200);
   color: var(--gray-700);
   font-size: 14px;
   vertical-align: middle;
@@ -363,8 +363,9 @@
   transition: background-color 0.16s ease;
 }
 
+/* 디자인 시스템: 주요 버튼은 hover에도 배경색을 유지하고 그림자로만 반응 */
 .item-submit-btn:hover {
-  background: var(--accent);
+  box-shadow: 0 2px 8px rgba(200, 79, 0, 0.28);
 }
 
 .item-summary-grid {

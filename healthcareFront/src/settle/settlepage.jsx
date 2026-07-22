@@ -902,6 +902,10 @@ function Settlepage() {
             </button>
           </div>
 
+          {/* 목업 기준 2단 구성: 좌측 리스트 + 우측 요약 레일 */}
+          <div className="settle-owner-grid">
+            <div className="settle-owner-main">
+
           {/* 공통 필터 영역 (매출 및 지출 목록용) */}
           {ownerTab !== 'pnl' && (
             <div className="filter-row">
@@ -947,22 +951,7 @@ function Settlepage() {
           {/* 3.1 매출 내역 탭 */}
           {ownerTab === 'sales' && (
             <div>
-              <div className="settle-stats">
-                <div className="card-premium stat-card">
-                  <div className="stat-card-title">총 매출 합계</div>
-                  <div className="stat-card-value" style={{ color: 'var(--primary-accent)' }}>
-                    {formatWon(payTotalAmount)}
-                  </div>
-                  <div className="stat-card-desc">검색 필터 기준 전체 매출 금액</div>
-                </div>
-                <div className="card-premium stat-card">
-                  <div className="stat-card-title">결제 승인 건수</div>
-                  <div className="stat-card-value">
-                    {payTotalCount} 건
-                  </div>
-                  <div className="stat-card-desc">정상 결제 승인 완료 기준 건수</div>
-                </div>
-              </div>
+              {/* 합계·건수는 우측 요약 레일로 이동 */}
 
               {/* 매출 테이블 */}
               <div className="settle-table-container" style={{ marginBottom: '30px' }}>
@@ -1068,22 +1057,7 @@ function Settlepage() {
           {/* 3.2 지출 관리 탭 */}
           {ownerTab === 'expenses' && (
             <div>
-              <div className="settle-stats">
-                <div className="card-premium stat-card">
-                  <div className="stat-card-title">지출 총액</div>
-                  <div className="stat-card-value" style={{ color: 'var(--danger-solid)' }}>
-                    {formatWon(expenseTotalAmount)}
-                  </div>
-                  <div className="stat-card-desc">검색 필터 기준 사업장 총 운영 지출비</div>
-                </div>
-                <div className="card-premium stat-card">
-                  <div className="stat-card-title">등록된 지출 건수</div>
-                  <div className="stat-card-value">
-                    {expenseTotalCount} 건
-                  </div>
-                  <div className="stat-card-desc">자체 관리 지출 내역 합산</div>
-                </div>
-              </div>
+              {/* 합계·건수는 우측 요약 레일로 이동 */}
 
               {/* 지출 리스트 테이블 */}
               <div className="settle-table-container">
@@ -1302,6 +1276,54 @@ function Settlepage() {
             </div>
           )}
 
+            </div>
+
+            {/* 우측 요약 레일 — 순이익 히어로(블랙) + 매출·지출 현황 (현재 필터 기준) */}
+            <aside className="settle-rail" aria-label="이번 조회 기준 요약">
+              <p className="settle-rail__label">조회 기준 요약</p>
+
+              <div className="settle-rail__hero">
+                <span className="settle-rail__hero-label">순이익</span>
+                <strong className="settle-rail__hero-value">{formatWon(payTotalAmount - expenseTotalAmount)}</strong>
+                <div className="settle-rail__hero-split">
+                  <div>
+                    <span>매출</span>
+                    <b className="is-revenue">{formatWon(payTotalAmount)}</b>
+                  </div>
+                  <div>
+                    <span>지출</span>
+                    <b className="is-expense">{formatWon(expenseTotalAmount)}</b>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className={`settle-rail__card${ownerTab === 'sales' ? ' is-active' : ''}`}
+                onClick={() => setOwnerTab('sales')}
+              >
+                <span className="settle-rail__card-head">
+                  매출
+                  <span className="status-badge paid">{payTotalCount}건</span>
+                </span>
+                <b className="settle-rail__card-value">{formatWon(payTotalAmount)}</b>
+              </button>
+
+              <button
+                type="button"
+                className={`settle-rail__card${ownerTab === 'expenses' ? ' is-active' : ''}`}
+                onClick={() => setOwnerTab('expenses')}
+              >
+                <span className="settle-rail__card-head">
+                  지출
+                  <span className="status-badge pending">{expenseTotalCount}건</span>
+                </span>
+                <b className="settle-rail__card-value">{formatWon(expenseTotalAmount)}</b>
+              </button>
+
+              <p className="settle-rail__caption">현재 기간·검색 필터가 적용된 합계예요</p>
+            </aside>
+          </div>
 
         </div>
       )}

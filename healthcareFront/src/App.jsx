@@ -18,6 +18,7 @@ import ContractLayout from './contract/ContractLayout.jsx';
 import TrialTargetPage from './contract/TrialTargetPage.jsx';
 import RosterPage from './contract/RosterPage.jsx';
 import JobSeekerPage from './contract/JobSeekerPage.jsx';
+import SalaryPage from './contract/SalaryPage.jsx';
 import Payment from './payment/Payment.jsx';
 import Attendance from './attendance/Attendance.jsx';               // 출석 키오스크 (무로그인)
 
@@ -26,7 +27,7 @@ import Settlepage from './settle/settlepage.jsx'
 import B2bMain from './b2b_mypage/B2bMain.jsx';
 import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
 import B2bNotification from './b2b_mypage/B2bNotification.jsx';
-import Dashboard from './dashboard/dashboard.jsx';
+import Dashboard from './dashboard/Dashboard.jsx';
 import B2bList from './b2b_mypage/B2bList.jsx';
 import B2bCoupon from './b2b_mypage/B2bCoupon.jsx';
 import B2cSurvey from './b2c_mypage/B2cSurvey.jsx';
@@ -90,6 +91,8 @@ function App() {
           <Route index element={<Contractpage />} />
           <Route path="member" element={<RosterPage />} />
           <Route path="jobseekers" element={<JobSeekerPage />} />
+          {/* 급여 (TRAINER 전용 탭) - 기능 구현 예정, 현재는 자리만 유지 */}
+          <Route path="salary" element={<SalaryPage />} />
           {/* 체험권 계약 대상 목록 (OWNER 전용) - PT 체험(5) 발행폼 진입 */}
           <Route path="trial" element={<TrialTargetPage />} />
         </Route>

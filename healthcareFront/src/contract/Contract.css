@@ -65,31 +65,105 @@
   color: var(--white);
 }
 
-/* 페이지 헤더 행 — 상태 문구 + 발행 버튼 */
-.contract-pagehead {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+/* 급여(Salary) 탭 — 지출 리스트 읽기 전용 화면 */
+.salary-page__head {
   margin-bottom: 16px;
 }
 
-.contract-pagehead__meta {
+.salary-page__title {
+  color: var(--gray-900);
+  font-size: var(--text-h3);
+  font-weight: 700;
+}
+
+.salary-page__desc {
+  margin-top: 4px;
+  color: var(--gray-500);
+  font-size: var(--text-sm);
+}
+
+.salary-page__filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.salary-page__select {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--gray-900);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+.salary-page__summary {
+  color: var(--gray-700);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 구현 예정 화면 자리 (Salary 등) */
+.contract-placeholder {
+  padding: 56px 24px;
+  border: 1px dashed var(--gray-300);
+  border-radius: 12px;
+  background: var(--white);
+  text-align: center;
+}
+
+.contract-placeholder__title {
+  color: var(--gray-900);
+  font-size: var(--text-h3);
+  font-weight: 600;
+}
+
+.contract-placeholder__desc {
+  margin-top: 8px;
   color: var(--gray-500);
   font-size: var(--text-sm);
   line-height: 1.6;
 }
 
-.contract-pagehead__actions {
+/* 상단 액션 줄 — 필터 칩(좌) + 검색·발행 버튼(우), 목업 기준 한 줄 배치 */
+.contract-toolbar {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.contract-toolbar .roster-filter {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.contract-toolbar__right {
+  display: flex;
+  align-items: center;
   flex: none;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
 }
 
+.contract-message {
+  margin-bottom: 12px;
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
 .contract-btn-primary {
-  padding: 9px 16px;
+  height: 38px;
+  padding: 0 16px;
   border: 0;
   border-radius: 8px;
   background: var(--accent-strong);
@@ -97,35 +171,61 @@
   font: inherit;
   font-size: var(--text-sm);
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
 }
 
+/* 디자인 시스템: 주요 버튼은 hover에도 배경색을 유지하고 그림자로만 반응 */
 .contract-btn-primary:hover {
-  background: var(--accent);
+  box-shadow: 0 2px 8px rgba(200, 79, 0, 0.28);
 }
 
-/* 검색 입력 — 내부 X + 돋보기 */
+/* 검색 입력 — 돋보기 아이콘 + 내부 X (목업: 폭 260 · 높이 38) */
 .contract-search {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 14px;
 }
 
 .contract-search__box {
   position: relative;
   display: inline-flex;
   align-items: center;
+  gap: 10px;
   width: 260px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+.contract-search__box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14);
+}
+
+.contract-search__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gray-400);
+  cursor: pointer;
+}
+
+.contract-search__icon:hover {
+  color: var(--gray-700);
 }
 
 .contract-search__box input {
   width: 100%;
-  height: 38px;
-  padding: 0 30px 0 12px;
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
-  background: var(--white);
+  min-width: 0;
+  border: 0;
+  background: transparent;
   color: var(--gray-900);
   font: inherit;
   font-size: var(--text-sm);
@@ -136,14 +236,8 @@
   color: var(--gray-400);
 }
 
-.contract-search__box input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14);
-}
-
 .contract-search__clear {
-  position: absolute;
-  right: 8px;
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -160,11 +254,14 @@
 
 .contract-search__run {
   height: 38px;
-  padding: 0 12px;
+  padding: 0 14px;
   border: 1px solid var(--gray-300);
   border-radius: 8px;
   background: var(--white);
-  font-size: 15px;
+  color: var(--gray-700);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -197,15 +294,29 @@
 }
 
 .contract-table td {
-  padding: 13px 14px;
-  border-top: 1px solid var(--gray-100);
+  padding: 14px 16px;
+  border-top: 1px solid var(--gray-200);
   color: var(--gray-900);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
+.contract-table th:first-child,
+.contract-table td:first-child {
+  padding-left: 16px;
+}
+
+/* 행 클릭 = 드로어 상세 (내부 버튼은 stopPropagation으로 기존 동선 유지) */
+.contract-table__row {
+  cursor: pointer;
+}
+
 .contract-table tbody tr:hover {
   background: var(--gray-50);
+}
+
+.contract-table__name {
+  font-weight: 500;
 }
 
 .contract-table__id {

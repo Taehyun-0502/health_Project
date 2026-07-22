@@ -35,7 +35,7 @@ public class AiToolRegistry {
         Object execute(AuthContext ctx, Map<String, Object> args) throws Exception;
     }
 
-    // 도구 메타 정의 (name/description/파라미터 스키마/허용 role/분류/바로가기 라우트)
+    // 도구 메타 정의 (name/description/파라미터 스키마/허용 role/분류/바로가기 라우트/차트 카드 타입)
     public static class ToolSpec {
         private final String name;
         private final String description;
@@ -45,11 +45,20 @@ public class AiToolRegistry {
         private final String classification; // READ / WRITE
         private final String linkTo;         // 조회 결과 바로가기 프론트 라우트 (nullable)
         private final String linkLabel;
+        private final String chartType;      // 차트 카드 템플릿 타입: bar/line/combo/gauge/list (nullable=카드 없음)
         private final ToolExecutor executor;
 
+        // 기존 5-인자(차트 없음) 호출부 호환용 오버로드
         public ToolSpec(String name, String description, Map<String, Object> properties,
                 List<String> required, Set<String> allowedRoles, String classification,
                 String linkTo, String linkLabel, ToolExecutor executor) {
+            this(name, description, properties, required, allowedRoles, classification,
+                    linkTo, linkLabel, null, executor);
+        }
+
+        public ToolSpec(String name, String description, Map<String, Object> properties,
+                List<String> required, Set<String> allowedRoles, String classification,
+                String linkTo, String linkLabel, String chartType, ToolExecutor executor) {
             this.name = name;
             this.description = description;
             this.properties = properties;
@@ -58,6 +67,7 @@ public class AiToolRegistry {
             this.classification = classification;
             this.linkTo = linkTo;
             this.linkLabel = linkLabel;
+            this.chartType = chartType;
             this.executor = executor;
         }
 
@@ -69,6 +79,7 @@ public class AiToolRegistry {
         public String getClassification() { return classification; }
         public String getLinkTo() { return linkTo; }
         public String getLinkLabel() { return linkLabel; }
+        public String getChartType() { return chartType; }
         public ToolExecutor getExecutor() { return executor; }
     }
 
@@ -143,7 +154,7 @@ public class AiToolRegistry {
                 Map.of("contract", prop("integer", "계약 유형 필터 (1~4, 생략 시 전체)")),
                 List.of(),
                 Set.of("OWNER"), "READ",
-                "/fitb/contractpage", "계약서 리스트로 이동",
+                "/fitb/contractpage", "계약서 리스트로 이동", "list",
                 (ctx, args) -> {
                     ContractDTO dto = new ContractDTO();
                     dto.setUsername(ctx.getUsername());
@@ -177,7 +188,7 @@ public class AiToolRegistry {
                 Map.of(),
                 List.of(),
                 Set.of("OWNER"), "READ",
-                "/fitb/contractpage/member", "회원 명단으로 이동",
+                "/fitb/contractpage/member", "회원 명단으로 이동", "list",
                 (ctx, args) -> {
                     ContractDTO dto = new ContractDTO();
                     dto.setUsername(ctx.getUsername());
@@ -203,7 +214,7 @@ public class AiToolRegistry {
                         "keyword", prop("string", "검색어 (생략 가능)")),
                 List.of(),
                 Set.of("OWNER"), "READ",
-                "/fitb/Settlepage", "매출·지출 페이지로 이동",
+                "/fitb/Settlepage", "매출·지출 페이지로 이동", "bar",
                 (ctx, args) -> settleService.expenseList(ctx.getUsername(), buildPager(args), null)));
 
         register(new ToolSpec(
@@ -214,7 +225,7 @@ public class AiToolRegistry {
                         "keyword", prop("string", "검색어 (생략 가능)")),
                 List.of(),
                 Set.of("OWNER"), "READ",
-                "/fitb/Settlepage", "매출·지출 페이지로 이동",
+                "/fitb/Settlepage", "매출·지출 페이지로 이동", "bar",
                 (ctx, args) -> paymentService.paymentList(ctx.getUsername(), buildPager(args), null)));
 
         register(new ToolSpec(
@@ -223,7 +234,7 @@ public class AiToolRegistry {
                 Map.of(),
                 List.of(),
                 Set.of("OWNER"), "READ",
-                "/fitb/b2bmypage/b2bcomplaint", "건의글 페이지로 이동",
+                "/fitb/b2bmypage/b2bcomplaint", "건의글 페이지로 이동", "list",
                 (ctx, args) -> complaintService.ownerList(ctx.getGymId())));
 
         register(new ToolSpec(

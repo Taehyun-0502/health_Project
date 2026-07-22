@@ -24,7 +24,7 @@ public class ContractDTO {
     private Long previousDataId; // 같은 기본 계약군 교체 갱신 시 이전 계약 연결 (int8)
     private Long relatedDataId; // 기본 계약과 병행하는 PT 체험(5)의 연계 계약 연결 (int8)
     private Long sourceCouponId; // PT 체험(5) 발행에 사용한 체험권 쿠폰 (int8, 동일 체험권 중복 발행 차단용)
-    // 만료 여부는 별도 컬럼 없이 status(EXPIRED/TERMINATED)로 일원화
+    // 만료 여부는 별도 컬럼 없이 status(TERMINATED)로 일원화
     private LocalDate startDate; // 공통: 시작일 (date)
     private LocalDate endDate; // 공통: 종료일 (date)
     private Long amount; // 공통: 금액 (int8)

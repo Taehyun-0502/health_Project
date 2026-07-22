@@ -2,13 +2,21 @@ package com.health.app.contract;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import com.health.app.member.MemberDTO;
+import com.health.app.pager.Pager;
 
 @Mapper
 public interface ContractMapper {
 
-    // 로그인 권한별 계약 유저 리스트 조회 메서드
+    // 로그인 권한별 계약 유저 리스트 조회 메서드 (페이징 없음 - AI 도구 등 전체 목록이 필요한 내부 호출용)
     public List<ContractDTO> contractUserList(ContractDTO contractDTO) throws Exception;
+
+    // 로그인 권한별 계약 유저 리스트 페이징 조회 메서드 (GET /contract/list, LIMIT/OFFSET 적용)
+    public List<ContractDTO> contractUserListPage(@Param("dto") ContractDTO contractDTO, @Param("pager") Pager pager) throws Exception;
+
+    // 로그인 권한별 계약 유저 리스트 전체 건수 조회 메서드 (Pager 총 페이지/블록 계산용)
+    public long contractUserListCount(ContractDTO contractDTO) throws Exception;
 
     // 계약서 발행(등록) 메서드
     public int contractInsert(ContractDTO contractDTO) throws Exception;

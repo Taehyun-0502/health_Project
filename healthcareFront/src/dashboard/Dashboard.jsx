@@ -22,6 +22,29 @@ const WIDGET_LABEL = {
 
 const ROLE_LABEL = { ADMIN: '관계사', OWNER: '사장님', TRAINER: '트레이너' };
 
+// 위젯 배치 폭 (목업 기준: KPI 4열 한 줄 · 리스트 2열 · 차트 전폭)
+// 사용자가 지정한 위젯 순서(sortOrder)는 유지하고 각 카드의 grid span만 달리한다.
+const WIDGET_LAYOUT = {
+  gymCount: 'kpi',
+  memberCount: 'kpi',
+  managedMemberCount: 'kpi',
+  gymNps: 'kpi',
+  memberChurn: 'kpi',
+  gymChurn: 'kpi',
+  goalRate: 'kpi',
+  monthlyRevenue: 'chart',
+  monthlyExpense: 'chart',
+  monthlySession: 'chart',
+};
+const layoutOf = (widgetKey) => WIDGET_LAYOUT[widgetKey] ?? 'list';
+
+// 차트 위젯 계열 정보 (범례 라벨 + 막대 색)
+const CHART_SERIES = {
+  monthlyRevenue: { label: '매출', tone: 'accent' },
+  monthlyExpense: { label: '지출', tone: 'gray' },
+  monthlySession: { label: '세션', tone: 'accent' },
+};
+
 // AI 영역 왼쪽 질문 카드 4종 - 단일 위젯/메서드로 없어서 AI가 READ 도구를 조합해야 답할 수 있는 질문
 // 질문 문구는 이 메타에 고정한다 (사용자 입력 아님 - 전송 질문 예측 가능, 임의 문자열 주입 여지 없음)
 const AI_QUESTIONS = [
@@ -175,12 +198,16 @@ function Dashboard() {
       case 'monthlyExpense':
       case 'monthlySession': {
         const max = Math.max(...value.map((row) => Number(row.total))) || 1;
+        const tone = CHART_SERIES[widgetKey]?.tone ?? 'accent';
         return (
+          // 막대 위 수치는 목업대로 생략하고 title 속성으로 정확한 값을 제공한다
           <div className="dash-chart">
             {value.map((row) => (
-              <div key={row.month} className="dash-bar-col">
-                <span className="dash-bar-value">{Number(row.total).toLocaleString()}</span>
-                <div className="dash-bar" style={{ height: `${Math.round((Number(row.total) / max) * 80)}px` }} />
+              <div key={row.month} className="dash-bar-col" title={`${row.month} · ${Number(row.total).toLocaleString()}`}>
+                <div
+                  className={`dash-bar dash-bar--${tone}`}
+                  style={{ height: `${Math.max(3, Math.round((Number(row.total) / max) * 100))}%` }}
+                />
                 <span className="dash-bar-month">{row.month.slice(5)}월</span>
               </div>
             ))}
@@ -229,12 +256,30 @@ function Dashboard() {
 
   return (
     <div className="dash-page">
-      <div className="dash-header">
-        <h1>
-          {ROLE_LABEL[loginUser?.role?.toUpperCase()] ?? loginUser?.role} 대시보드
-          <span className="dash-user">{loginUser ? ` ${loginUser.name}` : ''}</span>
-        </h1>
-        <button onClick={() => setEditOpen(!editOpen)}>위젯 편집</button>
+      {/* 상단 줄: 선택된 위젯 칩(삭제형) + 위젯 편집 버튼 — 칩 ✕는 기존 토글 API를 그대로 사용 */}
+      <div className="dash-toolbar">
+        <div className="dash-chips">
+          {activeWidgets.map((widget) => (
+            <span key={widget.widgetKey} className="dash-chip">
+              {WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey}
+              <button
+                type="button"
+                className="dash-chip__remove"
+                title={`${WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey} 숨기기`}
+                onClick={() => handleToggle(widget)}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+        <button type="button" className="dash-edit-btn" onClick={() => setEditOpen(!editOpen)}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" />
+          </svg>
+          위젯 편집
+        </button>
       </div>
 
       {!token && <p className="dash-message">로그인이 필요합니다. 먼저 로그인해 주세요.</p>}
@@ -271,15 +316,24 @@ function Dashboard() {
         </div>
       )}
 
-      {/* 활성 위젯 카드 목록 */}
+      {/* 활성 위젯 카드 목록 — KPI 4열 / 리스트 2열 / 차트 전폭 (목업 배치) */}
       <div className="dash-grid">
         {activeWidgets.length === 0 && <p className="dash-empty">표시할 위젯이 없습니다. 위젯 편집에서 켜보세요.</p>}
-        {activeWidgets.map((widget) => (
-          <div key={widget.widgetKey} className="dash-card">
-            <h2>{WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey}</h2>
-            {renderWidgetData(widget.widgetKey)}
-          </div>
-        ))}
+        {activeWidgets.map((widget) => {
+          const layout = layoutOf(widget.widgetKey);
+          const series = CHART_SERIES[widget.widgetKey];
+          return (
+            <div key={widget.widgetKey} className={`dash-card dash-card--${layout}`}>
+              <div className="dash-card__head">
+                <h2>{WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey}</h2>
+                {series && (
+                  <span className={`dash-legend dash-legend--${series.tone}`}>● {series.label}</span>
+                )}
+              </div>
+              {renderWidgetData(widget.widgetKey)}
+            </div>
+          );
+        })}
       </div>
 
       {/* AI 영역 (OWNER 전용, 위젯 그리드 아래 좌우 분할)
