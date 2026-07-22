@@ -14,6 +14,7 @@ function AttendanceConfirm() {
   const [currentDate, setCurrentDate] = useState(new Date()); // 캘린더 조회 기준일
   const [selectedDate, setSelectedDate] = useState(null); // 클릭으로 선택한 날짜 (YYYY-MM-DD)
   const [selectedMember, setSelectedMember] = useState(null); // 현황에서 클릭한 회원 (드릴다운용, username 문자열)
+  const [activeTab, setActiveTab] = useState('members'); // members(담당 회원) | schedule(일정 관리)
   const scheduleFormRef = useRef(null);
 
   const token = localStorage.getItem('accessToken');
@@ -244,59 +245,39 @@ function AttendanceConfirm() {
     missed: { label: '❌ 미수행', color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
   };
 
+  const tabs = [
+    { key: 'members', label: '담당 회원' },
+    { key: 'schedule', label: '일정 관리' },
+  ];
+
   return (
     <div style={{ maxWidth: '700px', margin: '0 auto', padding: '20px' }}>
 
-      {/* ===== 1. 당일 PT 출석 확인 섹션 ===== */}
-      <h3>🤝 PT 출석 확인</h3>
-      <p style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>
-        오늘 접수된 담당 회원의 PT 출석 목록입니다. 확인 버튼을 누르면 해당 회원의 잔여 PT 횟수가 1회 차감되고, 그날 일정이 있으면 완료로 채워집니다.
-      </p>
+      {/* ===== 탭바 ===== */}
+      <div role="tablist" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            role="tab"
+            aria-selected={activeTab === tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              padding: '7px 16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer',
+              borderRadius: '999px', border: '1px solid ' + (activeTab === tab.key ? '#171717' : '#d4d4d4'),
+              backgroundColor: activeTab === tab.key ? '#171717' : '#fff',
+              color: activeTab === tab.key ? '#fff' : '#525252',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-      <button onClick={fetchAll} style={{ marginBottom: '15px', padding: '6px 14px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>
-        🔄 새로고침
-      </button>
+      {/* ===== 담당 회원 탭 (담당 회원 현황) ===== */}
+      {activeTab === 'members' && (
+      <div role="tabpanel">
 
-      {pendingList.length === 0 ? (
-        <p style={{ padding: '30px', textAlign: 'center', color: '#999', border: '1px dashed #ddd', borderRadius: '8px' }}>
-          확인 대기 중인 PT 출석이 없습니다.
-        </p>
-      ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f3f4f6' }}>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>회원명</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>전화번호</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>출석 시간</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>잔여 횟수</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>처리</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pendingList.map((row) => (
-              <tr key={row.id}>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{row.memberName || '-'}</td>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{row.username}</td>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                  {row.checkIn ? row.checkIn.substring(11, 16) : '-'}
-                </td>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                  {row.remainingCount != null ? `${row.remainingCount}회` : '-'}
-                </td>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                  <button onClick={() => handleConfirm(row)} disabled={loading}
-                    style={{ padding: '6px 14px', cursor: 'pointer', border: 'none', borderRadius: '4px', backgroundColor: '#7c3aed', color: '#fff', fontWeight: 'bold' }}>
-                    출석 확인
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      {/* ===== 2. 담당 회원 현황 섹션 - 유효 PT 계약별 총/사용/잔여, 잔여 적은 순 ===== */}
-      <hr style={{ margin: '30px 0', border: 'none', borderTop: '1px solid #eee' }} />
+      {/* ===== 담당 회원 현황 섹션 - 유효 PT 계약별 총/사용/잔여, 잔여 적은 순 ===== */}
       <h3>👥 담당 회원 현황</h3>
       <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
         담당 중인 유효 PT 계약별 잔여 횟수입니다. 잔여가 적은 회원이 위로 정렬되며, 3회 이하는 재등록 제안 대상으로 표시됩니다.
@@ -461,7 +442,62 @@ function AttendanceConfirm() {
         </div>
       )}
 
-      {/* ===== 3. PT 캘린더 (일정 + 수행 결과 통합) 섹션 ===== */}
+      </div>
+      )}
+
+      {/* ===== 일정 관리 탭 (PT 출석 확인 + PT 캘린더 = 일정 + 수행 결과 통합) ===== */}
+      {activeTab === 'schedule' && (
+      <div role="tabpanel">
+
+      {/* ===== 당일 PT 출석 확인 섹션 ===== */}
+      <h3>🤝 PT 출석 확인</h3>
+      <p style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>
+        오늘 접수된 담당 회원의 PT 출석 목록입니다. 확인 버튼을 누르면 해당 회원의 잔여 PT 횟수가 1회 차감되고, 그날 일정이 있으면 완료로 채워집니다.
+      </p>
+
+      <button onClick={fetchAll} style={{ marginBottom: '15px', padding: '6px 14px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>
+        🔄 새로고침
+      </button>
+
+      {pendingList.length === 0 ? (
+        <p style={{ padding: '30px', textAlign: 'center', color: '#999', border: '1px dashed #ddd', borderRadius: '8px' }}>
+          확인 대기 중인 PT 출석이 없습니다.
+        </p>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f3f4f6' }}>
+              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>회원명</th>
+              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>전화번호</th>
+              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>출석 시간</th>
+              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>잔여 횟수</th>
+              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>처리</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pendingList.map((row) => (
+              <tr key={row.id}>
+                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{row.memberName || '-'}</td>
+                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{row.username}</td>
+                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                  {row.checkIn ? row.checkIn.substring(11, 16) : '-'}
+                </td>
+                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                  {row.remainingCount != null ? `${row.remainingCount}회` : '-'}
+                </td>
+                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                  <button onClick={() => handleConfirm(row)} disabled={loading}
+                    style={{ padding: '6px 14px', cursor: 'pointer', border: 'none', borderRadius: '4px', backgroundColor: '#7c3aed', color: '#fff', fontWeight: 'bold' }}>
+                    출석 확인
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* ===== 내 PT 캘린더 섹션 ===== */}
       <hr style={{ margin: '30px 0', border: 'none', borderTop: '1px solid #eee' }} />
       <h3>📅 내 PT 캘린더</h3>
       <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
@@ -646,6 +682,9 @@ function AttendanceConfirm() {
             </form>
           </div>
         </div>
+      )}
+
+      </div>
       )}
     </div>
   );
