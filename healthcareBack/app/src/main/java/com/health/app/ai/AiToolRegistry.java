@@ -104,6 +104,12 @@ public class AiToolRegistry {
     @Autowired
     private MemberMapper memberMapper;
 
+    @Autowired
+    private AiMapper aiMapper;
+
+    @Autowired
+    private AiBriefingService aiBriefingService;
+
     private final Map<String, ToolSpec> tools = new LinkedHashMap<>();
 
     private static Map<String, Object> prop(String type, String description) {
@@ -150,11 +156,11 @@ public class AiToolRegistry {
 
         register(new ToolSpec(
                 "list_contracts",
-                "로그인 사장님이 발행/수신한 계약서 리스트를 조회한다. 계약 유형: 1=제휴, 2=임금, 3=이용권, 4=PT. contract 파라미터로 유형 필터 가능.",
-                Map.of("contract", prop("integer", "계약 유형 필터 (1~4, 생략 시 전체)")),
+                "로그인 사장님이 발행/수신한 계약서 리스트를 조회한다. 계약 유형: 1=제휴, 2=임금, 3=이용권, 4=PT, 5=PT 체험. contract 파라미터로 유형 필터 가능.",
+                Map.of("contract", prop("integer", "계약 유형 필터 (1~5, 생략 시 전체)")),
                 List.of(),
                 Set.of("OWNER"), "READ",
-                "/fitb/contractpage", "계약서 리스트로 이동", "list",
+                "/fitb/contractpage", "계약서 리스트로 이동",
                 (ctx, args) -> {
                     ContractDTO dto = new ContractDTO();
                     dto.setUsername(ctx.getUsername());
@@ -188,7 +194,7 @@ public class AiToolRegistry {
                 Map.of(),
                 List.of(),
                 Set.of("OWNER"), "READ",
-                "/fitb/contractpage/member", "회원 명단으로 이동", "list",
+                "/fitb/contractpage/member", "회원 명단으로 이동",
                 (ctx, args) -> {
                     ContractDTO dto = new ContractDTO();
                     dto.setUsername(ctx.getUsername());
@@ -215,7 +221,7 @@ public class AiToolRegistry {
                 List.of(),
                 Set.of("OWNER"), "READ",
                 "/fitb/Settlepage", "매출·지출 페이지로 이동", "bar",
-                (ctx, args) -> settleService.expenseList(ctx.getUsername(), buildPager(args), null)));
+                (ctx, args) -> settleService.expenseList(ctx.getUsername(), ctx.getRole(), buildPager(args), null)));
 
         register(new ToolSpec(
                 "list_payments",
@@ -234,7 +240,7 @@ public class AiToolRegistry {
                 Map.of(),
                 List.of(),
                 Set.of("OWNER"), "READ",
-                "/fitb/b2bmypage/b2bcomplaint", "건의글 페이지로 이동", "list",
+                "/fitb/b2bmypage/b2bcomplaint", "건의글 페이지로 이동",
                 (ctx, args) -> complaintService.ownerList(ctx.getGymId())));
 
         register(new ToolSpec(
@@ -252,6 +258,31 @@ public class AiToolRegistry {
                     Object survey = surveyService.selectByUsername(target);
                     return survey != null ? survey : Map.of("message", "설문 응답이 없습니다.");
                 }));
+
+        register(new ToolSpec(
+                "get_churn_prediction",
+                "우리 지점 회원 1명의 최신 이탈 예측 결과(이탈 확률·주요 이탈 요인)를 조회한다. memberUsername은 회원 아이디(전화 뒤 8자리).",
+                Map.of("memberUsername", prop("integer", "대상 회원 아이디(전화 뒤 8자리)")),
+                List.of("memberUsername"),
+                Set.of("OWNER"), "READ",
+                "/fitb/dashboard", "대시보드로 이동", "gauge",
+                (ctx, args) -> {
+                    Long target = resolveSameGymMember(ctx, args);
+                    if (target == null) {
+                        return Map.of("message", "해당 회원을 찾을 수 없습니다.");
+                    }
+                    Object result = aiMapper.latestChurnResult(target);
+                    return result != null ? result : Map.of("message", "이탈 예측 결과가 없습니다.");
+                }));
+
+        register(new ToolSpec(
+                "get_task_briefing",
+                "사장님이 오늘 처리해야 할 일(이탈 예방·계약 만료 임박·미결제·지출 정산·미처리 건의) 후보 전체를 건수와 함께 조회한다.",
+                Map.of(),
+                List.of(),
+                Set.of("OWNER"), "READ",
+                null, null, "list",
+                (ctx, args) -> aiBriefingService.briefing(ctx, true)));
     }
 
     private void register(ToolSpec spec) {

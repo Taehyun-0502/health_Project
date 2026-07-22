@@ -16,6 +16,14 @@
   select * from "h_member" where username = #{username}
   </select>
 
+  <!-- 로그인 전용 조회 SQL - h_gym left join으로 gym_name(소속 지점명)까지 함께 조회 (gym_id 없는 ADMIN 등은 null) -->
+  <select id="loginLookup" parameterType="MemberDTO" resultType="MemberDTO">
+  select m.*, g.gym_name as gym_name
+  from "h_member" m
+  left join "h_gym" g on m.gym_id = g.gym_id
+  where m.username = #{username}
+  </select>
+
   <update id="update" parameterType="MemberDTO">
   update h_member
   set

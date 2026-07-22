@@ -133,6 +133,21 @@
 .dash-card--list { grid-column: span 2; }
 .dash-card--chart { grid-column: span 4; }
 
+/* 클릭 이동 가능한 위젯 카드 (button 태그로 렌더 - 기본 버튼 스타일 리셋) */
+.dash-card--clickable {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.dash-card--clickable:hover {
+  border-color: var(--gray-300);
+  background: var(--gray-50);
+}
+
 .dash-card__head {
   display: flex;
   align-items: center;
@@ -162,6 +177,22 @@
 
 .dash-legend--accent { color: var(--accent); }
 .dash-legend--gray { color: var(--gray-500); }
+.dash-legend--blue { color: #5B8DB8; }
+
+/* 쿠폰 사용 위젯 진행 바 */
+.dash-progress {
+  margin-top: 8px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gray-100);
+  overflow: hidden;
+}
+
+.dash-progress__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
 
 .dash-kpi {
   margin: 0;
@@ -262,6 +293,7 @@
 
 .dash-bar--accent { background: var(--accent); }
 .dash-bar--gray { background: var(--gray-500); }
+.dash-bar--blue { background: #5B8DB8; }
 
 .dash-bar-month {
   flex: none;

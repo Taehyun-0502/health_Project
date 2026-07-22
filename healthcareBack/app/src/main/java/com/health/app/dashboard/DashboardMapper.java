@@ -45,35 +45,14 @@ public interface DashboardMapper {
     // 공용: 최근 6개월 월별 지출 집계 쿼리 호출 (gymId 없으면 전체)
     public List<Map<String, Object>> monthlyExpense(DashboardDTO dashboardDTO) throws Exception;
 
-    // 사장님: 계약 회원 수 집계 쿼리 호출
-    public Map<String, Object> ownerMemberCount(Long gymId) throws Exception;
+    // 사장님(대시보드 2026-07-22 개편): 유효 회원 계약(3·4·5, ACTIVE만) distinct 수신자 수 + 유형 구성 집계 쿼리 호출
+    public Map<String, Object> ownerActiveMemberCount(Long gymId) throws Exception;
 
-    // 사장님: 활성 PT(4) 계약 회원 수 쿼리 호출
-    public Map<String, Object> ownerPtMemberCount(Long gymId) throws Exception;
-
-    // 사장님: 오늘 출석(체크인) 회원 수 쿼리 호출
-    public Map<String, Object> ownerTodayAttendance(Long gymId) throws Exception;
-
-    // 사장님: 출석 위젯 hasData(지점 체크인 기록 존재 여부) 쿼리 호출
-    public Map<String, Object> ownerAttendanceHasData(Long gymId) throws Exception;
-
-    // 사장님: 본인이 발행한 쿠폰 총 개수 + 사용완료 개수 쿼리 호출
-    public Map<String, Object> ownerCouponUsage(Long fromId) throws Exception;
-
-    // 사장님: 30일 내 계약 만료 회원 목록 쿼리 호출
+    // 사장님: 30일 내 계약 만료 회원 목록 쿼리 호출 (AiBriefingService 태스크 브리핑에서도 재사용)
     public List<Map<String, Object>> ownerExpiringContract(Long gymId) throws Exception;
 
-    // 사장님: 회원 운동 데이터(체성분/이용 패턴) 집계 쿼리 호출
-    public Map<String, Object> ownerModelSummary(Long gymId) throws Exception;
-
-    // 사장님: 지점 회원 이탈 예측(헬스장 이탈율) 집계 쿼리 호출
+    // 사장님: 지점 회원 이탈 예측(헬스장 이탈율) 집계 쿼리 호출 (임시 유지 - model 팀원 전달 후 교체 예정)
     public Map<String, Object> ownerChurnSummary(Long gymId) throws Exception;
-
-    // 사장님: 지점 월별 평균 예측 이탈률 추이(최근 6개월) 쿼리 호출
-    public List<Map<String, Object>> ownerChurnTrend(Long gymId) throws Exception;
-
-    // 사장님: 지점 월별 위험군(이탈률 45% 이상) 인원 추이(최근 6개월) 쿼리 호출
-    public List<Map<String, Object>> ownerRiskTrend(Long gymId) throws Exception;
 
     // 트레이너: 담당 회원 수 집계 쿼리 호출
     public Map<String, Object> trainerMemberCount(Long username) throws Exception;

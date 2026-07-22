@@ -16,8 +16,6 @@ import B2bAccount from './b2b_mypage/B2bAccount.jsx';
 import Contractpage from './contract/Contractpage.jsx';
 import ContractLayout from './contract/ContractLayout.jsx';
 import TrialTargetPage from './contract/TrialTargetPage.jsx';
-import RosterPage from './contract/RosterPage.jsx';
-import JobSeekerPage from './contract/JobSeekerPage.jsx';
 import SalaryPage from './contract/SalaryPage.jsx';
 import Payment from './payment/Payment.jsx';
 import Attendance from './attendance/Attendance.jsx';               // 출석 키오스크 (무로그인)
@@ -72,7 +70,9 @@ function App() {
 
 
 
-      {/* 계약 패키지 2Depth 메뉴 - Contract(계약서 리스트) / Member(역할별 로스터) / 구직 트레이너(ADMIN) */}
+      {/* 계약 패키지 2Depth 메뉴 - Contract(계약서 리스트) / Salary(TRAINER) / Trial(OWNER)
+          ※ 로스터(Member)·구직 트레이너 화면은 2026-07-22 결정으로 프론트에서 제거됨.
+             해당 백엔드 서비스(GET /contract/roster, /contract/jobseekers)는 다른 팀원 메뉴가 호출한다. */}
       <Route path="/fitb" element={<FitbLayout />}>
         <Route index element={<AdminMain />} />
         <Route path="b2bmypage" element={<B2bMain />} />
@@ -91,8 +91,6 @@ function App() {
         <Route path="ownermanagement" element={<B2bManagementPage />} />
         <Route path="/fitb/contractpage" element={<ContractLayout />}>
           <Route index element={<Contractpage />} />
-          <Route path="member" element={<RosterPage />} />
-          <Route path="jobseekers" element={<JobSeekerPage />} />
           {/* 급여 (TRAINER 전용 탭) - 기능 구현 예정, 현재는 자리만 유지 */}
           <Route path="salary" element={<SalaryPage />} />
           {/* 체험권 계약 대상 목록 (OWNER 전용) - PT 체험(5) 발행폼 진입 */}

@@ -180,6 +180,65 @@
   box-shadow: 0 2px 8px rgba(200, 79, 0, 0.28);
 }
 
+/* 보조 버튼 — 흰 배경+gray-300 보더+gray-700 글자 (예: 트레이너 구하기) */
+.contract-btn-secondary {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--gray-700);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.contract-btn-secondary:hover {
+  background: var(--gray-100);
+}
+
+/* 트레이너 구하기 안내 팝업 (2026-07-22, 버튼+팝업만 — 데이터 저장 없음) */
+.contract-modal-back {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 23, 23, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.contract-modal {
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  padding: 22px;
+  border-radius: 16px;
+  background: var(--white);
+  color: var(--gray-900);
+  box-shadow: var(--shadow-lg);
+}
+
+.contract-modal__title {
+  margin: 0 0 8px;
+  font-size: var(--text-h3);
+  font-weight: 700;
+}
+
+.contract-modal__desc {
+  margin: 0;
+  color: var(--gray-500);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.contract-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
 /* 검색 입력 — 돋보기 아이콘 + 내부 X (목업: 폭 260 · 높이 38) */
 .contract-search {
   display: flex;

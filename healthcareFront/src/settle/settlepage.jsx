@@ -302,7 +302,8 @@ function Settlepage() {
         fetchCommissions(1, 'ALL', 'ALL', ''),
         fetchCommissionStats(),
         fetchPays(1, '', 'ALL', ''),
-        fetchExpenses(1, '', 'ALL', ''),
+        // 지출 API는 OWNER·TRAINER 전용(그 외 403)이라 OWNER일 때만 호출 - ADMIN 뷰 오류 배너 방지
+        activeRole === 'OWNER' ? fetchExpenses(1, '', 'ALL', '') : Promise.resolve(),
         fetchUnpaidContracts(),
         fetchUnpaidExpenses(1),
       ]);

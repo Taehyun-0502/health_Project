@@ -237,6 +237,16 @@ public class CheckInoutService {
         return checkInoutMapper.adminGymOverview();
     }
 
+    // (OWNER 대시보드) 오늘 지점 출석(체크인) distinct 회원 수 집계
+    public java.util.Map<String, Object> ownerTodayAttendanceCount(Long gymId) throws Exception {
+        return checkInoutMapper.ownerTodayAttendanceCount(gymId);
+    }
+
+    // (OWNER 대시보드) 지점 체크인 기록 존재 여부 (hasData 판정)
+    public java.util.Map<String, Object> ownerAttendanceHasData(Long gymId) throws Exception {
+        return checkInoutMapper.ownerAttendanceHasData(gymId);
+    }
+
     // 내일 예정된 PT 일정 리마인드 발송 (전날 저녁 배치) - 회원/트레이너 양쪽에 알림, 발송 건수 반환
     public int sendTomorrowReminders() throws Exception {
         List<PtScheduleDTO> schedules = checkInoutMapper.tomorrowSchedules();

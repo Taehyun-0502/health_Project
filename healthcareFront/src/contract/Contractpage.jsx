@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Pagination from '../settle/Pagination';
 import './Contract.css';
@@ -23,6 +23,39 @@ const CREATE_BUTTONS = {
   ],
 };
 
+// '트레이너 구하기' 안내 팝업 (2026-07-22 확정 범위: 버튼+팝업만, 데이터 저장/API 호출 없음)
+// 바깥 클릭·ESC로 닫힘. CSS 제거해도 열림/닫힘 동작은 유지된다(React state 기반).
+function TrainerRecruitModal({ onClose }) {
+  const boxRef = useRef(null);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
+  const onBackdropClick = (e) => {
+    if (boxRef.current && !boxRef.current.contains(e.target)) onClose();
+  };
+
+  return (
+    <div className="contract-modal-back" onClick={onBackdropClick}>
+      <div className="contract-modal" ref={boxRef} role="dialog" aria-modal="true" aria-label="트레이너 구하기">
+        <h4 className="contract-modal__title">트레이너 구하기</h4>
+        <p className="contract-modal__desc">
+          관계사가 구직 중인 트레이너를 선별해 소개해 드리는 서비스입니다.
+          준비 중인 기능으로, 도입 일정은 관계사에 문의해 주세요.
+        </p>
+        <div className="contract-modal__actions">
+          <button type="button" className="contract-btn-primary" onClick={onClose}>닫기</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // 로그인 권한별 계약서 리스트 페이지 (B2B 어드민, 디자인 제외 Plain 버전)
 // 공통 칼럼: 계약 ID | 계약 유형 | 이름 | 상태 | 금액 | 시작일 | 종료일 | 발행일 | 갱신
 // 검색: 이름 또는 username (돋보기/Enter 실행, 입력값 있을 때만 X 초기화 표시 - X는 검색어만 지움)
@@ -37,12 +70,16 @@ function Contractpage() {
   const [keyword, setKeyword] = useState(''); // 검색 입력값(검색창)
   const [appliedKeyword, setAppliedKeyword] = useState(''); // 실제 조회에 적용된 검색어
   const [message, setMessage] = useState('');
+  const [hireModalOpen, setHireModalOpen] = useState(false); // '트레이너 구하기' 안내 팝업 (OWNER 전용)
 
   const loginUser = JSON.parse(localStorage.getItem('user') || 'null');
-  const createButtons = CREATE_BUTTONS[loginUser?.role?.toLowerCase()] ?? [];
+  const loginRole = loginUser?.role?.toLowerCase();
+  const createButtons = CREATE_BUTTONS[loginRole] ?? [];
+  const isOwner = loginRole === 'owner';
 
   // 권한별 계약 리스트 페이징 조회 (GET /contract/list)
-  const handleList = async () => {
+  // signal: 언마운트·의존값 변경 시 진행 중인 fetch를 취소해 이탈 후 콘솔 노이즈(고아 오류 로그)를 막는다.
+  const handleList = async (signal) => {
     setMessage('');
 
     const token = localStorage.getItem('accessToken');
@@ -58,6 +95,7 @@ function Contractpage() {
 
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/contract/list?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal,
       });
 
       if (response.ok) {
@@ -74,14 +112,18 @@ function Contractpage() {
         setMessage(`조회 실패(${response.status}): ${await response.text()}`);
       }
     } catch (error) {
+      // 취소된 요청(AbortError)은 이탈에 따른 정상 취소이므로 오류로 취급하지 않는다.
+      if (error.name === 'AbortError') return;
       console.error('리스트 조회 오류:', error);
       setMessage('서버와의 통신 중 오류가 발생했습니다.');
     }
   };
 
-  // 페이지·유형 필터·적용된 검색어가 바뀔 때마다 재조회
+  // 페이지·유형 필터·적용된 검색어가 바뀔 때마다 재조회 (언마운트/의존값 변경 시 이전 요청 취소)
   useEffect(() => {
-    handleList();
+    const controller = new AbortController();
+    handleList(controller.signal);
+    return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, typeFilter, appliedKeyword]);
 
@@ -182,8 +224,22 @@ function Contractpage() {
               {btn.label}
             </button>
           ))}
+
+          {/* 트레이너 구하기 (OWNER 전용) - 2026-07-22 확정 범위: 버튼+안내 팝업만, 데이터 저장 없음 */}
+          {isOwner && (
+            <button
+              type="button"
+              className="contract-btn-secondary"
+              title="트레이너 구하기"
+              onClick={() => setHireModalOpen(true)}
+            >
+              트레이너 구하기
+            </button>
+          )}
         </div>
       </div>
+
+      {hireModalOpen && <TrainerRecruitModal onClose={() => setHireModalOpen(false)} />}
 
       {/* 조회 상태·오류 안내 (401/403 등) */}
       {message && <p className="contract-message">{message}</p>}

@@ -69,4 +69,7 @@ public interface ContractMapper {
 
     // (TRAINER) 담당 유저 리스트 조회 메서드 - 담당 PT 계약(4, manager_id) 기준
     public List<ContractDTO> rosterManagedList(ContractDTO contractDTO) throws Exception;
+
+    // (OWNER 대시보드) 30일 내 만료 임박 회원 계약(3·4·5, SIGNED/ACTIVE) 수 집계 메서드
+    public java.util.Map<String, Object> expiringMemberCount(Long gymId) throws Exception;
 }

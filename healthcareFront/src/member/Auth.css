@@ -124,24 +124,25 @@
   background: var(--gray-100);
 }
 
-/* 최종 확정(로그인·등록) — 블랙 솔리드 */
+/* 최종 확정(로그인·등록) — 액센트 솔리드 (버튼 위계 단일화) */
 .auth-submit {
   width: 100%;
   height: 50px;
   margin-top: 8px;
   border: 0;
   border-radius: 10px;
-  background: var(--black);
+  background: var(--accent-strong);
   color: var(--white);
   font: inherit;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.16s ease;
+  transition: box-shadow 0.16s ease;
 }
 
+/* 디자인 시스템: 주요 버튼은 hover에도 배경색을 유지하고 그림자로만 반응 */
 .auth-submit:hover {
-  opacity: 0.88;
+  box-shadow: 0 2px 8px rgba(200, 79, 0, 0.28);
 }
 
 .auth-foot {
