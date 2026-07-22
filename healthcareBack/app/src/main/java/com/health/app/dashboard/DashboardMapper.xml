@@ -137,6 +137,38 @@
       and (d.end_date is null or d.end_date >= current_date)
     </select>
 
+    <!-- 사장님: 활성 PT(4) 계약 회원 수 (gym_id 격리 · status ACTIVE · contract 4) -->
+    <select id="ownerPtMemberCount" parameterType="Long" resultType="map">
+    select count(distinct receiver_id) as "total"
+    from "h_contract_data"
+    where gym_id = #{gymId}
+      and contract = 4
+      and status = 'ACTIVE'
+    </select>
+
+    <!-- 사장님: 오늘 출석(체크인)한 회원 수 (gym_id 격리 · check_in 날짜 = 오늘) -->
+    <select id="ownerTodayAttendance" parameterType="Long" resultType="map">
+    select count(distinct username) as "total"
+    from "h_check_inout"
+    where gym_id = #{gymId}
+      and check_in::date = current_date
+    </select>
+
+    <!-- 오늘 출석 위젯 hasData: 지점의 체크인 기록 존재 여부(오늘 0명이어도 위젯 노출) -->
+    <select id="ownerAttendanceHasData" parameterType="Long" resultType="map">
+    select count(*) as "total"
+    from "h_check_inout"
+    where gym_id = #{gymId}
+    </select>
+
+    <!-- 사장님: 본인이 발행한(from_id) 쿠폰 총 개수 + 사용완료 개수 (동시) -->
+    <select id="ownerCouponUsage" parameterType="Long" resultType="map">
+    select count(*) as "total",
+           count(case when status = '사용완료' then 1 end) as "usedCount"
+    from "h_coupon"
+    where from_id = #{fromId}
+    </select>
+
     <!-- 사장님: 30일 내 계약 만료 회원 목록 조회 SQL -->
     <select id="ownerExpiringContract" parameterType="Long" resultType="map">
     select d.receiver_name as "name",
@@ -165,7 +197,12 @@
     <select id="ownerChurnSummary" parameterType="Long" resultType="map">
     select count(*) as "total",
            coalesce(round(avg(r.churn_rate), 3), 0) as "averageChurnRate",
-           count(case when r.churn_rate >= 0.7 then 1 end) as "highRiskCount"
+           -- 위험군 = 이탈률 45% 이상 (개입 + 위험 등급 합계)
+           count(case when r.churn_rate >= 0.45 then 1 end) as "highRiskCount",
+           count(case when r.churn_rate >= 0.7 then 1 end) as "urgentCount",
+           count(case when r.churn_rate >= 0.45 and r.churn_rate &lt; 0.7 then 1 end) as "interveneCount",
+           count(case when r.churn_rate >= 0.25 and r.churn_rate &lt; 0.45 then 1 end) as "watchCount",
+           count(case when r.churn_rate &lt; 0.25 then 1 end) as "stableCount"
     from (
         select distinct on (username) username, churn_rate
         from "h_churn_result"
@@ -173,6 +210,30 @@
     ) r
     join "h_member" mb on r.username = mb.username
     where mb.gym_id = #{gymId}
+    </select>
+
+    <!-- 사장님: 지점 월별 평균 예측 이탈률 추이 (최근 6개월, h_member 조인으로 지점 격리) -->
+    <select id="ownerChurnTrend" parameterType="Long" resultType="map">
+    select to_char(r.churn_date, 'YYYY-MM')       as "month",
+           coalesce(round(avg(r.churn_rate), 3), 0) as "rate"
+    from "h_churn_result" r
+    join "h_member" mb on r.username = mb.username
+    where mb.gym_id = #{gymId}
+      and r.churn_date >= date_trunc('month', current_date) - interval '5 months'
+    group by to_char(r.churn_date, 'YYYY-MM')
+    order by "month" asc
+    </select>
+
+    <!-- 사장님: 지점 월별 위험군(이탈률 45% 이상) 인원 추이 (최근 6개월, 그 달 위험군에 든 고유 회원 수) -->
+    <select id="ownerRiskTrend" parameterType="Long" resultType="map">
+    select to_char(r.churn_date, 'YYYY-MM') as "month",
+           count(distinct r.username) filter (where r.churn_rate >= 0.45) as "count"
+    from "h_churn_result" r
+    join "h_member" mb on r.username = mb.username
+    where mb.gym_id = #{gymId}
+      and r.churn_date >= date_trunc('month', current_date) - interval '5 months'
+    group by to_char(r.churn_date, 'YYYY-MM')
+    order by "month" asc
     </select>
 
     <!-- 트레이너: 유효 담당 PT·PT 체험 계약(contract=4,5 / SIGNED·ACTIVE) 기준 담당 회원 수 + 이번 달 신규 집계 SQL -->
