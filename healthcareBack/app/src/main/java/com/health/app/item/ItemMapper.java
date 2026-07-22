@@ -10,6 +10,10 @@ import com.health.app.pager.Pager;
 @Mapper
 public interface ItemMapper {
 
+    public Long getOwnerGymId(@Param("username") Long username) throws Exception;
+
+    public Long getGymIdForGymUser(@Param("username") Long username) throws Exception;
+
     // 아이템 등록 쿼리 호출
     public int itemAdd(ItemDTO itemDTO) throws Exception;
 
