@@ -3,206 +3,73 @@ import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 
 // 위젯 키별 표시 이름 (백엔드 h_dashboard_widget.widget_key와 매핑)
+// OWNER 위젯 세트 개편(2026-07-22 확정)으로 memberCount·expiringContract·bodyComposition은
+// 더 이상 어느 역할의 DEFAULT_WIDGETS에도 없는 죽은 키라 라벨을 제거했다 — 아래 KNOWN 필터로
+// h_dashboard_widget에 잔존할 수 있는 구 키 행을 렌더·편집 목록에서 제외한다.
 const WIDGET_LABEL = {
   gymCount: '계약 체육관 수',
   expiringSubscription: '다가오는 구독 만료',
   monthlyRevenue: '월별 총 매출',
   monthlyExpense: '월별 총 지출',
   gymNps: '체육관 만족도',
-  memberCount: '계약 회원 수',
-  ptMemberCount: 'PT 회원수',
-  todayAttendance: '오늘 출석한 회원수',
-  couponUsage: '쿠폰 사용 이력',
-  expiringContract: '다가오는 계약 만료',
-  bodyComposition: '체성분 변화 추이',
   gymChurn: '헬스장 이탈율',
-  gymChurnTrend: '월별 예측 이탈률 추이',
-  gymRiskTrend: '월별 위험군 추이',
   managedMemberCount: '담당 회원 수',
   lowSessionMembers: '세션 소진 임박',
   monthlySession: '월별 세션 수행',
   memberChurn: '회원 이탈 예측',
   goalRate: '목표 달성률',
+  // OWNER 위젯 세트 개편 (2026-07-22 확정)
+  activeMemberCount: '총 회원 수',
+  couponUsage: '쿠폰 사용',
+  expiringMemberCount: '만료 임박 회원 수',
+  todayAttendance: '오늘 출석',
+  churnTrend: '월별 이탈 위험군 추이',
 };
 
 const ROLE_LABEL = { ADMIN: '관계사', OWNER: '사장님', TRAINER: '트레이너' };
 
-// 헬스장 이탈율 위젯 — 위험도 분포 도넛 차트 (순수 SVG)
-function ChurnDonut({ tiers, centerLabel, centerValue }) {
-  const size = 132;
-  const stroke = 20;
-  const r = (size - stroke) / 2;
-  const c = size / 2;
-  const circ = 2 * Math.PI * r;
-  const sum = tiers.reduce((acc, t) => acc + t.count, 0) || 1;
+// 위젯 배치 폭 (목업 기준: KPI 4열 한 줄 · 리스트 2열 · 차트 전폭)
+// 사용자가 지정한 위젯 순서(sortOrder)는 유지하고 각 카드의 grid span만 달리한다.
+const WIDGET_LAYOUT = {
+  gymCount: 'kpi',
+  managedMemberCount: 'kpi',
+  gymNps: 'kpi',
+  memberChurn: 'kpi',
+  gymChurn: 'kpi',
+  goalRate: 'kpi',
+  monthlyRevenue: 'chart',
+  monthlyExpense: 'chart',
+  monthlySession: 'chart',
+  // OWNER 위젯 세트 개편 (2026-07-22 확정)
+  activeMemberCount: 'kpi',
+  couponUsage: 'kpi',
+  expiringMemberCount: 'kpi',
+  todayAttendance: 'kpi',
+  churnTrend: 'chart',
+};
+const layoutOf = (widgetKey) => WIDGET_LAYOUT[widgetKey] ?? 'list';
 
-  let offset = 0;
-  const segments = tiers.map((t) => {
-    const len = (t.count / sum) * circ;
-    const seg = (
-      <circle
-        key={t.key}
-        cx={c}
-        cy={c}
-        r={r}
-        fill="none"
-        stroke={t.color}
-        strokeWidth={stroke}
-        strokeDasharray={`${len} ${circ - len}`}
-        strokeDashoffset={-offset}
-      />
-    );
-    offset += len;
-    return seg;
-  });
+// 차트 위젯 계열 정보 (범례 라벨 + 막대 색)
+const CHART_SERIES = {
+  monthlyRevenue: { label: '매출', tone: 'accent' },
+  monthlyExpense: { label: '지출', tone: 'gray' },
+  monthlySession: { label: '세션', tone: 'accent' },
+  churnTrend: { label: '위험군', tone: 'blue' },
+};
 
-  return (
-    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
-      <g transform={`rotate(-90 ${c} ${c})`}>
-        <circle cx={c} cy={c} r={r} fill="none" stroke="#eef0f4" strokeWidth={stroke} />
-        {segments}
-      </g>
-      <text x={c} y={c - 4} textAnchor="middle" fontSize="10" fill="#94a3b8">{centerLabel}</text>
-      <text x={c} y={c + 15} textAnchor="middle" fontSize="16" fontWeight="800" fill="#ef4444">{centerValue}명</text>
-    </svg>
-  );
-}
+// 회원/직원 관리 기존 라우트 (팀원 개편 중 - 현재 401 발생 상태 그대로 유지, merge 후 실제 라우트로 교체)
+const MANAGEMENT_ROUTE = '/fitb/management';
+// 이탈 리포트 페이지 (팀원 작업 중 - 라우트 미확정, merge 후 확정 라우트로 교체)
+const REPORT_ROUTE = '/fitb/report';
 
-// 헬스장 이탈율 위젯 — 월별 예측 이탈률 추이 라인 차트 (순수 SVG)
-function ChurnTrend({ trend }) {
-  const points = (trend || []).map((d) => ({
-    month: parseInt(String(d.month).slice(5), 10),
-    pct: Number(d.rate) * 100,
-  }));
-
-  if (points.length === 0) {
-    return <p className="dash-empty">추이 데이터가 아직 없습니다.</p>;
-  }
-
-  const W = 340;
-  const H = 180;
-  const padL = 34;
-  const padR = 14;
-  const padT = 26;
-  const padB = 26;
-  const plotW = W - padL - padR;
-  const plotH = H - padT - padB;
-
-  const maxPct = Math.max(40, Math.ceil(Math.max(...points.map((p) => p.pct)) / 10) * 10);
-  const xAt = (i) => (points.length <= 1 ? padL + plotW / 2 : padL + (plotW * i) / (points.length - 1));
-  const yAt = (pct) => padT + plotH * (1 - pct / maxPct);
-
-  const ticks = [];
-  for (let v = 0; v <= maxPct; v += 10) ticks.push(v);
-
-  const linePath = points.map((p, i) => `${i ? 'L' : 'M'}${xAt(i)},${yAt(p.pct)}`).join(' ');
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, height: 'auto' }}>
-      {/* 가로 눈금선 + Y축 라벨 */}
-      {ticks.map((v) => (
-        <g key={v}>
-          <line x1={padL} y1={yAt(v)} x2={W - padR} y2={yAt(v)} stroke="#eef0f4" strokeWidth="1" />
-          <text x={padL - 6} y={yAt(v) + 3} textAnchor="end" fontSize="9" fill="#94a3b8">{v}%</text>
-        </g>
-      ))}
-      {/* 추이 선 */}
-      <path d={linePath} fill="none" stroke="#6366f1" strokeWidth="2" />
-      {/* 데이터 포인트 + 값 라벨 + X축(월) 라벨 */}
-      {points.map((p, i) => (
-        <g key={i}>
-          <circle cx={xAt(i)} cy={yAt(p.pct)} r="4" fill="#fff" stroke="#6366f1" strokeWidth="2" />
-          <text x={xAt(i)} y={yAt(p.pct) - 9} textAnchor="middle" fontSize="10" fontWeight="700" fill="#475569">
-            {p.pct.toFixed(1)}%
-          </text>
-          <text x={xAt(i)} y={H - 8} textAnchor="middle" fontSize="10" fill="#94a3b8">{p.month}월</text>
-        </g>
-      ))}
-    </svg>
-  );
-}
-
-// 월별 위험군 추이 라인 차트 (순수 SVG) — 위험군(이탈률 45% 이상) 인원수 추이
-function RiskTrend({ trend }) {
-  const points = (trend || []).map((d) => ({
-    month: parseInt(String(d.month).slice(5), 10),
-    count: Number(d.count) || 0,
-  }));
-
-  if (points.length === 0) {
-    return <p className="dash-empty">추이 데이터가 아직 없습니다.</p>;
-  }
-
-  const W = 340;
-  const H = 180;
-  const padL = 34;
-  const padR = 14;
-  const padT = 26;
-  const padB = 26;
-  const plotW = W - padL - padR;
-  const plotH = H - padT - padB;
-
-  // 정수 눈금 4칸으로 떨어지도록 nice-step 계산
-  const maxCount = Math.max(...points.map((p) => p.count), 1);
-  const rawStep = maxCount / 4;
-  const pow = Math.pow(10, Math.floor(Math.log10(rawStep)));
-  const f = rawStep / pow;
-  const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * pow;
-  const yMax = step * 4;
-  const ticks = [0, step, step * 2, step * 3, step * 4];
-
-  const xAt = (i) => (points.length <= 1 ? padL + plotW / 2 : padL + (plotW * i) / (points.length - 1));
-  const yAt = (v) => padT + plotH * (1 - v / (yMax || 1));
-
-  const linePath = points.map((p, i) => `${i ? 'L' : 'M'}${xAt(i)},${yAt(p.count)}`).join(' ');
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, height: 'auto' }}>
-      {/* 가로 눈금선 + Y축 라벨(명) */}
-      {ticks.map((v) => (
-        <g key={v}>
-          <line x1={padL} y1={yAt(v)} x2={W - padR} y2={yAt(v)} stroke="#eef0f4" strokeWidth="1" />
-          <text x={padL - 6} y={yAt(v) + 3} textAnchor="end" fontSize="9" fill="#94a3b8">{v}</text>
-        </g>
-      ))}
-      {/* 추이 선 */}
-      <path d={linePath} fill="none" stroke="#ef4444" strokeWidth="2" />
-      {/* 데이터 포인트 + 값 라벨 + X축(월) 라벨 */}
-      {points.map((p, i) => (
-        <g key={i}>
-          <circle cx={xAt(i)} cy={yAt(p.count)} r="4" fill="#fff" stroke="#ef4444" strokeWidth="2" />
-          <text x={xAt(i)} y={yAt(p.count) - 9} textAnchor="middle" fontSize="10" fontWeight="700" fill="#475569">
-            {p.count}명
-          </text>
-          <text x={xAt(i)} y={H - 8} textAnchor="middle" fontSize="10" fill="#94a3b8">{p.month}월</text>
-        </g>
-      ))}
-    </svg>
-  );
-}
-
-// 헬스장 이탈율 위젯 — 위험도 분포 + 월별 추이 2패널 렌더
-// 헬스장 이탈율 위젯 — 좌측 이탈율 %(제목 아래) + 우측 위험도 분포 도넛
-function GymChurnCard({ value }) {
-  // 위험군 = 개입 + 위험(45점 이상). 도넛은 등급별 구간, 중앙은 위험군 합계
-  const tiers = [
-    { key: 'urgent', label: '위험 (70점 이상)', count: value.urgentCount || 0, color: '#ef4444' },
-    { key: 'intervene', label: '개입 (45~69점)', count: value.interveneCount || 0, color: '#f59e0b' },
-    { key: 'watch', label: '관심 (25~44점)', count: value.watchCount || 0, color: '#facc15' },
-    { key: 'stable', label: '안정 (25점 미만)', count: value.stableCount || 0, color: '#10b981' },
-  ];
-  return (
-    <div className="gymchurn-card">
-      <div className="gymchurn-info">
-        <p className="dash-kpi">{(Number(value.averageChurnRate) * 100).toFixed(1)}<span> %</span></p>
-        <p className="dash-sub">위험군 {value.highRiskCount || 0}명 · {value.total || 0}명 분석</p>
-      </div>
-      <div className="gymchurn-donut">
-        <ChurnDonut tiers={tiers} centerLabel="위험군" centerValue={value.highRiskCount || 0} />
-      </div>
-    </div>
-  );
-}
+// 위젯 카드 클릭 시 이동 라우트 (OWNER 위젯 세트 개편 2026-07-22 확정)
+const WIDGET_LINK = {
+  activeMemberCount: MANAGEMENT_ROUTE,
+  todayAttendance: MANAGEMENT_ROUTE,
+  monthlyRevenue: '/fitb/Settlepage',
+  monthlyExpense: '/fitb/Settlepage',
+  gymChurn: REPORT_ROUTE,
+};
 
 // AI 영역 왼쪽 질문 카드 4종 - 단일 위젯/메서드로 없어서 AI가 READ 도구를 조합해야 답할 수 있는 질문
 // 질문 문구는 이 메타에 고정한다 (사용자 입력 아님 - 전송 질문 예측 가능, 임의 문자열 주입 여지 없음)
@@ -297,16 +164,18 @@ function Dashboard() {
   };
 
   // 위젯 순서 한 칸 위/아래 이동 (PUT /dashboard/widgets/order)
-  const handleMove = async (index, direction) => {
+  // 구 위젯 키(h_dashboard_widget에 남아있을 수 있는 memberCount 등)는 알려진 키(visibleWidgets)
+  // 기준으로만 순서를 교환한다 - 죽은 키가 섞여 인덱스가 어긋나는 것을 방지
+  const handleMove = async (widgetKey, direction) => {
+    const index = visibleWidgets.findIndex((w) => w.widgetKey === widgetKey);
     const target = index + direction;
-    if (target < 0 || target >= widgets.length) return;
+    if (index < 0 || target < 0 || target >= visibleWidgets.length) return;
 
     // 두 위젯의 sortOrder를 서로 교환
-    const reordered = widgets.map((w, i) => {
-      if (i === index) return { widgetKey: w.widgetKey, sortOrder: widgets[target].sortOrder };
-      if (i === target) return { widgetKey: w.widgetKey, sortOrder: widgets[index].sortOrder };
-      return null;
-    }).filter(Boolean);
+    const reordered = [
+      { widgetKey: visibleWidgets[index].widgetKey, sortOrder: visibleWidgets[target].sortOrder },
+      { widgetKey: visibleWidgets[target].widgetKey, sortOrder: visibleWidgets[index].sortOrder },
+    ];
 
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/dashboard/widgets/order`, {
@@ -333,7 +202,6 @@ function Dashboard() {
 
     switch (widgetKey) {
       case 'gymCount':
-      case 'memberCount':
       case 'managedMemberCount':
         return (
           <div>
@@ -341,29 +209,45 @@ function Dashboard() {
             <p className="dash-sub">이번 달 신규 +{value.newThisMonth}</p>
           </div>
         );
-      case 'ptMemberCount':
+      // 총 회원 수 (OWNER 위젯 세트 개편) - 이용권·PT·PT체험(3·4·5) ACTIVE 수신자 수 + 유형 구성
+      case 'activeMemberCount':
         return (
           <div>
             <p className="dash-kpi">{value.total}<span> 명</span></p>
-            <p className="dash-sub">활성 PT 계약 회원</p>
+            <p className="dash-sub">이번 달 신규 +{value.newThisMonth}</p>
+            <p className="dash-sub">이용권 {value.membership} · PT {value.pt} · 체험 {value.trial}</p>
           </div>
         );
+      // 쿠폰 사용 (OWNER 위젯 세트 개편) - 전체 발급 대비 사용 수
+      case 'couponUsage': {
+        const pct = value.total > 0 ? Math.round((value.used / value.total) * 100) : 0;
+        return (
+          <div>
+            <p className="dash-kpi">{value.used}<span> / {value.total}건 사용</span></p>
+            <div className="dash-progress">
+              <div className="dash-progress__fill" style={{ width: `${pct}%` }} />
+            </div>
+            <p className="dash-sub">사용률 {pct}%</p>
+          </div>
+        );
+      }
+      // 만료 임박 회원 수 (OWNER 위젯 세트 개편) - 30일 내 end_date 도래
+      case 'expiringMemberCount':
+        return (
+          <div>
+            <p className="dash-kpi">{value.total}<span> 명</span></p>
+            <p className="dash-sub">30일 내 만료 예정</p>
+          </div>
+        );
+      // 오늘 출석 (OWNER 위젯 세트 개편) - h_check_inout 당일 distinct 체크인
       case 'todayAttendance':
         return (
           <div>
             <p className="dash-kpi">{value.total}<span> 명</span></p>
-            <p className="dash-sub">오늘 출석</p>
-          </div>
-        );
-      case 'couponUsage':
-        return (
-          <div>
-            <p className="dash-kpi">{value.total}<span> 건 발행</span></p>
-            <p className="dash-sub">사용 완료 {value.usedCount}건</p>
+            <p className="dash-sub">오늘 출석 인원</p>
           </div>
         );
       case 'expiringSubscription':
-      case 'expiringContract':
         return (
           <ul className="dash-list">
             {value.map((row, i) => (
@@ -375,37 +259,19 @@ function Dashboard() {
           </ul>
         );
       case 'monthlyRevenue':
-      case 'monthlyExpense': {
-        // 그래프 대신 최신 달 금액(₩) + 전월 대비 증감% (오름 초록 / 내림 빨강)
-        const rows = Array.isArray(value) ? [...value].sort((a, b) => (a.month < b.month ? -1 : 1)) : [];
-        const latest = rows[rows.length - 1];
-        const prev = rows[rows.length - 2];
-        const cur = Number(latest?.total || 0);
-        const prevTotal = Number(prev?.total || 0);
-        const diffPct = prevTotal > 0 ? ((cur - prevTotal) / prevTotal) * 100 : null;
-        const up = diffPct != null && diffPct >= 0;
-        return (
-          <div>
-            <p className="dash-kpi">₩{cur.toLocaleString()}</p>
-            {latest && <p className="dash-sub">{latest.month.slice(5)}월 기준</p>}
-            {diffPct != null ? (
-              <p className={`dash-sub dash-delta ${up ? 'up' : 'down'}`}>
-                전월 대비 {up ? '▲' : '▼'} {Math.abs(diffPct).toFixed(1)}%
-              </p>
-            ) : (
-              <p className="dash-sub">전월 데이터 없음</p>
-            )}
-          </div>
-        );
-      }
+      case 'monthlyExpense':
       case 'monthlySession': {
         const max = Math.max(...value.map((row) => Number(row.total))) || 1;
+        const tone = CHART_SERIES[widgetKey]?.tone ?? 'accent';
         return (
+          // 막대 위 수치는 목업대로 생략하고 title 속성으로 정확한 값을 제공한다
           <div className="dash-chart">
             {value.map((row) => (
-              <div key={row.month} className="dash-bar-col">
-                <span className="dash-bar-value">{Number(row.total).toLocaleString()}</span>
-                <div className="dash-bar" style={{ height: `${Math.round((Number(row.total) / max) * 80)}px` }} />
+              <div key={row.month} className="dash-bar-col" title={`${row.month} · ${Number(row.total).toLocaleString()}`}>
+                <div
+                  className={`dash-bar dash-bar--${tone}`}
+                  style={{ height: `${Math.max(3, Math.round((Number(row.total) / max) * 100))}%` }}
+                />
                 <span className="dash-bar-month">{row.month.slice(5)}월</span>
               </div>
             ))}
@@ -430,20 +296,29 @@ function Dashboard() {
             <p className="dash-sub">설문 {value.total}건 기준</p>
           </div>
         );
-      case 'bodyComposition':
+      // 월별 이탈 위험군 추이 (OWNER 위젯 세트 개편) - ResultService.selectStatPeriods(monthly)
+      case 'churnTrend': {
+        const max = Math.max(...value.map((row) => Number(row.riskMembers))) || 1;
         return (
-          <div>
-            <p className="dash-sub">주당 방문 {value.averageVisitPerWeek}회 · 일평균 운동 {value.averageExerciseTime}분</p>
-            <p className="dash-sub">운동 데이터 {value.total}건 기준</p>
+          <div className="dash-chart">
+            {value.map((row) => (
+              <div
+                key={row.period}
+                className="dash-bar-col"
+                title={`${row.period} · 위험군 ${row.riskMembers}명 · 평균 이탈률 ${(Number(row.avgChurnRate || 0) * 100).toFixed(1)}%`}
+              >
+                <div
+                  className="dash-bar dash-bar--blue"
+                  style={{ height: `${Math.max(3, Math.round((Number(row.riskMembers) / max) * 100))}%` }}
+                />
+                <span className="dash-bar-month">{row.period.slice(5)}월</span>
+              </div>
+            ))}
           </div>
         );
-      case 'gymChurn':
-        return <GymChurnCard value={value} />;
-      case 'gymChurnTrend':
-        return <ChurnTrend trend={value} />;
-      case 'gymRiskTrend':
-        return <RiskTrend trend={value} />;
+      }
       case 'memberChurn':
+      case 'gymChurn':
         return (
           <div>
             <p className="dash-kpi">{value.highRiskCount}<span> 명 고위험</span></p>
@@ -455,16 +330,38 @@ function Dashboard() {
     }
   };
 
-  const activeWidgets = widgets.filter((w) => w.isActive && w.hasData);
+  // 알려진(WIDGET_LABEL에 라벨이 있는) 위젯 키만 표시·편집 대상으로 삼는다.
+  // OWNER 위젯 세트 개편(2026-07-22)으로 h_dashboard_widget에 남아있을 수 있는 구 키
+  // (memberCount·expiringContract·bodyComposition 등)는 여기서 걸러진다.
+  const visibleWidgets = widgets.filter((w) => WIDGET_LABEL[w.widgetKey]);
+  const activeWidgets = visibleWidgets.filter((w) => w.isActive && w.hasData);
 
   return (
     <div className="dash-page">
-      <div className="dash-header">
-        <h1>
-          {ROLE_LABEL[loginUser?.role?.toUpperCase()] ?? loginUser?.role} 대시보드
-          <span className="dash-user">{loginUser ? ` ${loginUser.name}` : ''}</span>
-        </h1>
-        <button onClick={() => setEditOpen(!editOpen)}>위젯 편집</button>
+      {/* 상단 줄: 선택된 위젯 칩(삭제형) + 위젯 편집 버튼 — 칩 ✕는 기존 토글 API를 그대로 사용 */}
+      <div className="dash-toolbar">
+        <div className="dash-chips">
+          {activeWidgets.map((widget) => (
+            <span key={widget.widgetKey} className="dash-chip">
+              {WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey}
+              <button
+                type="button"
+                className="dash-chip__remove"
+                title={`${WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey} 숨기기`}
+                onClick={() => handleToggle(widget)}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+        <button type="button" className="dash-edit-btn" onClick={() => setEditOpen(!editOpen)}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" />
+          </svg>
+          위젯 편집
+        </button>
       </div>
 
       {!token && <p className="dash-message">로그인이 필요합니다. 먼저 로그인해 주세요.</p>}
@@ -475,7 +372,7 @@ function Dashboard() {
         <div className="dash-edit">
           <p>대시보드에 표시할 위젯을 켜고 끌 수 있어요</p>
           <ul>
-            {widgets.map((widget, index) => (
+            {visibleWidgets.map((widget) => (
               <li key={widget.widgetKey} className={widget.hasData ? '' : 'locked'}>
                 <label>
                   <input
@@ -488,8 +385,8 @@ function Dashboard() {
                 </label>
                 {widget.hasData ? (
                   <span>
-                    <button onClick={() => handleMove(index, -1)}>▲</button>
-                    <button onClick={() => handleMove(index, 1)}>▼</button>
+                    <button type="button" onClick={() => handleMove(widget.widgetKey, -1)}>▲</button>
+                    <button type="button" onClick={() => handleMove(widget.widgetKey, 1)}>▼</button>
                   </span>
                 ) : (
                   <span className="dash-badge">데이터 없음</span>
@@ -501,18 +398,31 @@ function Dashboard() {
         </div>
       )}
 
-      {/* 활성 위젯 카드 목록 */}
+      {/* 활성 위젯 카드 목록 — KPI 4열 / 리스트 2열 / 차트 전폭 (목업 배치) */}
       <div className="dash-grid">
         {activeWidgets.length === 0 && <p className="dash-empty">표시할 위젯이 없습니다. 위젯 편집에서 켜보세요.</p>}
-        {activeWidgets.map((widget) => (
-          <div
-            key={widget.widgetKey}
-            className="dash-card"
-          >
-            <h2>{WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey}</h2>
-            {renderWidgetData(widget.widgetKey)}
-          </div>
-        ))}
+        {activeWidgets.map((widget) => {
+          const layout = layoutOf(widget.widgetKey);
+          const series = CHART_SERIES[widget.widgetKey];
+          // 위젯 클릭 이동 - 편집 모드에서는 이동을 비활성화해 편집 조작과 충돌하지 않게 한다
+          const linkTo = WIDGET_LINK[widget.widgetKey];
+          const clickable = !!linkTo && !editOpen;
+          const CardTag = clickable ? 'button' : 'div';
+          const cardProps = clickable
+            ? { type: 'button', onClick: () => navigate(linkTo), className: `dash-card dash-card--${layout} dash-card--clickable` }
+            : { className: `dash-card dash-card--${layout}` };
+          return (
+            <CardTag key={widget.widgetKey} {...cardProps}>
+              <div className="dash-card__head">
+                <h2>{WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey}</h2>
+                {series && (
+                  <span className={`dash-legend dash-legend--${series.tone}`}>● {series.label}</span>
+                )}
+              </div>
+              {renderWidgetData(widget.widgetKey)}
+            </CardTag>
+          );
+        })}
       </div>
 
       {/* AI 영역 (OWNER 전용, 위젯 그리드 아래 좌우 분할)

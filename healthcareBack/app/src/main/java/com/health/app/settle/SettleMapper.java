@@ -56,16 +56,17 @@ public interface SettleMapper {
             @Param("commission") long commission) throws Exception;
 
     // 사장님 계정의 소속 지점(gym_id) 기준 지출비 목록 페이징 조회 (username + Pager(페이지/검색어/조회월) + 정렬조건(sort: price_desc/price_asc/date_desc/date_asc, 기본은 최신순))
-    public List<ExpenseDTO> expenseList(@Param("username") Long username, @Param("pager") Pager pager, @Param("sort") String sort) throws Exception;
+    // role=TRAINER면 본인이 수신자(receiver_id)인 임금 계약(contract=2)에 연결된 지출로만 좁혀서 반환 (본인 급여만 조회)
+    public List<ExpenseDTO> expenseList(@Param("username") Long username, @Param("role") String role, @Param("pager") Pager pager, @Param("sort") String sort) throws Exception;
 
     // 지출비 목록 전체 건수 조회 (Pager의 총 페이지/블록 계산용)
-    public long expenseListCount(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
+    public long expenseListCount(@Param("username") Long username, @Param("role") String role, @Param("pager") Pager pager) throws Exception;
 
     // 지출비 목록 전체 합계 금액 조회
-    public long expenseListSum(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
+    public long expenseListSum(@Param("username") Long username, @Param("role") String role, @Param("pager") Pager pager) throws Exception;
 
     // CSV 내보내기용 지출 전체 목록 조회 (username + Pager(검색어/조회월) 조건, 페이징 없음)
-    public List<ExpenseDTO> expenseListAll(@Param("username") Long username, @Param("pager") Pager pager) throws Exception;
+    public List<ExpenseDTO> expenseListAll(@Param("username") Long username, @Param("role") String role, @Param("pager") Pager pager) throws Exception;
 
     // 지점 운영 지출 항목 신규 등록
     public int expenseAdd(ExpenseDTO expenseDTO) throws Exception;

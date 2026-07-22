@@ -35,7 +35,7 @@ public class AiToolRegistry {
         Object execute(AuthContext ctx, Map<String, Object> args) throws Exception;
     }
 
-    // 도구 메타 정의 (name/description/파라미터 스키마/허용 role/분류/바로가기 라우트)
+    // 도구 메타 정의 (name/description/파라미터 스키마/허용 role/분류/바로가기 라우트/차트 카드 타입)
     public static class ToolSpec {
         private final String name;
         private final String description;
@@ -45,11 +45,20 @@ public class AiToolRegistry {
         private final String classification; // READ / WRITE
         private final String linkTo;         // 조회 결과 바로가기 프론트 라우트 (nullable)
         private final String linkLabel;
+        private final String chartType;      // 차트 카드 템플릿 타입: bar/line/combo/gauge/list (nullable=카드 없음)
         private final ToolExecutor executor;
 
+        // 기존 5-인자(차트 없음) 호출부 호환용 오버로드
         public ToolSpec(String name, String description, Map<String, Object> properties,
                 List<String> required, Set<String> allowedRoles, String classification,
                 String linkTo, String linkLabel, ToolExecutor executor) {
+            this(name, description, properties, required, allowedRoles, classification,
+                    linkTo, linkLabel, null, executor);
+        }
+
+        public ToolSpec(String name, String description, Map<String, Object> properties,
+                List<String> required, Set<String> allowedRoles, String classification,
+                String linkTo, String linkLabel, String chartType, ToolExecutor executor) {
             this.name = name;
             this.description = description;
             this.properties = properties;
@@ -58,6 +67,7 @@ public class AiToolRegistry {
             this.classification = classification;
             this.linkTo = linkTo;
             this.linkLabel = linkLabel;
+            this.chartType = chartType;
             this.executor = executor;
         }
 
@@ -69,6 +79,7 @@ public class AiToolRegistry {
         public String getClassification() { return classification; }
         public String getLinkTo() { return linkTo; }
         public String getLinkLabel() { return linkLabel; }
+        public String getChartType() { return chartType; }
         public ToolExecutor getExecutor() { return executor; }
     }
 
@@ -92,6 +103,12 @@ public class AiToolRegistry {
 
     @Autowired
     private MemberMapper memberMapper;
+
+    @Autowired
+    private AiMapper aiMapper;
+
+    @Autowired
+    private AiBriefingService aiBriefingService;
 
     private final Map<String, ToolSpec> tools = new LinkedHashMap<>();
 
@@ -139,8 +156,8 @@ public class AiToolRegistry {
 
         register(new ToolSpec(
                 "list_contracts",
-                "로그인 사장님이 발행/수신한 계약서 리스트를 조회한다. 계약 유형: 1=제휴, 2=임금, 3=이용권, 4=PT. contract 파라미터로 유형 필터 가능.",
-                Map.of("contract", prop("integer", "계약 유형 필터 (1~4, 생략 시 전체)")),
+                "로그인 사장님이 발행/수신한 계약서 리스트를 조회한다. 계약 유형: 1=제휴, 2=임금, 3=이용권, 4=PT, 5=PT 체험. contract 파라미터로 유형 필터 가능.",
+                Map.of("contract", prop("integer", "계약 유형 필터 (1~5, 생략 시 전체)")),
                 List.of(),
                 Set.of("OWNER"), "READ",
                 "/fitb/contractpage", "계약서 리스트로 이동",
@@ -203,8 +220,8 @@ public class AiToolRegistry {
                         "keyword", prop("string", "검색어 (생략 가능)")),
                 List.of(),
                 Set.of("OWNER"), "READ",
-                "/fitb/Settlepage", "매출·지출 페이지로 이동",
-                (ctx, args) -> settleService.expenseList(ctx.getUsername(), buildPager(args), null)));
+                "/fitb/Settlepage", "매출·지출 페이지로 이동", "bar",
+                (ctx, args) -> settleService.expenseList(ctx.getUsername(), ctx.getRole(), buildPager(args), null)));
 
         register(new ToolSpec(
                 "list_payments",
@@ -214,7 +231,7 @@ public class AiToolRegistry {
                         "keyword", prop("string", "검색어 (생략 가능)")),
                 List.of(),
                 Set.of("OWNER"), "READ",
-                "/fitb/Settlepage", "매출·지출 페이지로 이동",
+                "/fitb/Settlepage", "매출·지출 페이지로 이동", "bar",
                 (ctx, args) -> paymentService.paymentList(ctx.getUsername(), buildPager(args), null)));
 
         register(new ToolSpec(
@@ -241,6 +258,31 @@ public class AiToolRegistry {
                     Object survey = surveyService.selectByUsername(target);
                     return survey != null ? survey : Map.of("message", "설문 응답이 없습니다.");
                 }));
+
+        register(new ToolSpec(
+                "get_churn_prediction",
+                "우리 지점 회원 1명의 최신 이탈 예측 결과(이탈 확률·주요 이탈 요인)를 조회한다. memberUsername은 회원 아이디(전화 뒤 8자리).",
+                Map.of("memberUsername", prop("integer", "대상 회원 아이디(전화 뒤 8자리)")),
+                List.of("memberUsername"),
+                Set.of("OWNER"), "READ",
+                "/fitb/dashboard", "대시보드로 이동", "gauge",
+                (ctx, args) -> {
+                    Long target = resolveSameGymMember(ctx, args);
+                    if (target == null) {
+                        return Map.of("message", "해당 회원을 찾을 수 없습니다.");
+                    }
+                    Object result = aiMapper.latestChurnResult(target);
+                    return result != null ? result : Map.of("message", "이탈 예측 결과가 없습니다.");
+                }));
+
+        register(new ToolSpec(
+                "get_task_briefing",
+                "사장님이 오늘 처리해야 할 일(이탈 예방·계약 만료 임박·미결제·지출 정산·미처리 건의) 후보 전체를 건수와 함께 조회한다.",
+                Map.of(),
+                List.of(),
+                Set.of("OWNER"), "READ",
+                null, null, "list",
+                (ctx, args) -> aiBriefingService.briefing(ctx, true)));
     }
 
     private void register(ToolSpec spec) {

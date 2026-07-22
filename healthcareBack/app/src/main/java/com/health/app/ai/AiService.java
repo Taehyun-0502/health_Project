@@ -167,6 +167,9 @@ public class AiService {
             long tokenOut = 0;
             Set<String> executedTools = new LinkedHashSet<>();
             List<Map<String, String>> links = new ArrayList<>();
+            // 차트 카드: 레지스트리 메타(chartType) 주도 - LLM이 그래프를 생성하지 않고
+            // 도구 결과의 구조화 데이터(서버 집계 원본)를 프론트 고정 템플릿이 렌더한다
+            List<Map<String, Object>> charts = new ArrayList<>();
             String finalText = null;
 
             for (int turn = 0; turn < MAX_TOOL_TURNS; turn++) {
@@ -201,7 +204,7 @@ public class AiService {
                     }
                     ToolUseBlock toolUse = block.toolUse().get();
                     sendEvent(emitter, "tool", Map.of("name", toolUse.name()));
-                    String resultJson = executeTool(ctx, conversationId, toolUse, executedTools, links);
+                    String resultJson = executeTool(ctx, conversationId, toolUse, executedTools, links, charts);
                     results.add(ContentBlockParam.ofToolResult(ToolResultBlockParam.builder()
                             .toolUseId(toolUse.id())
                             .content(resultJson)
@@ -232,6 +235,7 @@ public class AiService {
             answer.put("content", finalText);
             answer.put("links", links);
             answer.put("tools", new ArrayList<>(executedTools));
+            answer.put("charts", charts);
             sendEvent(emitter, "answer", answer);
             emitter.complete();
 
@@ -272,7 +276,7 @@ public class AiService {
 
     // 도구 1건 실행 - 화이트리스트/role 재검증 후 Service 직접 호출, 전 과정 감사 기록
     private String executeTool(AuthContext ctx, Long conversationId, ToolUseBlock toolUse,
-            Set<String> executedTools, List<Map<String, String>> links) {
+            Set<String> executedTools, List<Map<String, String>> links, List<Map<String, Object>> charts) {
 
         String toolName = toolUse.name();
         Map<String, Object> args = toArgsMap(toolUse._input());
@@ -319,6 +323,16 @@ public class AiService {
             if (spec.getLinkTo() != null
                     && links.stream().noneMatch(link -> spec.getLinkTo().equals(link.get("to")))) {
                 links.add(Map.of("label", spec.getLinkLabel(), "to", spec.getLinkTo()));
+            }
+            // 차트 카드 메타가 있는 도구는 결과 원본(구조화 데이터, 12,000자 컷 이전)을
+            // answer 페이로드로 전달한다(도구당 1회, LLM 재가공 없이 서버 집계 원본을 그대로 바인딩)
+            if (spec.getChartType() != null
+                    && charts.stream().noneMatch(chart -> toolName.equals(chart.get("tool")))) {
+                Map<String, Object> chart = new LinkedHashMap<>();
+                chart.put("tool", toolName);
+                chart.put("type", spec.getChartType());
+                chart.put("data", result);
+                charts.add(chart);
             }
             return json;
         } catch (Exception e) {

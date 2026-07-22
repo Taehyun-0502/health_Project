@@ -149,4 +149,12 @@
         WHERE username = #{username} AND churn_date = CURRENT_DATE AND status = 0
     </update>
 
+    <!-- (OWNER 대시보드) 본인이 발급한(from_id) 쿠폰 전체 개수 + 사용완료 개수 집계 -->
+    <select id="usageSummary" parameterType="Long" resultType="map">
+        SELECT count(*) as "total",
+               count(case when status = '사용완료' then 1 end) as "used"
+        FROM "h_coupon"
+        WHERE from_id = #{fromId}
+    </select>
+
 </mapper>

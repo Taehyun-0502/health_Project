@@ -22,5 +22,6 @@ public class MemberDTO {
     private Long gymId;          // 사업장 정보 번호 (int8)
     private LocalDate birth;
     private String status;
+    private String gymName;      // 소속 지점명 (h_gym.gym_name, 로그인 응답 전용 - LNB 브랜드 노출용, gym_id 없으면 null)
    
 }

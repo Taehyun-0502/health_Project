@@ -71,4 +71,15 @@
              #{error, jdbcType=VARCHAR})
     </insert>
 
+    <!-- 회원 1명의 최신 이탈 예측 결과 (h_churn_result, 이력 누적 → 최신 churn_date 1건)
+         get_churn_prediction 도구 전용 - churn/result 패키지 미변경 원칙에 따라 여기 둔다.
+         gym_id 검증은 호출측(AiToolRegistry.resolveSameGymMember)에서 선행 수행한다. -->
+    <select id="latestChurnResult" resultType="com.health.app.result.ResultDTO">
+        SELECT r.result_id, r.username, r.churn_rate, r.top1_reason, r.top2_reason, r.top3_reason, r.churn_date
+        FROM "h_churn_result" r
+        WHERE r.username = #{username, jdbcType=BIGINT}
+        ORDER BY r.churn_date DESC NULLS LAST, r.result_id DESC
+        LIMIT 1
+    </select>
+
 </mapper>

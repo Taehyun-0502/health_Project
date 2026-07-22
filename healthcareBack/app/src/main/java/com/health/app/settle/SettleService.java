@@ -108,20 +108,21 @@ public class SettleService {
         return settleMapper.ownerUnpaidCommissionList(username);
     }
 
-    // 사장님 계정의 소속 지점(gym_id) 기준 지출비 목록 페이징 조회
-    public PagedResponse<ExpenseDTO> expenseList(Long username, Pager pager, String sort) throws Exception {
+    // 사장님/트레이너 계정의 소속 지점(gym_id) 기준 지출비 목록 페이징 조회
+    // role=TRAINER면 본인이 수신자인 임금 계약(2)에 연결된 지출로만 좁혀서 반환(본인 급여만 조회, 지점 전체 미노출)
+    public PagedResponse<ExpenseDTO> expenseList(Long username, String role, Pager pager, String sort) throws Exception {
         pager.makeOffset();
-        List<ExpenseDTO> items = settleMapper.expenseList(username, pager, sort);
-        long totalCount = settleMapper.expenseListCount(username, pager);
-        long totalAmount = settleMapper.expenseListSum(username, pager);
+        List<ExpenseDTO> items = settleMapper.expenseList(username, role, pager, sort);
+        long totalCount = settleMapper.expenseListCount(username, role, pager);
+        long totalAmount = settleMapper.expenseListSum(username, role, pager);
         pager.makeBlock(totalCount);
 
         return new PagedResponse<>(items, pager, totalCount, totalAmount);
     }
 
     // CSV 내보내기용 지출 전체 목록 조회 처리 (현재 검색어/조회월 조건 반영, 페이징 없음)
-    public List<ExpenseDTO> expenseListAll(Long username, Pager pager) throws Exception {
-        return settleMapper.expenseListAll(username, pager);
+    public List<ExpenseDTO> expenseListAll(Long username, String role, Pager pager) throws Exception {
+        return settleMapper.expenseListAll(username, role, pager);
     }
 
     // 지점 운영 지출 항목 추가 및 제휴 수수료 정산 상태 자동 갱신

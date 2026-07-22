@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.health.app.member.MemberDTO;
 import com.health.app.member.MemberMapper;
 import com.health.app.member.MemberService;
+import com.health.app.pager.PagedResponse;
+import com.health.app.pager.Pager;
 
 @Service
 public class ContractService {
@@ -94,10 +96,34 @@ public class ContractService {
             return null;
         }
 
-        // 조회 전 만료 일괄 갱신 - end_date 경과 계약의 상태(EXPIRED/TERMINATED)를 최신화
+        // 조회 전 만료 일괄 갱신 - end_date 경과 계약의 상태(TERMINATED)를 최신화
         contractSweep();
 
         return contractMapper.contractUserList(contractDTO);
+    }
+
+    // 로그인 권한별 계약 유저 리스트 페이징 조회 비즈니스 로직 (GET /contract/list 전용)
+    // 필터·정렬·상대방 이름 조인 로직은 contractUserList와 동일하며, LIMIT/OFFSET + 전체 건수만 추가
+    public PagedResponse<ContractDTO> contractUserListPage(ContractDTO contractDTO, Pager pager) throws Exception {
+        String role = contractDTO.getRole() == null ? null : contractDTO.getRole().toUpperCase();
+        contractDTO.setRole(role);
+
+        // 허용되지 않은 권한(MEMBER 포함)은 접근 차단 플래그로 null 반환
+        if (role == null
+                || !(role.equals("ADMIN") || role.equals("OWNER") || role.equals("TRAINER"))) {
+            return null;
+        }
+
+        // 조회 전 만료 일괄 갱신 - end_date 경과 계약의 상태(TERMINATED)를 최신화
+        contractSweep();
+
+        pager.makeOffset();
+        List<ContractDTO> items = contractMapper.contractUserListPage(contractDTO, pager);
+        long totalCount = contractMapper.contractUserListCount(contractDTO);
+        pager.makeBlock(totalCount);
+
+        // 계약 리스트는 금액 합계 표시가 없어 totalAmount는 0 고정(제휴(1)는 금액이 아닌 수수료율을 쓰는 등 합산 의미가 없음)
+        return new PagedResponse<>(items, pager, totalCount, 0L);
     }
 
     // 제휴 계약(1) 대상자 선택용 사장님(OWNER) 목록 조회 비즈니스 로직 (ADMIN 전용)
@@ -232,7 +258,7 @@ public class ContractService {
 
     // 계약서 상세 조회 비즈니스 로직
     public ContractDTO contractDetail(ContractDTO contractDTO) throws Exception {
-        // 조회 전 만료 일괄 갱신 - end_date 경과 계약의 상태(EXPIRED/TERMINATED)를 최신화
+        // 조회 전 만료 일괄 갱신 - end_date 경과 계약의 상태(TERMINATED)를 최신화
         contractSweep();
 
         ContractDTO detail = contractMapper.contractDetail(contractDTO);
@@ -346,8 +372,14 @@ public class ContractService {
         if (!"ADMIN".equals(upper)) {
             return null; // 접근 권한 없음 플래그 반환
         }
-        // 구직 판정이 최신 임금계약(2)의 status 기준이므로 조회 직전 만료 sweep으로 EXPIRED 전이를 최신화
+        // 구직 판정이 최신 임금계약(2)의 status 기준이므로 조회 직전 만료 sweep으로 TERMINATED 전이를 최신화
         contractSweep();
         return contractMapper.jobSeekingTrainers();
+    }
+
+    // (OWNER 대시보드) 30일 내 만료 임박 회원 계약(3·4·5) 수 집계 - 조회 직전 만료 sweep으로 상태 최신화
+    public java.util.Map<String, Object> expiringMemberCount(Long gymId) throws Exception {
+        contractSweep();
+        return contractMapper.expiringMemberCount(gymId);
     }
 }
