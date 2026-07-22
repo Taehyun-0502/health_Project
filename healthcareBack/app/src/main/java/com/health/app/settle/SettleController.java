@@ -46,6 +46,25 @@ public class SettleController {
         return role != null && role.equalsIgnoreCase(expectedRole);
     }
 
+    // role 대문자 정규화 값을 반환 (DB엔 소문자로 실릴 수 있어 role 비교는 항상 대문자 기준)
+    private String upperRole(Claims claims) {
+        String role = claims == null ? null : claims.get("role", String.class);
+        return role == null ? null : role.toUpperCase();
+    }
+
+    private boolean hasAnyRole(Claims claims, String... expectedRoles) {
+        String role = upperRole(claims);
+        if (role == null) {
+            return false;
+        }
+        for (String expected : expectedRoles) {
+            if (role.equals(expected.toUpperCase())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // 전체 가맹점 플랫폼 수수료 커미션 내역 페이징 조회 API (ADMIN용)
     @GetMapping("/commission")
     public ResponseEntity<?> commissionList(
@@ -147,7 +166,7 @@ public class SettleController {
         return ResponseEntity.ok(settleService.ownerUnpaidCommissionList(Long.parseLong(claims.getSubject())));
     }
 
-    // 소속 가맹점 지출 내역 페이징 조회 API (OWNER용)
+    // 소속 가맹점 지출 내역 페이징 조회 API (OWNER=지점 전체 지출, TRAINER=본인이 수신자인 임금 계약(2) 연계 지출만)
     @GetMapping("/expense")
     public ResponseEntity<?> expenseList(
             @RequestHeader(value = "Authorization", required = false) String authorization,
@@ -165,11 +184,12 @@ public class SettleController {
         if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
         }
-        if (!hasRole(claims, "OWNER")) {
+        if (!hasAnyRole(claims, "OWNER", "TRAINER")) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
         Long username = Long.parseLong(claims.getSubject());
+        String role = upperRole(claims);
 
         Pager pager = new Pager();
         pager.setCurrentPage(page);
@@ -177,10 +197,10 @@ public class SettleController {
         pager.setSearchKeyword(keyword);
         pager.setMonth(month);
 
-        return ResponseEntity.ok(settleService.expenseList(username, pager, sort));
+        return ResponseEntity.ok(settleService.expenseList(username, role, pager, sort));
     }
 
-    // CSV 내보내기용 지출 전체 목록 조회 API (OWNER용, 현재 검색어/조회월 조건 반영, 페이징 없음)
+    // CSV 내보내기용 지출 전체 목록 조회 API (OWNER=지점 전체, TRAINER=본인 임금 계약(2) 연계 지출만, 현재 검색어/조회월 조건 반영, 페이징 없음)
     @GetMapping("/expense/export")
     public ResponseEntity<?> expenseListAll(
             @RequestHeader(value = "Authorization", required = false) String authorization,
@@ -195,17 +215,18 @@ public class SettleController {
         if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
         }
-        if (!hasRole(claims, "OWNER")) {
+        if (!hasAnyRole(claims, "OWNER", "TRAINER")) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
         Long username = Long.parseLong(claims.getSubject());
+        String role = upperRole(claims);
 
         Pager pager = new Pager();
         pager.setSearchKeyword(keyword);
         pager.setMonth(month);
 
-        return ResponseEntity.ok(settleService.expenseListAll(username, pager));
+        return ResponseEntity.ok(settleService.expenseListAll(username, role, pager));
     }
 
     // 신규 지출 내역 등록 API (OWNER용)

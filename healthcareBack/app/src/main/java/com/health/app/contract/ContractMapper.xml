@@ -39,7 +39,10 @@
         </association>
     </resultMap>
 
-    <!-- 로그인 권한별 계약 유저 리스트 조회 SQL -->
+    <!-- 로그인 권한별 계약 유저 리스트 조회 SQL (페이징 없음 - AI 도구 등 전체 목록이 필요한 내부 호출용)
+         이름 칼럼은 로그인 사용자 기준 "상대방"을 노출한다: 로그인 사용자가 수신자(receiver_id)인 방향
+         (OWNER가 받은 제휴(1), TRAINER가 받은 임금(2))은 발행자(sender_id)를 조인하고,
+         그 외(발행자 본인 조회, 담당 트레이너의 회원 조회)는 기존대로 수신자(receiver_id)를 조인한다. -->
     <select id="contractUserList" parameterType="com.health.app.contract.ContractDTO" resultMap="contractUserMap">
     select d.data_id, d.contract, d.gym_id, d.sender_id, d.receiver_id,
            d.receiver_name, d.status, d.previous_data_id, d.related_data_id, d.source_coupon_id,
@@ -48,7 +51,13 @@
            m.username as m_username, m.name as m_name, m.email as m_email,
            m.role as m_role, m.gym_id as m_gym_id
      from "h_contract_data" d
-     left join "h_member" m on d.receiver_id = m.username
+     left join "h_member" m on m.username = (
+         case
+             when d.contract = 1 and d.receiver_id = #{username} then d.sender_id
+             when d.contract = 2 and d.receiver_id = #{username} then d.sender_id
+             else d.receiver_id
+         end
+     )
      <where>
          <choose>
              <when test="role == 'ADMIN'">
@@ -75,7 +84,7 @@
          <if test="contract != null">
              and d.contract = #{contract}
          </if>
-         <!-- 이름 또는 username 검색 (가입 회원 이름/아이디 + 미가입 수신자 스냅샷 이름) -->
+         <!-- 이름 또는 username 검색 (상대방으로 조인된 m 기준 이름/아이디 + 미가입 수신자 스냅샷 이름) -->
          <if test="keyword != null and keyword != ''">
              and (m.name like concat('%', #{keyword}, '%')
                   or cast(m.username as varchar) like concat('%', #{keyword}, '%')
@@ -83,6 +92,100 @@
          </if>
      </where>
      order by d.issue_date desc, d.data_id desc
+    </select>
+
+    <!-- 로그인 권한별 계약 유저 리스트 페이징 조회 SQL (GET /contract/list, LIMIT/OFFSET 적용)
+         필터·정렬·상대방 이름 조인 로직은 위 contractUserList와 동일, dto./pager. 접두사만 다름(2개 파라미터) -->
+    <select id="contractUserListPage" resultMap="contractUserMap">
+    select d.data_id, d.contract, d.gym_id, d.sender_id, d.receiver_id,
+           d.receiver_name, d.status, d.previous_data_id, d.related_data_id, d.source_coupon_id,
+           d.start_date, d.end_date, d.amount, d.contract_rate, d.quantity, d.remaining_count,
+           d.issue_date, d.signed_at, d.manager_id, d.birth_date, d.avg_workout_hour, d.avg_workout_minute,
+           m.username as m_username, m.name as m_name, m.email as m_email,
+           m.role as m_role, m.gym_id as m_gym_id
+     from "h_contract_data" d
+     left join "h_member" m on m.username = (
+         case
+             when d.contract = 1 and d.receiver_id = #{dto.username} then d.sender_id
+             when d.contract = 2 and d.receiver_id = #{dto.username} then d.sender_id
+             else d.receiver_id
+         end
+     )
+     <where>
+         <choose>
+             <when test="dto.role == 'ADMIN'">
+                 and d.contract = 1
+             </when>
+             <when test="dto.role == 'OWNER'">
+                 and (
+                     (d.sender_id = #{dto.username} and d.contract in (2, 3, 4, 5))
+                     or (d.contract = 1 and d.receiver_id = #{dto.username})
+                 )
+             </when>
+             <when test="dto.role == 'TRAINER'">
+                 and (
+                     (d.contract in (4, 5) and d.manager_id = #{dto.username})
+                     or (d.contract = 2 and d.receiver_id = #{dto.username})
+                 )
+             </when>
+             <otherwise>
+                 and 1 = 0
+             </otherwise>
+         </choose>
+         <if test="dto.contract != null">
+             and d.contract = #{dto.contract}
+         </if>
+         <if test="dto.keyword != null and dto.keyword != ''">
+             and (m.name like concat('%', #{dto.keyword}, '%')
+                  or cast(m.username as varchar) like concat('%', #{dto.keyword}, '%')
+                  or d.receiver_name like concat('%', #{dto.keyword}, '%'))
+         </if>
+     </where>
+     order by d.issue_date desc, d.data_id desc
+     limit #{pager.pageSize} offset #{pager.offset}
+    </select>
+
+    <!-- 로그인 권한별 계약 유저 리스트 전체 건수 조회 SQL (Pager 총 페이지/블록 계산용, 페이징 없는 단일 ContractDTO 파라미터) -->
+    <select id="contractUserListCount" parameterType="com.health.app.contract.ContractDTO" resultType="long">
+    select count(*)
+      from "h_contract_data" d
+      left join "h_member" m on m.username = (
+          case
+              when d.contract = 1 and d.receiver_id = #{username} then d.sender_id
+              when d.contract = 2 and d.receiver_id = #{username} then d.sender_id
+              else d.receiver_id
+          end
+      )
+      <where>
+          <choose>
+              <when test="role == 'ADMIN'">
+                  and d.contract = 1
+              </when>
+              <when test="role == 'OWNER'">
+                  and (
+                      (d.sender_id = #{username} and d.contract in (2, 3, 4, 5))
+                      or (d.contract = 1 and d.receiver_id = #{username})
+                  )
+              </when>
+              <when test="role == 'TRAINER'">
+                  and (
+                      (d.contract in (4, 5) and d.manager_id = #{username})
+                      or (d.contract = 2 and d.receiver_id = #{username})
+                  )
+              </when>
+              <otherwise>
+                  and 1 = 0
+              </otherwise>
+          </choose>
+          <if test="contract != null">
+              and d.contract = #{contract}
+          </if>
+          <if test="keyword != null and keyword != ''">
+              and (m.name like concat('%', #{keyword}, '%')
+                   or cast(m.username as varchar) like concat('%', #{keyword}, '%')
+                   or d.receiver_name like concat('%', #{keyword}, '%'))
+          </if>
+      </where>
     </select>
 
     <!-- 계약서 상세 조회 SQL -->
@@ -404,4 +507,14 @@
      #{sourceCouponId, jdbcType=BIGINT},
      current_date)
     </insert>
+
+    <!-- (OWNER 대시보드) 30일 내 만료 임박 회원 계약(3·4·5, SIGNED/ACTIVE) distinct 회원 수 집계 SQL -->
+    <select id="expiringMemberCount" parameterType="Long" resultType="map">
+    select count(distinct d.receiver_id) as "total"
+    from "h_contract_data" d
+    where d.gym_id = #{gymId}
+      and d.contract in (3, 4, 5)
+      and d.status in ('SIGNED', 'ACTIVE')
+      and d.end_date between current_date and current_date + 30
+    </select>
 </mapper>

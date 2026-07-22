@@ -186,6 +186,133 @@
   background: var(--black);
 }
 
+/* 사장님 뷰 2단 구성 — 좌측 리스트 + 우측 요약 레일 (목업 기준 300px) */
+.settle-owner-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  align-items: start;
+}
+
+.settle-owner-main {
+  min-width: 0;
+}
+
+.settle-rail {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settle-rail__label {
+  color: var(--gray-500);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* 순이익 히어로 — 차콜 블랙 카드 */
+.settle-rail__hero {
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--black);
+  color: var(--white);
+}
+
+.settle-rail__hero-label {
+  color: var(--gray-400);
+  font-size: 12px;
+}
+
+.settle-rail__hero-value {
+  display: block;
+  margin-top: 4px;
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.settle-rail__hero-split {
+  display: flex;
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.settle-rail__hero-split span {
+  display: block;
+  color: var(--gray-400);
+  font-size: 11px;
+}
+
+.settle-rail__hero-split b {
+  display: block;
+  margin-top: 3px;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.settle-rail__hero-split .is-revenue { color: #ff8534; }
+.settle-rail__hero-split .is-expense { color: var(--gray-300); }
+
+/* 매출·지출 요약 카드 (클릭 시 해당 탭으로 전환) */
+.settle-rail__card {
+  padding: 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--white);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.settle-rail__card:hover {
+  border-color: var(--gray-300);
+  background: var(--gray-50);
+}
+
+.settle-rail__card.is-active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.settle-rail__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--gray-900);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.settle-rail__card-value {
+  display: block;
+  margin-top: 8px;
+  color: var(--gray-900);
+  font-size: 19px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.settle-rail__caption {
+  color: var(--gray-400);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1024px) {
+  .settle-owner-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settle-rail {
+    position: static;
+  }
+}
+
 /* Filter Controls */
 .filter-row {
   display: flex;
@@ -299,7 +426,7 @@
 .settle-table td {
   padding: 13px 16px;
   color: var(--gray-900);
-  border-bottom: 1px solid var(--gray-100);
+  border-bottom: 1px solid var(--gray-200);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -357,8 +484,9 @@
   color: var(--white);
 }
 
+/* 디자인 시스템: 주요 버튼은 hover에도 배경색을 유지하고 그림자로만 반응 */
 .btn-action-primary:hover {
-  background: var(--accent);
+  box-shadow: 0 2px 8px rgba(200, 79, 0, 0.28);
 }
 
 .btn-action-danger {

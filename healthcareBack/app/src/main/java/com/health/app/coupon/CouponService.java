@@ -114,4 +114,9 @@ public class CouponService {
     public List<CouponDTO> trialList(Long gymId) throws Exception {
         return couponMapper.trialList(gymId);
     }
+
+    // (OWNER 대시보드) 본인이 발급한 쿠폰 전체 개수 + 사용완료 개수 집계
+    public java.util.Map<String, Object> usageSummary(Long fromId) throws Exception {
+        return couponMapper.usageSummary(fromId);
+    }
 }

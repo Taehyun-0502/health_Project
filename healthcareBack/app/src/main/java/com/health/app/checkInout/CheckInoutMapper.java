@@ -95,4 +95,10 @@ public interface CheckInoutMapper {
     // 총괄 관리자용 매장별 비교 지표 (전 매장)
     public List<GymPerfDTO> adminGymOverview() throws Exception;
 
+    // (OWNER 대시보드) 오늘 지점 출석(체크인) distinct 회원 수 집계
+    public java.util.Map<String, Object> ownerTodayAttendanceCount(Long gymId) throws Exception;
+
+    // (OWNER 대시보드) 지점 체크인 기록 존재 여부(hasData 판정용 - 오늘 0명이어도 위젯 노출)
+    public java.util.Map<String, Object> ownerAttendanceHasData(Long gymId) throws Exception;
+
 }

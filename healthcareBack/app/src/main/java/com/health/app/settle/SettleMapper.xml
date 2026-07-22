@@ -189,7 +189,8 @@
         UPDATE "h_settlement" SET commission = #{commission} WHERE settlement_id = #{settlementId}
     </update>
 
-    <!-- 사장님용: 해당 지점(gym_id)의 운영 비용 지출 목록 페이징 조회 -->
+    <!-- 사장님용: 해당 지점(gym_id)의 운영 비용 지출 목록 페이징 조회
+         role=TRAINER면 본인이 수신자인 임금 계약(contract=2)에 연결된 지출로만 좁혀 본인 급여만 노출 -->
     <select id="expenseList" resultType="com.health.app.settle.ExpenseDTO">
         SELECT
             e.expense_id as expenseId,
@@ -202,6 +203,9 @@
             COALESCE(NULLIF(e.expense_rate, 0), s.commission_rate, 0) as expenseRate
         FROM "h_expense" e
         LEFT JOIN "h_settlement" s ON s.expense_id = e.expense_id
+        <if test="role == 'TRAINER'">
+        INNER JOIN "h_contract_data" cd ON cd.data_id = e.data_id AND cd.contract = 2 AND cd.receiver_id = #{username}
+        </if>
         WHERE e.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
         <if test="pager.month != null and pager.month != ''">
             AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{pager.month}
@@ -218,23 +222,29 @@
         LIMIT #{pager.pageSize} OFFSET #{pager.offset}
     </select>
 
-    <!-- 사장님용: 지출 내역 전체 건수 조회 (Pager 총 페이지 계산용) -->
+    <!-- 사장님/트레이너용: 지출 내역 전체 건수 조회 (Pager 총 페이지 계산용) -->
     <select id="expenseListCount" resultType="long">
-        SELECT COUNT(*) FROM "h_expense"
-        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+        SELECT COUNT(*) FROM "h_expense" e
+        <if test="role == 'TRAINER'">
+        INNER JOIN "h_contract_data" cd ON cd.data_id = e.data_id AND cd.contract = 2 AND cd.receiver_id = #{username}
+        </if>
+        WHERE e.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
         <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(expense_date, 'YYYY-MM') = #{pager.month}
+            AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{pager.month}
         </if>
         <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
+            AND e.expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
         </if>
     </select>
 
-    <!-- 사장님용: 지출 내역 전체 합계 금액 조회 (필터 조건 적용, 페이지 무관) -->
+    <!-- 사장님/트레이너용: 지출 내역 전체 합계 금액 조회 (필터 조건 적용, 페이지 무관) -->
     <select id="expenseListSum" resultType="long">
         SELECT COALESCE(SUM(COALESCE(NULLIF(e.expense_price, 0), s.commission, 0)), 0)
         FROM "h_expense" e
         LEFT JOIN "h_settlement" s ON s.expense_id = e.expense_id
+        <if test="role == 'TRAINER'">
+        INNER JOIN "h_contract_data" cd ON cd.data_id = e.data_id AND cd.contract = 2 AND cd.receiver_id = #{username}
+        </if>
         WHERE e.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
         <if test="pager.month != null and pager.month != ''">
             AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{pager.month}
@@ -257,6 +267,9 @@
             COALESCE(NULLIF(e.expense_rate, 0), s.commission_rate, 0) as expenseRate
         FROM "h_expense" e
         LEFT JOIN "h_settlement" s ON s.expense_id = e.expense_id
+        <if test="role == 'TRAINER'">
+        INNER JOIN "h_contract_data" cd ON cd.data_id = e.data_id AND cd.contract = 2 AND cd.receiver_id = #{username}
+        </if>
         WHERE e.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
         <if test="pager.month != null and pager.month != ''">
             AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{pager.month}

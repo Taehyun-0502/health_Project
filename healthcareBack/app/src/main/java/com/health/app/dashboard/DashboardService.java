@@ -10,18 +10,36 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.health.app.checkInout.CheckInoutService;
+import com.health.app.contract.ContractService;
+import com.health.app.coupon.CouponService;
+import com.health.app.result.ResultService;
+
 @Service
 public class DashboardService {
 
     @Autowired
     private DashboardMapper dashboardMapper;
 
+    // OWNER 위젯 세트 개편(2026-07-22 확정)에 필요한 타 패키지 집계 서비스
+    @Autowired
+    private ContractService contractService;
+
+    @Autowired
+    private CouponService couponService;
+
+    @Autowired
+    private CheckInoutService checkInoutService;
+
+    @Autowired
+    private ResultService resultService;
+
     // 역할별 기본 위젯 구성 (표시 순서대로)
     private static final Map<String, List<String>> DEFAULT_WIDGETS = Map.of(
             // 관계사: 계약 체육관 수 / 다가오는 구독 만료 / 월별 총 매출 / 월별 총 지출 / 체육관 만족도
             "ADMIN", List.of("gymCount", "expiringSubscription", "monthlyRevenue", "monthlyExpense", "gymNps"),
-            // 사장님: 계약 회원 수 / PT 회원수 / 오늘 출석한 회원수 / 쿠폰 사용 이력 / 월별 총 매출 / 월별 총 지출 / 다가오는 계약 만료 / 헬스장 이탈율 / 월별 예측 이탈률 추이 / 월별 위험군 추이 / 체성분 변화 추이
-            "OWNER", List.of("memberCount", "ptMemberCount", "todayAttendance", "couponUsage", "monthlyRevenue", "monthlyExpense", "expiringContract", "gymChurn", "gymChurnTrend", "gymRiskTrend", "bodyComposition"),
+            // 사장님(2026-07-22 개편): 총 회원 수 / 월별 총 매출 / 월별 총 지출 / 쿠폰 사용 / 만료 임박 회원 수 / 이탈 위험 / 오늘 출석 / 월별 이탈 위험군 추이
+            "OWNER", List.of("activeMemberCount", "monthlyRevenue", "monthlyExpense", "couponUsage", "expiringMemberCount", "gymChurn", "todayAttendance", "churnTrend"),
             // 트레이너: 담당 회원 수 / 세션 소진 임박 / 월별 세션 수행 / 회원 이탈 예측 / 목표 달성률
             "TRAINER", List.of("managedMemberCount", "lowSessionMembers", "monthlySession", "memberChurn", "goalRate"));
 
@@ -137,24 +155,19 @@ public class DashboardService {
                 return !dashboardMapper.monthlyExpense(monthlyScope(role, gymId)).isEmpty();
             case "gymNps":
                 return countOf(dashboardMapper.adminNpsSummary()) > 0;
-            case "memberCount":
-            case "expiringContract":
-                return countOf(dashboardMapper.ownerMemberCount(gymId)) > 0;
-            case "ptMemberCount":
-                return countOf(dashboardMapper.ownerPtMemberCount(gymId)) > 0;
+            case "activeMemberCount":
+                return countOf(dashboardMapper.ownerActiveMemberCount(gymId)) > 0;
+            case "expiringMemberCount":
+                return countOf(contractService.expiringMemberCount(gymId)) > 0;
             case "todayAttendance":
                 // 오늘 0명이어도 위젯은 노출되도록, 지점에 체크인 기록이 하나라도 있으면 활성
-                return countOf(dashboardMapper.ownerAttendanceHasData(gymId)) > 0;
+                return countOf(checkInoutService.ownerAttendanceHasData(gymId)) > 0;
             case "couponUsage":
-                return countOf(dashboardMapper.ownerCouponUsage(username)) > 0;
-            case "bodyComposition":
-                return countOf(dashboardMapper.ownerModelSummary(gymId)) > 0;
+                return countOf(couponService.usageSummary(username)) > 0;
             case "gymChurn":
                 return countOf(dashboardMapper.ownerChurnSummary(gymId)) > 0;
-            case "gymChurnTrend":
-                return !dashboardMapper.ownerChurnTrend(gymId).isEmpty();
-            case "gymRiskTrend":
-                return !dashboardMapper.ownerRiskTrend(gymId).isEmpty();
+            case "churnTrend":
+                return !resultService.selectStatPeriods(gymId, "monthly").isEmpty();
             case "managedMemberCount":
             case "lowSessionMembers":
                 return countOf(dashboardMapper.trainerMemberCount(username)) > 0;
@@ -182,24 +195,18 @@ public class DashboardService {
                 return dashboardMapper.monthlyExpense(monthlyScope(role, gymId));
             case "gymNps":
                 return dashboardMapper.adminNpsSummary();
-            case "memberCount":
-                return dashboardMapper.ownerMemberCount(gymId);
-            case "ptMemberCount":
-                return dashboardMapper.ownerPtMemberCount(gymId);
+            case "activeMemberCount":
+                return dashboardMapper.ownerActiveMemberCount(gymId);
+            case "expiringMemberCount":
+                return contractService.expiringMemberCount(gymId);
             case "todayAttendance":
-                return dashboardMapper.ownerTodayAttendance(gymId);
+                return checkInoutService.ownerTodayAttendanceCount(gymId);
             case "couponUsage":
-                return dashboardMapper.ownerCouponUsage(username);
-            case "expiringContract":
-                return dashboardMapper.ownerExpiringContract(gymId);
-            case "bodyComposition":
-                return dashboardMapper.ownerModelSummary(gymId);
+                return couponService.usageSummary(username);
             case "gymChurn":
                 return dashboardMapper.ownerChurnSummary(gymId);
-            case "gymChurnTrend":
-                return dashboardMapper.ownerChurnTrend(gymId);
-            case "gymRiskTrend":
-                return dashboardMapper.ownerRiskTrend(gymId);
+            case "churnTrend":
+                return resultService.selectStatPeriods(gymId, "monthly");
             case "managedMemberCount":
                 return dashboardMapper.trainerMemberCount(username);
             case "lowSessionMembers":

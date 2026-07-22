@@ -296,22 +296,23 @@
   letter-spacing: -0.4px;
 }
 
-/* 결제하기 = 최종 확정 액션 → 블랙 솔리드 버튼 (디자인 가이드 2단 위계) */
+/* 결제하기 = 최종 확정 액션 → 액센트 솔리드 버튼 (버튼 위계 단일화) */
 .pay-submit {
   width: 100%;
   padding: 14px;
   font-size: var(--text-body);
   font-weight: 600;
   color: var(--white);
-  background: var(--black);
+  background: var(--accent-strong);
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: opacity 0.15s ease, transform 0.1s ease;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
 }
 
+/* 디자인 시스템: 주요 버튼은 hover에도 배경색을 유지하고 그림자로만 반응 */
 .pay-submit:hover:not(:disabled) {
-  opacity: 0.88;
+  box-shadow: 0 2px 8px rgba(200, 79, 0, 0.28);
 }
 
 .pay-submit:active:not(:disabled) {
