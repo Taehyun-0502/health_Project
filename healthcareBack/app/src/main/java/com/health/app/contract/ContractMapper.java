@@ -2,13 +2,21 @@ package com.health.app.contract;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import com.health.app.member.MemberDTO;
+import com.health.app.pager.Pager;
 
 @Mapper
 public interface ContractMapper {
 
-    // 로그인 권한별 계약 유저 리스트 조회 메서드
+    // 로그인 권한별 계약 유저 리스트 조회 메서드 (페이징 없음 - AI 도구 등 전체 목록이 필요한 내부 호출용)
     public List<ContractDTO> contractUserList(ContractDTO contractDTO) throws Exception;
+
+    // 로그인 권한별 계약 유저 리스트 페이징 조회 메서드 (GET /contract/list, LIMIT/OFFSET 적용)
+    public List<ContractDTO> contractUserListPage(@Param("dto") ContractDTO contractDTO, @Param("pager") Pager pager) throws Exception;
+
+    // 로그인 권한별 계약 유저 리스트 전체 건수 조회 메서드 (Pager 총 페이지/블록 계산용)
+    public long contractUserListCount(ContractDTO contractDTO) throws Exception;
 
     // 계약서 발행(등록) 메서드
     public int contractInsert(ContractDTO contractDTO) throws Exception;
@@ -61,4 +69,7 @@ public interface ContractMapper {
 
     // (TRAINER) 담당 유저 리스트 조회 메서드 - 담당 PT 계약(4, manager_id) 기준
     public List<ContractDTO> rosterManagedList(ContractDTO contractDTO) throws Exception;
+
+    // (OWNER 대시보드) 30일 내 만료 임박 회원 계약(3·4·5, SIGNED/ACTIVE) 수 집계 메서드
+    public java.util.Map<String, Object> expiringMemberCount(Long gymId) throws Exception;
 }

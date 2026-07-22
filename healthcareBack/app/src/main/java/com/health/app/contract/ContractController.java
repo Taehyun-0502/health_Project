@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.health.app.config.JwtUtill;
 import com.health.app.member.MemberDTO;
+import com.health.app.pager.PagedResponse;
+import com.health.app.pager.Pager;
 import io.jsonwebtoken.Claims;
 
 @RestController
@@ -39,12 +41,15 @@ public class ContractController {
         }
     }
 
-    // 로그인 권한별 계약 유저 리스트 조회 API 메서드 (B2B 어드민 페이지)
+    // 로그인 권한별 계약 유저 리스트 페이징 조회 API 메서드 (B2B 어드민 페이지)
+    // page/pageSize를 Pager로 묶어 LIMIT/OFFSET 적용, {items, pager, totalCount, totalAmount} 형태로 응답(payment·item 관례와 동일)
     @GetMapping("/list")
     public ResponseEntity<?> contractUserList(
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam(required = false) Long contract,
-            @RequestParam(required = false) String keyword) throws Exception {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long page,
+            @RequestParam(required = false) Long pageSize) throws Exception {
 
         Claims claims = extractClaims(authorization);
         if (claims == null) {
@@ -57,7 +62,11 @@ public class ContractController {
         contractDTO.setContract(contract);
         contractDTO.setKeyword(keyword);
 
-        List<ContractDTO> userList = contractService.contractUserList(contractDTO);
+        Pager pager = new Pager();
+        pager.setCurrentPage(page);
+        pager.setPageSize(pageSize);
+
+        PagedResponse<ContractDTO> userList = contractService.contractUserListPage(contractDTO, pager);
 
         if (userList == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
