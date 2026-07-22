@@ -55,12 +55,14 @@
 .b2blist-desc { margin: 6px 0 12px; font-size: var(--text-sm); color: var(--gray-500); }
 .cs-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
-.b2b-tabs { display: flex; gap: 6px; background: var(--cs-surface-2); padding: 4px; border-radius: 999px; }
+/* 계약 리스트 필터(.roster-filter/.roster-filter-btn)와 동일한 칩 스타일 */
+.b2b-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
 .b2b-chip {
-  padding: 6px 16px; border: 0; border-radius: 999px; background: transparent;
+  padding: 7px 14px; border: 0; border-radius: 999px; background: var(--cs-surface-2);
   color: var(--cs-ink-3); font: inherit; font-size: var(--text-sm); font-weight: 600;
   cursor: pointer; transition: background-color .16s ease, color .16s ease;
 }
+.b2b-chip:hover { color: var(--cs-ink); }
 .b2b-chip.is-active { background: var(--black); color: var(--white); }
 
 .cs-periodpick { position: relative; }
@@ -97,7 +99,9 @@
 .cs-mcell .cs-cal-dot { bottom: 7px; }
 
 /* ── 요약: 읽기 전용 KPI 스트립 + 위험도 분포 ── */
-.cs-summary { display: grid; grid-template-columns: repeat(4, 1fr) 1.35fr; gap: 14px; margin: 18px 0 16px; }
+.cs-summary { display: grid; grid-template-columns: repeat(3, 1fr) 1.35fr 1fr; gap: 14px; margin: 18px 0 16px; }
+/* 요약 카드 높이 고정 — 스켈레톤/실데이터 전환 시 행 높이가 바뀌어 KPI 카드가 줄었다 늘어나는 것 방지 */
+.cs-skpi, .cs-distcard { min-height: 130px; }
 .cs-skpi { background: var(--cs-surface); border: 1px solid var(--cs-border); border-radius: var(--cs-radius); box-shadow: var(--cs-shadow); padding: 15px 16px; }
 .cs-skpi-label { font-size: var(--text-xs); font-weight: 600; color: var(--cs-ink-2); }
 .cs-skpi-value { font-size: 25px; font-weight: 700; letter-spacing: -.01em; margin-top: 4px; line-height: 1.1; }
@@ -114,6 +118,19 @@
 .cs-dist-legend i { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
 .cs-dist-legend b { margin-left: auto; color: var(--cs-ink); font-variant-numeric: tabular-nums; }
 
+/* 스켈레톤 (탭 전환 로딩) */
+.cs-skel { display: block; border-radius: 6px; background: var(--cs-surface-2); position: relative; overflow: hidden; }
+.cs-skel::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: cs-shimmer 1.3s infinite;
+}
+@keyframes cs-shimmer { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .cs-skel::after { animation: none; } }
+.cs-skel-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 11px; }
+.cs-skel-rows { padding: 12px 14px; display: flex; flex-direction: column; gap: 16px; }
+.cs-skel-row { display: flex; align-items: center; gap: 14px; }
+
 /* 등급 배지 */
 .cs-badge { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-xs); font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
 .cs-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; }
@@ -122,9 +139,33 @@
 .cs-badge.serious { color: var(--cs-serious); background: var(--cs-serious-bg); } .cs-badge.serious::before { background: var(--cs-serious); }
 .cs-badge.crit { color: var(--cs-crit); background: var(--cs-crit-bg); } .cs-badge.crit::before { background: var(--cs-crit); }
 
-/* ── 메인: 조치(좌) + 신규 위험군(우) ── */
-.cs-main { display: grid; grid-template-columns: 1fr 316px; gap: 18px; align-items: start; }
+/* ── 메인: 이탈 요인별 조치 (전체 폭) ── */
+.cs-main { display: grid; grid-template-columns: 1fr; gap: 18px; align-items: start; }
 .cs-rail { min-width: 0; }
+
+/* 신규 위험군 KPI → 명단 팝오버 */
+.cs-skpi-risk { position: relative; }
+.cs-riskpop-toggle {
+  position: absolute; top: 12px; right: 12px;
+  width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--cs-border-strong); border-radius: 7px; background: var(--cs-surface);
+  color: var(--cs-ink-2); font-size: 12px; line-height: 1; cursor: pointer;
+  transition: transform .18s ease, border-color .15s, color .15s;
+}
+.cs-riskpop-toggle:hover { border-color: var(--cs-accent); color: var(--cs-accent); }
+.cs-riskpop-toggle.is-open { transform: rotate(180deg); border-color: var(--cs-accent); color: var(--cs-accent); }
+.cs-riskpop {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 140;
+  width: 340px; max-width: calc(100vw - 32px); max-height: 482px; overflow-y: auto;
+  background: var(--cs-surface); border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius); box-shadow: var(--shadow-lg);
+}
+.cs-riskpop .cs-risklist { max-height: none; }
+.cs-riskpop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px 6px; }
+.cs-riskpop-head h3 { margin: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.cs-riskpop-close { border: 0; background: transparent; color: var(--cs-ink-3); font-size: 14px; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.cs-riskpop-close:hover { background: var(--cs-surface-2); color: var(--cs-ink); }
+.cs-riskpop-sub { margin: 0 16px 4px; font-size: 12px; color: var(--cs-ink-3); }
 .cs-panel-card { background: var(--cs-surface); border: 1px solid var(--cs-border); border-radius: var(--cs-radius); box-shadow: var(--cs-shadow); overflow: hidden; }
 .cs-cardhead { padding: 16px 18px 12px; border-bottom: 1px solid var(--cs-border); }
 .cs-cardhead h3 { margin: 0; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
@@ -154,7 +195,7 @@
 .cs-facc-row {
   width: 100%; display: grid; grid-template-columns: 132px 1fr auto; align-items: center; gap: 14px;
   background: transparent; border: 0; border-radius: 10px; font: inherit; text-align: left;
-  padding: 11px 12px; cursor: pointer; color: var(--cs-ink); transition: background-color .13s;
+  padding: 7px 12px; cursor: pointer; color: var(--cs-ink); transition: background-color .13s;
 }
 .cs-facc-row:hover { background: var(--cs-surface-2); }
 .cs-facc.open > .cs-facc-row { background: var(--cs-accent-weak); }
@@ -174,7 +215,7 @@
 
 /* 요인 인라인 상세 본문 */
 .cs-fd-body { display: flex; flex-direction: column; gap: 12px; }
-.cs-fd-members { max-height: 300px; overflow-y: auto; border: 1px solid var(--cs-border); border-radius: 10px; }
+.cs-fd-members { max-height: 307px; overflow-y: auto; border: 1px solid var(--cs-border); border-radius: 10px; }
 .cs-fd-action {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
   background: var(--cs-surface-2); border: 1px dashed var(--cs-border-strong); border-radius: 10px; padding: 12px 14px;
@@ -213,7 +254,12 @@
 .cs-side h5 { margin: 0 0 8px; font-size: var(--text-sm); font-weight: 600; }
 .cs-side .cs-hint { font-size: var(--text-xs); color: var(--cs-ink-3); margin: 0; line-height: 1.45; }
 .cs-side-body { max-height: 200px; overflow-y: auto; }
-.cs-side-sc .cs-side-body { max-height: 220px; }
+.cs-side-sc .cs-side-body { max-height: 180px; }
+.cs-side-eq .cs-side-body { max-height: 182px; }
+.cs-side-vt .cs-side-body { max-height: 105px; }
+.cs-side-mgr .cs-side-body { max-height: 105px; }
+/* 기구 목록 헤더(기구명/보유 수량) 스크롤 시 상단 고정 */
+.cs-side-eq .cs-side-body thead th { position: sticky; top: 0; z-index: 1; background: var(--cs-surface); }
 .cs-side table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 .cs-side th { color: var(--cs-ink-3); font-weight: 600; text-align: left; padding: 2px 12px 6px 0; font-size: var(--text-xs); }
 .cs-side td { padding: 3px 12px 3px 0; border-top: 1px solid var(--cs-border); }
@@ -234,9 +280,9 @@
 .cs-center a:hover { text-decoration: underline; }
 
 /* 얇은 스크롤바 */
-.cs-risklist, .cs-fd-members, .cs-side-body { scrollbar-width: thin; scrollbar-color: var(--cs-border-strong) transparent; }
-.cs-risklist::-webkit-scrollbar, .cs-fd-members::-webkit-scrollbar, .cs-side-body::-webkit-scrollbar { width: 4px; }
-.cs-risklist::-webkit-scrollbar-thumb, .cs-fd-members::-webkit-scrollbar-thumb, .cs-side-body::-webkit-scrollbar-thumb { background: var(--cs-border-strong); border-radius: 4px; }
+.cs-risklist, .cs-fd-members, .cs-side-body, .cs-riskpop { scrollbar-width: thin; scrollbar-color: var(--cs-border-strong) transparent; }
+.cs-risklist::-webkit-scrollbar, .cs-fd-members::-webkit-scrollbar, .cs-side-body::-webkit-scrollbar, .cs-riskpop::-webkit-scrollbar { width: 4px; }
+.cs-risklist::-webkit-scrollbar-thumb, .cs-fd-members::-webkit-scrollbar-thumb, .cs-side-body::-webkit-scrollbar-thumb, .cs-riskpop::-webkit-scrollbar-thumb { background: var(--cs-border-strong); border-radius: 4px; }
 
 /* ── 팝업(모달) ── */
 .cs-modal-back { position: fixed; inset: 0; background: rgba(23, 23, 23, 0.45); display: flex; justify-content: center; align-items: center; z-index: 1000; }

@@ -67,6 +67,8 @@ const COUPON_FACTOR = '가격불만';
 const HELPER_FACTOR = '서비스불만_환경불편';
 // 이 요인들의 버튼(PT체험권 발송)을 누르면 쿠폰 발송 팝업 → 오늘자 위험군 회원에게 쿠폰 발송
 const PT_TRIAL_FACTORS = ['PT_가입여부', '최근한달_부상경험'];
+// 이 요인의 버튼(교육 프로그램)은 회원이 아니라 직원 대상 교육 프로그램을 제공한다
+const TRAINING_FACTOR = '직원불만_불친절';
 
 // 방문 시간대 표시 순서(시간순)
 const SLOT_ORDER = ['새벽(00-06)', '오전(06-11)', '점심(11-14)', '오후(14-18)', '저녁(18-22)', '야간(22-24)'];
@@ -225,7 +227,7 @@ function VisitTimePanel({ gymId, mode, period, statKey }) {
   const peak = slots.reduce((p, x) => (Number(x.cnt || 0) > Number(p?.cnt || 0) ? x : p), null);
 
   return (
-    <div className="cs-side">
+    <div className="cs-side cs-side-vt">
       <h5>🕒 이 회원들이 주로 오는 시간대</h5>
       {loading ? (
         <p className="cs-loading">불러오는 중…</p>
@@ -279,7 +281,7 @@ function EquipmentPanel({ gymId }) {
   const sorted = [...items].sort((a, b) => Number(b.itemCount || 0) - Number(a.itemCount || 0));
 
   return (
-    <div className="cs-side">
+    <div className="cs-side cs-side-eq">
       <h5>🏋️ 이 헬스장 기구 목록</h5>
       {loading ? (
         <p className="cs-loading">불러오는 중…</p>
@@ -333,7 +335,7 @@ function ManagerPanel({ gymId, mode, period, statKey }) {
   const top = managers[0] || null;
 
   return (
-    <div className="cs-side">
+    <div className="cs-side cs-side-mgr">
       <h5>🧑‍🏫 이 회원들의 담당자</h5>
       {loading ? (
         <p className="cs-loading">불러오는 중…</p>
@@ -420,6 +422,7 @@ function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
   const showServiceCenter = statKey === SERVICE_CENTER_FACTOR;
   const isCoupon = statKey === COUPON_FACTOR;
   const isHelper = statKey === HELPER_FACTOR;
+  const isTraining = statKey === TRAINING_FACTOR;
   const isPtTrial = PT_TRIAL_FACTORS.includes(statKey);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -501,8 +504,9 @@ function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
 
   const showActionBtn = action && !showVisitTime && !showEquip && !showManager && !showServiceCenter;
   const actionCopy = isPtTrial ? 'PT 미가입·부상 위험군에게 체험권으로 전환을 유도합니다.'
-    : isCoupon ? '가격에 민감한 위험군에게 재등록 할인 쿠폰을 제공합니다.'
-    : isHelper ? '환경 불편을 겪는 회원을 위해 헬퍼를 요청합니다.'
+    : isCoupon ? '할인 쿠폰 발행을 위해 프로모션 페이지로 이동합니다.'
+    : isHelper ? '환경 불편 개선을 위해 헬스장을 도와줄 헬퍼를 요청합니다.'
+    : isTraining ? '직원 응대 개선을 위해 직원 대상 교육 프로그램을 제공합니다.'
     : '이 요인 위험군에게 조치를 실행합니다.';
   const onAction = isCoupon ? () => navigate('/fitb/promotion')
     : isHelper ? () => setHelperOpen(true)
@@ -540,7 +544,7 @@ function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
         <div className="cs-fd-action">
           <span className="cs-fd-action-copy">{actionCopy}</span>
           <button type="button" className="cs-action-solid" onClick={onAction}>
-            {members.length > 0 ? `이 ${members.length}명에게 ` : ''}{action} →
+            {!isHelper && !isTraining && !isCoupon && members.length > 0 ? `이 ${members.length}명에게 ` : ''}{action} →
           </button>
         </div>
       )}
@@ -741,6 +745,52 @@ function RiskMembers({ riskList, loading }) {
   );
 }
 
+// 탭 전환 로딩 시 스켈레톤 — 요약 스트립 + 조치 카드 레이아웃을 모사
+function StatsSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="불러오는 중">
+      <div className="cs-summary">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="cs-skpi">
+            <span className="cs-skel" style={{ width: '52%', height: 12 }} />
+            <span className="cs-skel" style={{ width: '70%', height: 24, marginTop: 8 }} />
+            <span className="cs-skel" style={{ width: '40%', height: 11, marginTop: 10 }} />
+          </div>
+        ))}
+        <div className="cs-distcard">
+          <span className="cs-skel" style={{ width: '45%', height: 12 }} />
+          <span className="cs-skel" style={{ width: '100%', height: 12, marginTop: 12, borderRadius: 999 }} />
+          <div className="cs-skel-legend">
+            {[0, 1, 2, 3].map((i) => <span key={i} className="cs-skel" style={{ height: 11 }} />)}
+          </div>
+        </div>
+        <div className="cs-skpi">
+          <span className="cs-skel" style={{ width: '60%', height: 12 }} />
+          <span className="cs-skel" style={{ width: '55%', height: 24, marginTop: 8 }} />
+          <span className="cs-skel" style={{ width: '45%', height: 11, marginTop: 10 }} />
+        </div>
+      </div>
+      <div className="cs-main">
+        <section className="cs-panel-card">
+          <div className="cs-cardhead">
+            <span className="cs-skel" style={{ width: 180, height: 16 }} />
+            <span className="cs-skel" style={{ width: '70%', height: 11, marginTop: 8 }} />
+          </div>
+          <div className="cs-skel-rows">
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+              <div key={i} className="cs-skel-row">
+                <span className="cs-skel" style={{ width: 120, height: 13 }} />
+                <span className="cs-skel" style={{ flex: 1, height: 9, borderRadius: 999 }} />
+                <span className="cs-skel" style={{ width: 40, height: 13 }} />
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function B2bList() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const gymId = user.gymId;
@@ -758,6 +808,18 @@ function B2bList() {
 
   const [riskList, setRiskList] = useState([]);
   const [riskLoading, setRiskLoading] = useState(false);
+  const [showRiskPop, setShowRiskPop] = useState(false); // 신규 위험군 명단 팝오버
+  const riskPopRef = useRef(null);
+
+  // 팝오버 바깥 클릭 시 닫기
+  useEffect(() => {
+    if (!showRiskPop) return;
+    const onDown = (e) => {
+      if (riskPopRef.current && !riskPopRef.current.contains(e.target)) setShowRiskPop(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [showRiskPop]);
 
   // 기간 목록 조회
   useEffect(() => {
@@ -849,8 +911,8 @@ function B2bList() {
           <PeriodPicker mode={mode} periods={periods} value={openPeriod} onPick={setOpenPeriod} />
         </div>
 
-        {periodsLoading ? (
-          <p className="cs-empty-state">불러오는 중…</p>
+        {periodsLoading || (periods.length > 0 && (!openPeriod || loading)) ? (
+          <StatsSkeleton />
         ) : periods.length === 0 ? (
           <p className="cs-empty-state">집계된 통계 데이터가 없습니다. (배치 실행 후 표시됩니다)</p>
         ) : (
@@ -872,17 +934,35 @@ function B2bList() {
                 <div className={`cs-skpi-value cs-num cs-${focusTier?.cls || 'good'}`}>{avgPct}<small>%</small></div>
                 <div className="cs-skpi-sub">{focusTier && <span className={`cs-badge ${focusTier.cls}`}>{focusTier.label}</span>}</div>
               </div>
-              <div className="cs-skpi">
-                <div className="cs-skpi-label">신규 위험군</div>
-                <div className="cs-skpi-value cs-num">{riskLoading ? '…' : riskList.length}<small>명</small></div>
-                <div className="cs-skpi-sub">직전 {unit} 대비</div>
-              </div>
               <div className="cs-distcard">
                 <RiskDistBar dist={focusObj} />
               </div>
+              <div className="cs-skpi cs-skpi-risk" ref={riskPopRef}>
+                <div className="cs-skpi-label">신규 위험군</div>
+                <div className="cs-skpi-value cs-num">{riskLoading ? '…' : riskList.length}<small>명</small></div>
+                <div className="cs-skpi-sub">직전 {unit} 대비</div>
+                <button
+                  type="button"
+                  className={`cs-riskpop-toggle${showRiskPop ? ' is-open' : ''}`}
+                  aria-expanded={showRiskPop}
+                  aria-label="신규 위험군 명단 열기"
+                  onClick={() => setShowRiskPop((v) => !v)}
+                >▾</button>
+                {showRiskPop && (
+                  <div className="cs-riskpop" role="dialog" aria-label="신규 위험군 명단">
+                    <div className="cs-riskpop-head">
+                      <h3>🔔 신규 위험군 <span className="cs-crit cs-cardhead-count">{riskLoading ? '…' : riskList.length}명</span></h3>
+                      <button type="button" className="cs-riskpop-close" aria-label="닫기" onClick={() => setShowRiskPop(false)}>✕</button>
+                    </div>
+                    <p className="cs-riskpop-sub">직전 {unit} 대비 개입·긴급에 새로 진입</p>
+                    <RiskMembers riskList={riskList} loading={riskLoading} />
+                    <div className="cs-trust">🔒 우리 지점 데이터만 보여줍니다</div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* ── 조치(좌) + 신규 위험군(우) ── */}
+            {/* ── 이탈 요인별 조치 (전체 폭) ── */}
             <div className="cs-main" aria-busy={loading}>
               <section className="cs-panel-card">
                 <div className="cs-cardhead">
@@ -896,17 +976,6 @@ function B2bList() {
                   ? <FactorList items={breakdown} gymId={gymId} mode={mode} period={openPeriod} />
                   : <p className="cs-muted cs-pad">상단에서 기간을 선택하세요.</p>}
               </section>
-
-              <aside className="cs-rail">
-                <section className="cs-panel-card">
-                  <div className="cs-cardhead">
-                    <h3>🔔 신규 위험군 <span className="cs-crit cs-cardhead-count">{riskLoading ? '…' : riskList.length}명</span></h3>
-                    <p className="cs-cardhead-sub">직전 {unit} 대비 개입·긴급에 새로 진입</p>
-                  </div>
-                  <RiskMembers riskList={riskList} loading={riskLoading} />
-                  <div className="cs-trust">🔒 우리 지점 데이터만 보여줍니다</div>
-                </section>
-              </aside>
             </div>
           </>
         )}
