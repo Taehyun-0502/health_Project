@@ -16,6 +16,12 @@ const ICON_PATHS = {
       <rect x="13" y="13" width="7" height="7" rx="1.5" />
     </>
   ),
+  churnlist: (
+    <>
+      <path d="M9 6h11M9 12h11M9 18h11" />
+      <path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" strokeWidth="2.6" strokeLinecap="round" />
+    </>
+  ),
   contract: (
     <>
       <path d="M7 3h7l4 4v14H7z" />

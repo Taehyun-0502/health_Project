@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import './Payment.css';
 
 const TYPE_LABEL = { 3: '이용권', 4: 'PT' };
 
@@ -126,84 +127,153 @@ function Payment() {
 
   if (!detail) {
     return (
-      <div>
-        <h1>결제</h1>
+      <div className="pay-state">
+        <div className="pay-state-title">결제</div>
         <p>{message || '불러오는 중...'}</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <h1>결제</h1>
-      <p>{message}</p>
+    <div className="pay-page">
+      <div className="pay-head">
+        <h1 className="pay-title">결제</h1>
+        <Link to={`/fitb/contract/${dataId}`} className="pay-back">← 계약 상세로</Link>
+      </div>
 
-      <h2>계약 정보</h2>
-      <p>계약 유형: {TYPE_LABEL[detail.contract] ?? '-'}</p>
-      <p>계약 기간: {detail.startDate ?? '-'} ~ {detail.endDate ?? '-'}</p>
-      {detail.contract === 4 && <p>PT 횟수: {detail.quantity ?? '-'}회</p>}
-      <p>결제 금액: {money(detail.amount)}원</p>
-
-      <h2>쿠폰 선택</h2>
-      {applicableCoupons.length === 0 ? (
-        <p>이 계약에 적용 가능한 쿠폰이 없습니다.</p>
-      ) : (
-        <div>
-          <label>
-            <input
-              type="radio"
-              name="coupon"
-              checked={selectedCouponId === null}
-              onChange={() => setSelectedCouponId(null)}
-            />
-            쿠폰 사용 안 함
-          </label>
-          {applicableCoupons.map((c) => (
-            <div key={c.couponId}>
-              <label>
-                <input
-                  type="radio"
-                  name="coupon"
-                  checked={selectedCouponId === c.couponId}
-                  onChange={() => setSelectedCouponId(c.couponId)}
-                />
-                [{c.category}] {c.couponName} ({c.category === '체험권' ? '무료체험' : `${c.percent}% 할인`}{c.maxAmount != null ? `, 최대 ${money(c.maxAmount)}원` : ''}, {c.fromName} 발송, ~{c.date} 까지)
-              </label>
+      <div className="pay-layout">
+        {/* 본문: 계약 정보 · 쿠폰 · 결제 방법 */}
+        <div className="pay-main">
+          <section className="pay-card">
+            <h2 className="pay-card-title">계약 정보</h2>
+            <div className="pay-fields">
+              <div className="pay-field">
+                <span className="pay-field-label">계약 유형</span>
+                <span className="pay-field-value">
+                  <span className="pay-type-badge">{TYPE_LABEL[detail.contract] ?? '-'}</span>
+                </span>
+              </div>
+              <div className="pay-field">
+                <span className="pay-field-label">계약 기간</span>
+                <span className="pay-field-value">{detail.startDate ?? '-'} ~ {detail.endDate ?? '-'}</span>
+              </div>
+              {detail.contract === 4 && (
+                <div className="pay-field">
+                  <span className="pay-field-label">PT 횟수</span>
+                  <span className="pay-field-value">{detail.quantity ?? '-'}회</span>
+                </div>
+              )}
+              <div className="pay-field">
+                <span className="pay-field-label">결제 금액</span>
+                <span className="pay-field-value is-amount">{money(detail.amount)}원</span>
+              </div>
             </div>
-          ))}
+          </section>
+
+          <section className="pay-card">
+            <h2 className="pay-card-title">쿠폰 선택</h2>
+            {applicableCoupons.length === 0 ? (
+              <p className="pay-coupon-none">이 계약에 적용 가능한 쿠폰이 없습니다.</p>
+            ) : (
+              <div className="pay-coupon-list">
+                <label className={`pay-coupon-option${selectedCouponId === null ? ' is-selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="coupon"
+                    className="pay-coupon-radio"
+                    checked={selectedCouponId === null}
+                    onChange={() => setSelectedCouponId(null)}
+                  />
+                  <span className="pay-coupon-body">
+                    <span className="pay-coupon-name">쿠폰 사용 안 함</span>
+                  </span>
+                </label>
+                {applicableCoupons.map((c) => (
+                  <label
+                    key={c.couponId}
+                    className={`pay-coupon-option${selectedCouponId === c.couponId ? ' is-selected' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="coupon"
+                      className="pay-coupon-radio"
+                      checked={selectedCouponId === c.couponId}
+                      onChange={() => setSelectedCouponId(c.couponId)}
+                    />
+                    <span className="pay-coupon-body">
+                      <span className="pay-coupon-name">
+                        <span className="pay-coupon-cat">{c.category}</span>
+                        {c.couponName}
+                      </span>
+                      <span className="pay-coupon-meta">
+                        {c.category === '체험권' ? '무료체험' : `${c.percent}% 할인`}
+                        {c.maxAmount != null ? ` · 최대 ${money(c.maxAmount)}원` : ''} · {c.fromName} 발송 · ~{c.date} 까지
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="pay-card">
+            <h2 className="pay-card-title">결제 방법</h2>
+            <div className="pay-method-row">
+              <label className="pay-field-label" htmlFor="pay-installment">할부 개월</label>
+              <select
+                id="pay-installment"
+                className="pay-select"
+                value={effectiveInstallment}
+                disabled={finalPrice === 0}
+                onChange={(e) => setInstallment(Number(e.target.value))}
+              >
+                <option value={0}>일시불</option>
+                <option value={3}>3개월 할부</option>
+                <option value={6}>6개월 할부</option>
+                <option value={12}>12개월 할부</option>
+              </select>
+              {finalPrice === 0 && (
+                <p className="pay-method-note">무료(0원) 결제는 일시불로 처리됩니다.</p>
+              )}
+            </div>
+          </section>
         </div>
-      )}
 
-      <h2>결제 방법</h2>
-      <label>
-        할부 개월
-        <select
-          value={effectiveInstallment}
-          disabled={finalPrice === 0}
-          onChange={(e) => setInstallment(Number(e.target.value))}
-        >
-          <option value={0}>일시불</option>
-          <option value={3}>3개월 할부</option>
-          <option value={6}>6개월 할부</option>
-          <option value={12}>12개월 할부</option>
-        </select>
-      </label>
-      {finalPrice === 0 && <p>무료(0원) 결제는 일시불로 처리됩니다.</p>}
+        {/* 우측 요약 레일 */}
+        <aside className="pay-summary">
+          <h2 className="pay-summary-title">결제 요약</h2>
+          <div className="pay-summary-row">
+            <span>기본 금액</span>
+            <span className="pay-summary-num">{money(detail.amount)}원</span>
+          </div>
+          {selectedCoupon && (
+            <div className="pay-summary-row is-discount">
+              <span>
+                쿠폰 할인{selectedCoupon.category === '체험권' ? ' (무료체험)' : ''}
+                {isCapped ? ` (최대 ${money(selectedCoupon.maxAmount)}원)` : ''}
+              </span>
+              <span className="pay-summary-num">-{money(discount)}원</span>
+            </div>
+          )}
+          <div className="pay-summary-row">
+            <span>결제 방법</span>
+            <span className="pay-summary-num">{effectiveInstallment === 0 ? '일시불' : `${effectiveInstallment}개월 할부`}</span>
+          </div>
 
-      <h2>결제 요약</h2>
-      <p>기본 금액: {money(detail.amount)}원</p>
-      {selectedCoupon && (
-        <p>
-          쿠폰 할인{selectedCoupon.category === '체험권' ? ' (무료체험 적용)' : ''}
-          {isCapped ? ` (최대 할인 금액 ${money(selectedCoupon.maxAmount)}원 적용)` : ''}: -{money(discount)}원
-        </p>
-      )}
-      <p>결제 방법: {effectiveInstallment === 0 ? '일시불' : `${effectiveInstallment}개월 할부`}</p>
-      <p><strong>최종 결제 금액: {money(finalPrice)}원</strong></p>
+          <div className="pay-summary-divider" />
 
-      <button type="button" onClick={handleCheckout} disabled={submitting}>
-        {submitting ? '결제 처리 중...' : '결제하기'}
-      </button>
+          <div className="pay-summary-total">
+            <span className="pay-summary-total-label">최종 결제 금액</span>
+            <span className="pay-summary-total-value">{money(finalPrice)}원</span>
+          </div>
+
+          <button type="button" className="pay-submit" onClick={handleCheckout} disabled={submitting}>
+            {submitting ? '결제 처리 중...' : '결제하기'}
+          </button>
+
+          {message && <p className="pay-message">{message}</p>}
+        </aside>
+      </div>
     </div>
   );
 }

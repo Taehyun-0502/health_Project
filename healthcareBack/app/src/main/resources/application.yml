@@ -48,6 +48,5 @@ jwt:
 # AI 비서 (Anthropic Messages API) 설정
 # 키·모델은 .env의 AI_API_KEY / AI_MODEL을 주입 (DB_URL 등과 동일 방식, .env는 gitignore - 실 키 커밋 금지)
 anthropic:
-  # 임시: AI_API_KEY 미설정 시 빈 값으로 기동(AI 비서 호출 시에만 실패). 실제 키 복구 시 원복 권장.
-  api-key: ${AI_API_KEY:}
+  api-key: ${AI_API_KEY:sk-placeholder-key-for-dev}
   model: ${AI_MODEL:claude-sonnet-5}

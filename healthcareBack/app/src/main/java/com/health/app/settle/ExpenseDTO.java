@@ -21,6 +21,8 @@ public class ExpenseDTO {
     private Long gymId;
     // 계약 데이터 id
     private Long dataId;
+    // 플랫폼 커미션 정산 id (OWNER가 월별 미지급 커미션을 지출로 등록할 때 사용)
+    private Long settlementId;
     // 지출 항목
     private String expenseName;
     // 지출 날짜(결제일)

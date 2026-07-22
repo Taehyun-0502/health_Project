@@ -1,0 +1,43 @@
+.client-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 24px;
+}
+
+.client-pagination__button {
+  min-width: 36px;
+  padding: 8px 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  color: #404040;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.client-pagination__button:hover:not(:disabled) {
+  border-color: #a3a3a3;
+  background: #f5f5f5;
+}
+
+.client-pagination__button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.client-pagination__button--active,
+.client-pagination__button--active:hover:not(:disabled) {
+  border-color: #171717;
+  color: #fff;
+  background: #171717;
+}
+
+.client-pagination__button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
