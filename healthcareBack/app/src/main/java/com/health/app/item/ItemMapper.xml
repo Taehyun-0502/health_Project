@@ -22,11 +22,25 @@ select
     (select h2.item_price from "h_item" h2
      where h2.gym_id = h.gym_id and h2.item_category = h.item_category and h2.item_name = h.item_name
        and h2.item_count > 0
-     order by h2.item_date desc, h2.item_id desc limit 1) as itemPrice
+     order by h2.item_date desc, h2.item_id desc limit 1) as itemPrice,
+    (select h4.item_date from "h_item" h4
+     where h4.gym_id = h.gym_id and h4.item_category = h.item_category and h4.item_name = h.item_name
+       and h4.item_count > 0
+     order by h4.item_date desc, h4.item_id desc limit 1) as itemDate,
+    (select min(h3.item_expiry_date) from "h_item" h3
+     where h3.gym_id = h.gym_id and h3.item_category = h.item_category and h3.item_name = h.item_name
+       and h3.item_count > 0 and h3.item_expiry_date is not null) as itemExpiryDate
 from "h_item" h
 where h.gym_id=#{gymId}
 <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
     and (h.item_name like concat('%', #{pager.searchKeyword}, '%') or h.item_category like concat('%', #{pager.searchKeyword}, '%'))
+</if>
+<!-- 카테고리 칩 필터: '기타'는 고정 3종(기구/소모품/용품) 외 나머지, 그 외는 정확히 일치 -->
+<if test="category != null and category != ''">
+    <choose>
+        <when test="'기타'.equals(category)">and h.item_category not in ('기구','소모품','용품')</when>
+        <otherwise>and h.item_category = #{category}</otherwise>
+    </choose>
 </if>
 group by h.gym_id, h.item_category, h.item_name
 having sum(h.item_count) > 0
@@ -48,6 +62,12 @@ select count(*) from (
     where gym_id=#{gymId}
     <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
         and (item_name like concat('%', #{pager.searchKeyword}, '%') or item_category like concat('%', #{pager.searchKeyword}, '%'))
+    </if>
+    <if test="category != null and category != ''">
+        <choose>
+            <when test="'기타'.equals(category)">and item_category not in ('기구','소모품','용품')</when>
+            <otherwise>and item_category = #{category}</otherwise>
+        </choose>
     </if>
     group by gym_id, item_category, item_name
     having sum(item_count) > 0

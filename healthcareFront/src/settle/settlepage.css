@@ -768,3 +768,268 @@
   color: var(--gray-700);
 }
 .btn-unlink:hover { background: var(--gray-100); }
+
+/* ── 매출 탭 2단 레이아웃 (좌 결제 리스트 + 우 이번 달 요약 레일) ── */
+.settle-sales-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.settle-sales-main {
+  flex: 1 1 auto;
+  min-width: 0; /* 자식 테이블 가로 스크롤이 레이아웃을 밀지 않도록 */
+}
+
+.settle-summary-rail {
+  flex: 0 0 300px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: sticky;
+  top: 16px;
+}
+
+.settle-summary-rail__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-500);
+  margin-bottom: 2px;
+}
+
+/* 순이익 블랙 히어로 카드 */
+.summary-hero {
+  background: var(--black);
+  color: var(--white);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.summary-hero__label {
+  font-size: 13px;
+  color: var(--gray-300);
+  margin-bottom: 6px;
+}
+
+.summary-hero__value {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-hero__sub {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--gray-300);
+}
+
+.summary-hero__sub b {
+  color: var(--white);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-hero__sub-key {
+  margin-right: 4px;
+}
+
+.summary-hero__sub-sales {
+  color: var(--accent) !important;
+}
+
+.summary-hero--expense {
+  background: linear-gradient(145deg, #17191f 0%, #272b35 100%);
+}
+
+.summary-hero__sub--single {
+  justify-content: flex-start;
+}
+
+/* 커미션/월급 지급 상태 카드 */
+.summary-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(17, 24, 39, 0.06);
+}
+
+.summary-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.summary-card__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.summary-card__value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gray-900);
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.summary-badge--pending {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.summary-badge--done {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.expense-confirm-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.expense-confirm-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--gray-900);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* 매출 상세와 같은 형태로 오른쪽에서 열리는 지출 확정 패널 */
+.expense-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  justify-content: flex-end;
+  padding: 76px 16px 16px;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+.expense-drawer {
+  width: min(880px, 94vw);
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--gray-200);
+  border-radius: 14px;
+  background: var(--gray-100);
+  box-shadow: 0 12px 40px rgba(23, 23, 23, 0.18);
+  animation: expense-drawer-in 0.24s ease-out;
+}
+
+@keyframes expense-drawer-in {
+  from { transform: translateX(calc(100% + 16px)); }
+  to { transform: translateX(0); }
+}
+
+.expense-drawer__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--white);
+}
+
+.expense-drawer__eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.expense-drawer__header h2 {
+  margin: 0;
+  color: var(--gray-900);
+  font-size: 24px;
+}
+
+.expense-drawer__header p {
+  margin: 6px 0 0;
+  color: var(--gray-500);
+  font-size: 13px;
+}
+
+.expense-drawer__close {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--gray-700);
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.expense-drawer__close:hover {
+  background: var(--gray-100);
+}
+
+.expense-drawer__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 24px 28px 36px;
+  overflow-y: auto;
+}
+
+.expense-drawer .expense-dual-layout {
+  margin-top: 0;
+}
+
+/* 좁은 화면에서는 레일을 아래로 내려 단일 컬럼 */
+@media (max-width: 1024px) {
+  .settle-sales-layout {
+    flex-direction: column;
+  }
+  .settle-summary-rail {
+    flex-basis: auto;
+    width: 100%;
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .expense-drawer-backdrop {
+    padding: 0;
+  }
+
+  .expense-drawer {
+    width: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .expense-drawer__header,
+  .expense-drawer__body {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}

@@ -99,20 +99,13 @@ public class SettleService {
         return settleMapper.commissionStats();
     }
 
-    // 관리자용 커미션 수수료 지급 상태 토글 비즈니스 로직
-    public int toggleCommissionStatus(Long settlementId) throws Exception {
-        CommissionDTO commission = settleMapper.getCommissionById(settlementId);
-        if (commission != null) {
-            if ("지급".equals(commission.getStatus())) {
-                commission.setStatus("미지급");
-                commission.setSettledAt(null);
-            } else {
-                commission.setStatus("지급");
-                commission.setSettledAt(java.time.LocalDate.now());
-            }
-            return settleMapper.updateCommissionStatus(commission);
-        }
-        return 0;
+    // 사장님 정산 페이지 우측 요약 레일 집계 (username→gym_id 스코프)
+    public OwnerSummaryDTO ownerSettleSummary(Long username, String month) throws Exception {
+        return settleMapper.ownerSettleSummary(username, month);
+    }
+
+    public List<CommissionDTO> ownerUnpaidCommissionList(Long username) throws Exception {
+        return settleMapper.ownerUnpaidCommissionList(username);
     }
 
     // 사장님 계정의 소속 지점(gym_id) 기준 지출비 목록 페이징 조회
@@ -134,33 +127,82 @@ public class SettleService {
     // 지점 운영 지출 항목 추가 및 제휴 수수료 정산 상태 자동 갱신
     @org.springframework.transaction.annotation.Transactional
     public int expenseAdd(ExpenseDTO expenseDTO) throws Exception {
+        return settleMapper.expenseAdd(expenseDTO);
+    }
+
+    // OWNER 지출 등록: gym_id는 JWT subject에서 강제하고, 커미션은 settlement_id 단건을 원본으로 사용한다.
+    @org.springframework.transaction.annotation.Transactional
+    public int expenseAddForOwner(Long username, ExpenseDTO expenseDTO) throws Exception {
+        Long ownerGymId = settleMapper.getOwnerGymId(username);
+        if (ownerGymId == null) {
+            throw new IllegalArgumentException("소속 사업장을 확인할 수 없습니다.");
+        }
+        expenseDTO.setGymId(ownerGymId);
+
+        if (expenseDTO.getSettlementId() != null) {
+            CommissionDTO settlement = settleMapper.getOwnerUnpaidCommission(username, expenseDTO.getSettlementId());
+            if (settlement == null) {
+                throw new IllegalArgumentException("본인 사업장의 미지급 커미션이 아니거나 이미 지급된 정산입니다.");
+            }
+
+            expenseDTO.setDataId(null);
+            expenseDTO.setExpenseName(String.format("[%s] 플랫폼 커미션", settlement.getSettleMonth()));
+            expenseDTO.setExpensePrice(settlement.getCommission());
+            expenseDTO.setExpenseRate(settlement.getCommissionRate());
+        } else if (expenseDTO.getDataId() != null) {
+            settleMapper.lockExpenseContract(expenseDTO.getDataId());
+            if (settleMapper.checkOwnerExpenseContract(username, expenseDTO.getDataId()) != 1) {
+                throw new IllegalArgumentException("본인이 지급할 수 있는 미지급 임금 계약이 아닙니다.");
+            }
+        }
+
+        if (expenseDTO.getExpenseDate() == null
+                || expenseDTO.getExpenseName() == null
+                || expenseDTO.getExpenseName().isBlank()
+                || expenseDTO.getExpensePrice() == null
+                || expenseDTO.getExpensePrice() <= 0) {
+            throw new IllegalArgumentException("지출 항목명, 결제일, 금액을 올바르게 입력해 주세요.");
+        }
+
         int result = settleMapper.expenseAdd(expenseDTO);
-        if (result > 0 && expenseDTO.getDataId() != null) {
-            settleMapper.updateSettlementStatusByContract(expenseDTO.getDataId(), expenseDTO.getExpenseId());
+        if (result <= 0) {
+            throw new IllegalStateException("지출 등록에 실패했습니다.");
+        }
+
+        if (expenseDTO.getSettlementId() != null
+                && settleMapper.markSettlementPaid(
+                        expenseDTO.getSettlementId(), expenseDTO.getExpenseId(), expenseDTO.getExpenseDate()) != 1) {
+            throw new IllegalArgumentException("커미션이 이미 지급되었거나 상태가 변경되었습니다.");
         }
         return result;
     }
 
-    // 지점 운영 지출 항목 삭제
-    // 이미 정산(h_settlement.expense_id)에 연결된 지출은 h_settlement_expense_id_fkey 제약 때문에 삭제가 불가능하므로 사전에 차단
-    public int expenseDelete(Long expenseId) throws Exception {
-        int linkedCount = settleMapper.checkExpenseLinkedToSettlement(expenseId);
-        if (linkedCount > 0) {
-            return -2; // 이미 정산에 반영되어 삭제 불가 플래그 반환
+    // 지점 운영 지출 항목 삭제. 커미션 지출이면 정산 연결을 먼저 해제해 다시 확정할 수 있게 한다.
+    @org.springframework.transaction.annotation.Transactional
+    public int expenseDelete(Long username, Long expenseId) throws Exception {
+        int resetCount = settleMapper.resetSettlementForExpense(username, expenseId);
+        int deleteCount = settleMapper.expenseDelete(username, expenseId);
+        if (resetCount > 0 && deleteCount <= 0) {
+            throw new IllegalStateException("커미션 정산 복구 중 지출 삭제에 실패했습니다.");
         }
-        return settleMapper.expenseDelete(expenseId);
+        return deleteCount;
     }
 
     // 매달 1일 및 수동 요청 시 가맹점별 매출 집계 및 정산 커미션 생성 처리
     @org.springframework.transaction.annotation.Transactional
     public int generateMonthlyCommissions(java.time.LocalDate settleMonth) throws Exception {
         java.time.LocalDate startDate = settleMonth.withDayOfMonth(1);
+        java.time.LocalDate currentMonth = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).withDayOfMonth(1);
+        if (!startDate.isBefore(currentMonth)) {
+            throw new IllegalArgumentException("완료된 이전 달의 매출만 커미션으로 집계할 수 있습니다.");
+        }
         java.time.LocalDate endDate = settleMonth.with(java.time.temporal.TemporalAdjusters.lastDayOfMonth());
 
         List<CommissionDTO> calculatedList = settleMapper.calculateMonthlyGymSales(startDate, endDate);
 
         int insertCount = 0;
         for (CommissionDTO item : calculatedList) {
+            settleMapper.lockCommissionGeneration(item.getGymId());
             int count = settleMapper.checkCommissionExists(item.getGymId(), startDate);
             if (count == 0) {
                 item.setSettleMonth(startDate);

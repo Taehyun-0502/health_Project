@@ -296,6 +296,122 @@
   background: var(--danger-bg);
 }
 
+/* 카테고리별 배지 색상 (기구=회색, 소모품=오렌지, 용품=블루, 기타=중립) */
+.item-category-badge--gear {
+  color: var(--gray-700);
+  background: var(--gray-200);
+}
+
+.item-category-badge--consumable {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+
+.item-category-badge--goods {
+  color: var(--info);
+  background: var(--info-bg);
+}
+
+.item-category-badge--etc {
+  color: var(--gray-500);
+  background: var(--gray-100);
+}
+
+/* 카테고리 칩 필터(좌) + 물품 등록 버튼(우) */
+.item-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.item-chip-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.item-chip {
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-500);
+  background: var(--gray-100);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.item-chip:hover {
+  background: var(--gray-200);
+}
+
+.item-chip--active,
+.item-chip--active:hover {
+  color: var(--white);
+  background: var(--black);
+}
+
+.item-register-btn {
+  padding: 10px 18px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--white);
+  background: var(--accent-strong);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.16s ease;
+}
+
+.item-register-btn:hover {
+  background: var(--accent);
+}
+
+/* 단가·수량 숫자 컬럼 우측 정렬 + 숫자 정렬용 tabular */
+.item-table__num-col {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 유통기한 D-day 배지 (심각도별 색상) */
+.item-expiry-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.item-expiry-badge--none {
+  color: var(--gray-400);
+  background: transparent;
+  padding: 0;
+}
+
+.item-expiry-badge--normal {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.item-expiry-badge--soon {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+
+.item-expiry-badge--expired {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
 .item-pagination {
   display: flex;
   align-items: center;

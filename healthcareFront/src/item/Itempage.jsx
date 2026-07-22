@@ -3,6 +3,38 @@ import './Itempage.css';
 import { useSearchParams } from 'react-router-dom';
 import Pagination from './Pagination';
 
+// 카테고리 칩 필터 목록 (Figma 고정 칩 + 기타). value=''는 전체
+const ITEM_CATEGORY_CHIPS = [
+  { value: '', label: '전체' },
+  { value: '기구', label: '기구' },
+  { value: '소모품', label: '소모품' },
+  { value: '용품', label: '용품' },
+  { value: '기타', label: '기타' },
+];
+
+// 카테고리별 배지 색상 클래스 (기구=회색, 소모품=오렌지, 용품=블루, 그 외=중립)
+const categoryBadgeClass = (category) => {
+  if (category === '기구') return 'item-category-badge--gear';
+  if (category === '소모품') return 'item-category-badge--consumable';
+  if (category === '용품') return 'item-category-badge--goods';
+  return 'item-category-badge--etc';
+};
+
+// 'YYYY-MM-DD' → 'YYYY.MM.DD' (없으면 '—')
+const formatDot = (date) => (date ? String(date).slice(0, 10).replace(/-/g, '.') : '—');
+
+// 유통기한 D-day 라벨 + 심각도(색은 CSS가 담당). 색을 못 봐도 라벨로 상태 구분
+const expiryMeta = (expiryDate) => {
+  if (!expiryDate) return { label: '—', level: 'none' };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const end = new Date(`${String(expiryDate).slice(0, 10)}T00:00:00`);
+  const dday = Math.round((end - today) / 86400000);
+  if (dday < 0) return { label: '만료', level: 'expired' };
+  if (dday === 0) return { label: 'D-0', level: 'soon' };
+  return { label: `D-${dday}`, level: dday <= 30 ? 'soon' : 'normal' };
+};
+
 function Itempage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('view') === 'form' ? 'form' : 'list';
@@ -66,16 +98,20 @@ function Itempage() {
   // 정렬 옵션 상태 ('' = 기본(이름순), count_desc/count_asc/price_desc/price_asc)
   const [sortOption, setSortOption] = useState('');
 
-  // 백엔드로부터 물품 리스트를 "현재 페이지 + 검색어 + 정렬" 조건으로 페이징 조회하는 API 호출
+  // 카테고리 칩 필터 상태 ('' = 전체, '기구'/'소모품'/'용품' = 정확히 일치, '기타' = 그 외)
+  const [categoryFilter, setCategoryFilter] = useState('');
+
+  // 백엔드로부터 물품 리스트를 "현재 페이지 + 검색어 + 정렬 + 카테고리" 조건으로 페이징 조회하는 API 호출
   // 응답 형태: { items: [...], pager: {...}, totalCount: n }
-  const fetchItems = async (targetPage, keyword, sort) => {
+  const fetchItems = async (targetPage, keyword, sort, category) => {
     try {
       const query = new URLSearchParams({
         gymId,
         page: targetPage,
         pageSize,
         keyword: keyword || '',
-        sort: sort || ''
+        sort: sort || '',
+        category: category || ''
       });
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/list?${query.toString()}`);
       if (response.ok) {
@@ -105,7 +141,8 @@ function Itempage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1);
     setSearchTerm('');
-    fetchItems(1, '', sortOption);
+    setCategoryFilter('');
+    fetchItems(1, '', sortOption, '');
     fetchItemNames();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gymId]);
@@ -114,7 +151,7 @@ function Itempage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1);
-      fetchItems(1, searchTerm, sortOption);
+      fetchItems(1, searchTerm, sortOption, categoryFilter);
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,7 +160,7 @@ function Itempage() {
   // 페이지네이션 버튼 클릭 시 즉시(디바운스 없이) 해당 페이지를 조회
   const handlePageChange = (targetPage) => {
     setPage(targetPage);
-    fetchItems(targetPage, searchTerm, sortOption);
+    fetchItems(targetPage, searchTerm, sortOption, categoryFilter);
   };
 
   // 정렬 옵션 변경 시 1페이지로 이동해서 즉시 재조회 (state 갱신은 비동기라 새 값을 직접 넘겨줌)
@@ -131,7 +168,14 @@ function Itempage() {
     const newSort = e.target.value;
     setSortOption(newSort);
     setPage(1);
-    fetchItems(1, searchTerm, newSort);
+    fetchItems(1, searchTerm, newSort, categoryFilter);
+  };
+
+  // 카테고리 칩 클릭 시 1페이지로 이동해서 즉시 재조회 (state 갱신은 비동기라 새 값을 직접 넘겨줌)
+  const handleCategoryChange = (nextCategory) => {
+    setCategoryFilter(nextCategory);
+    setPage(1);
+    fetchItems(1, searchTerm, sortOption, nextCategory);
   };
 
   // CSV 필드값에 쉼표/줄바꿈/큰따옴표가 섞여 있어도 깨지지 않도록 이스케이프
@@ -584,9 +628,26 @@ function Itempage() {
               </div>
             ) : !selectedItem ? (
               <div className="item-card">
-                <h2 className="item-card-title">등록된 물품 목록</h2>
-
-                {/* 실제 운영 시에는 로그인 정보(gymId)에 따라 고정됩니다. */}
+                {/* 카테고리 칩 필터(좌) + 물품 등록 버튼(우) */}
+                <div className="item-filter-bar">
+                  <div className="item-chip-group" role="tablist" aria-label="카테고리 필터">
+                    {ITEM_CATEGORY_CHIPS.map((chip) => (
+                      <button
+                        key={chip.value || 'all'}
+                        type="button"
+                        role="tab"
+                        aria-selected={categoryFilter === chip.value}
+                        className={`item-chip${categoryFilter === chip.value ? ' item-chip--active' : ''}`}
+                        onClick={() => handleCategoryChange(chip.value)}
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                  <button type="button" className="item-register-btn" onClick={() => setActiveTab('form')}>
+                    + 물품 등록
+                  </button>
+                </div>
 
                 {/* 검색 바 + 정렬 옵션 + CSV 내보내기 버튼 */}
                 <div className="item-search-bar">
@@ -609,60 +670,66 @@ function Itempage() {
                   </button>
                 </div>
 
-                {/* 테이블 목록 (분류, 물품명, 갯수, 최근 단가 출력) */}
+                {/* 테이블 목록 (카테고리, 물품명, 구매일, 단가, 수량, 유통기한) */}
                 <div className="item-table-wrapper">
                   <table className="item-table">
                     <thead>
                       <tr>
-                        <th>번호</th>
-                        <th>분류</th>
+                        <th>카테고리</th>
                         <th>물품명</th>
-                        <th>갯수</th>
-                        <th>최근 단가</th>
+                        <th>구매일</th>
+                        <th className="item-table__num-col">단가</th>
+                        <th className="item-table__num-col">수량</th>
+                        <th>유통기한</th>
                       </tr>
                     </thead>
                     <tbody>
                       {items.length > 0 ? (
-                        items.map((item, index) => (
-                          // 행 클릭 = 우측 통합 드로어에 물품 탭 추가 (상세 보기 버튼은 stopPropagation으로 기존 동작 유지)
-                          <tr
-                            key={item.itemId || index}
-                            className="is-clickable"
-                            onClick={() =>
-                              window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
-                                detail: { kind: 'item', id: item.itemId ?? item.itemName ?? index, title: item.itemName ?? '물품', data: item },
-                              }))
-                            }
-                          >
-                            {/* 페이지가 바뀌어도 전체 목록 기준 연속된 번호가 보이도록 offset + index로 계산 */}
-                            <td>{(pager?.offset || 0) + index + 1}</td>
-                            <td>
-                              <span className="item-category-badge">
-                                {item.itemCategory}
-                              </span>
-                            </td>
-                            <td className="item-table__name">
-                              <button
-                                type="button"
-                                className="item-table__detail-button"
-                                onClick={(e) => { e.stopPropagation(); handleItemClick(item); }}
-                              >
-                                {item.itemName}
-                              </button>
-                            </td>
-                            <td>
-                              <span className="item-table__count">
-                                {item.itemCount.toLocaleString()}
-                              </span> 개
-                            </td>
-                            <td>
-                              {item.itemPrice != null ? `${item.itemPrice.toLocaleString()} 원` : '-'}
-                            </td>
-                          </tr>
-                        ))
+                        items.map((item, index) => {
+                          const expiry = expiryMeta(item.itemExpiryDate);
+                          return (
+                            // 행 클릭 = 우측 통합 드로어에 물품 탭 추가 (상세 보기 버튼은 stopPropagation으로 기존 동작 유지)
+                            <tr
+                              key={item.itemId || index}
+                              className="is-clickable"
+                              onClick={() =>
+                                window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
+                                  detail: { kind: 'item', id: item.itemId ?? item.itemName ?? index, title: item.itemName ?? '물품', data: item },
+                                }))
+                              }
+                            >
+                              <td>
+                                <span className={`item-category-badge ${categoryBadgeClass(item.itemCategory)}`}>
+                                  {item.itemCategory}
+                                </span>
+                              </td>
+                              <td className="item-table__name">
+                                <button
+                                  type="button"
+                                  className="item-table__detail-button"
+                                  onClick={(e) => { e.stopPropagation(); handleItemClick(item); }}
+                                >
+                                  {item.itemName}
+                                </button>
+                              </td>
+                              <td className="item-table__date">{formatDot(item.itemDate)}</td>
+                              <td className="item-table__num-col">
+                                {item.itemPrice != null ? item.itemPrice.toLocaleString() : '-'}
+                              </td>
+                              <td className="item-table__num-col">
+                                <span className="item-table__count">{item.itemCount.toLocaleString()}</span> 개
+                              </td>
+                              <td>
+                                <span className={`item-expiry-badge item-expiry-badge--${expiry.level}`}>
+                                  {expiry.label}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })
                       ) : (
                         <tr>
-                          <td colSpan="5" className="item-table__empty">
+                          <td colSpan="6" className="item-table__empty">
                             검색 조건에 맞는 물품이 없거나 현재 사업장에 등록된 물품이 없습니다.
                           </td>
                         </tr>

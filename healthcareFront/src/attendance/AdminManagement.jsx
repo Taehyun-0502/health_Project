@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import './AdminManagement.css';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -11,15 +12,18 @@ const calcDaysLeft = (endDate) => {
   return Math.round((end - today) / DAY_MS);
 };
 
+// 만료까지 남은 기간을 라벨 + 심각도 level로 변환한다.
+// 색상은 CSS(.admin-management__badge--{level})가 담당하고, JSX는 데이터 파생 값만 계산한다.
+// (색을 못 봐도 라벨 텍스트로 상태를 알 수 있게 label을 함께 제공)
 const getExpiryMeta = (endDate) => {
   const daysLeft = calcDaysLeft(endDate);
 
-  if (daysLeft === null) return { label: '기간 미정', color: '#6b7280', background: '#f3f4f6' };
-  if (daysLeft < 0) return { label: `${Math.abs(daysLeft)}일 경과`, color: '#991b1b', background: '#fee2e2' };
-  if (daysLeft === 0) return { label: '오늘 만료', color: '#991b1b', background: '#fee2e2' };
-  if (daysLeft <= 30) return { label: `D-${daysLeft}`, color: '#9a3412', background: '#ffedd5' };
-  if (daysLeft <= 90) return { label: `D-${daysLeft}`, color: '#92400e', background: '#fef3c7' };
-  return { label: `D-${daysLeft}`, color: '#166534', background: '#dcfce7' };
+  if (daysLeft === null) return { label: '기간 미정', level: 'none' };
+  if (daysLeft < 0) return { label: `${Math.abs(daysLeft)}일 경과`, level: 'expired' };
+  if (daysLeft === 0) return { label: '오늘 만료', level: 'expired' };
+  if (daysLeft <= 30) return { label: `D-${daysLeft}`, level: 'soon' };
+  if (daysLeft <= 90) return { label: `D-${daysLeft}`, level: 'watch' };
+  return { label: `D-${daysLeft}`, level: 'normal' };
 };
 
 const STATUS_LABEL = {
@@ -31,12 +35,39 @@ const STATUS_LABEL = {
   TERMINATED: '종료',
 };
 
-// 총괄 관리자(admin) 전용 헬스장 제휴 계약 현황
-// 매장 내부 운영 정보는 열람하지 않고, 제휴 계약 기간과 만료 여부만 관리한다.
+// 계약 유형 코드(1=제휴, 2=임금, 3=이용권, 4=PT, 5=PT 체험) 표시 라벨
+const CONTRACT_LABEL = {
+  1: '제휴',
+  2: '임금',
+  3: '이용권',
+  4: 'PT',
+  5: 'PT 체험',
+};
+
+// 총괄 관리자(admin) 전용 회원 관리 화면
+// 상단 탭으로 두 영역을 나눈다:
+//  ① 운동시설 제휴 계약 현황 - 계약 기간·만료 확인, 시설명 클릭 시 해당 시설 회원 명단 드릴다운
+//  ② 구인구직 - 유효 임금계약(2)이 없는 이탈 트레이너 풀(연락처 소개용, 최소 정보만)
+// 모든 조회는 기존 백엔드 API(GET /contract/roster, /contract/jobseekers)를 그대로 사용한다.
 function AdminManagement() {
+  // 상단 탭: 'contracts'=운동시설 제휴 계약 현황 / 'jobseekers'=구인구직 트레이너 풀
+  const [activeTab, setActiveTab] = useState('contracts');
+
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // 운동시설 회원 명단 드릴다운 상태 (selectedGym=null 이면 시설 리스트 뷰)
+  const [selectedGym, setSelectedGym] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState('');
+
+  // 구인구직(구직 트레이너 풀) 상태 - 탭 최초 진입 시에만 조회
+  const [jobSeekers, setJobSeekers] = useState([]);
+  const [jobLoading, setJobLoading] = useState(false);
+  const [jobError, setJobError] = useState('');
+  const [jobLoaded, setJobLoaded] = useState(false);
 
   const fetchContracts = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
@@ -61,7 +92,7 @@ function AdminManagement() {
 
       setContracts(await response.json());
     } catch (fetchError) {
-      console.error('헬스장 계약 현황 조회 실패:', fetchError);
+      console.error('운동시설 계약 현황 조회 실패:', fetchError);
       setError('서버와 통신 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
@@ -74,6 +105,97 @@ function AdminManagement() {
     fetchContracts();
   }, [fetchContracts]);
 
+  // 선택한 운동시설(gymId)의 소속 명단을 조회해 회원(role=member)만 남긴다.
+  // 백엔드는 기존 GET /contract/roster?gymId= 를 그대로 사용한다(신규 API 없음).
+  const fetchMembers = useCallback(async (gymId) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setMembersError('로그인이 필요합니다.');
+      return;
+    }
+
+    setMembersLoading(true);
+    setMembersError('');
+    setMembers([]);
+
+    try {
+      const params = new URLSearchParams({ gymId: String(gymId) });
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/contract/roster?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        setMembersError(`회원 명단을 불러오지 못했습니다. (${response.status})`);
+        return;
+      }
+
+      const roster = await response.json();
+      // 트레이너 등은 제외하고 회원(member)만 노출
+      setMembers(roster.filter((item) => item.member?.role?.toLowerCase() === 'member'));
+    } catch (fetchError) {
+      console.error('운동시설 회원 명단 조회 실패:', fetchError);
+      setMembersError('서버와 통신 중 오류가 발생했습니다.');
+    } finally {
+      setMembersLoading(false);
+    }
+  }, []);
+
+  // 구직 트레이너 풀 조회 (ADMIN 전용 - 그 외 역할은 403)
+  // 유효 임금계약(2)이 없는 이탈 트레이너를 이름·전화번호(아이디) 최소 정보만 조회한다.
+  const fetchJobSeekers = useCallback(async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setJobError('로그인이 필요합니다.');
+      return;
+    }
+
+    setJobLoading(true);
+    setJobError('');
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/contract/jobseekers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        setJobError(`구직 트레이너 명단을 불러오지 못했습니다. (${response.status})`);
+        return;
+      }
+
+      setJobSeekers(await response.json());
+      setJobLoaded(true);
+    } catch (fetchError) {
+      console.error('구직 트레이너 조회 실패:', fetchError);
+      setJobError('서버와 통신 중 오류가 발생했습니다.');
+    } finally {
+      setJobLoading(false);
+    }
+  }, []);
+
+  // 탭 전환 - 구인구직 탭 최초 진입 시에만 조회 (이후에는 새로고침 버튼으로 갱신)
+  const handleSelectTab = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'jobseekers' && !jobLoaded) {
+      fetchJobSeekers();
+    }
+  };
+
+  // 운동시설명 클릭 → 회원 명단 뷰로 전환하며 조회
+  const handleSelectGym = (contract) => {
+    setSelectedGym({
+      gymId: contract.gymId,
+      gymName: contract.gymName || `운동시설 #${contract.gymId}`,
+    });
+    fetchMembers(contract.gymId);
+  };
+
+  // 시설 리스트 뷰로 복귀
+  const handleBackToGyms = () => {
+    setSelectedGym(null);
+    setMembers([]);
+    setMembersError('');
+  };
+
   const summary = useMemo(() => contracts.reduce((counts, contract) => {
     const daysLeft = calcDaysLeft(contract.endDate);
     const isExpired = contract.status === 'EXPIRED' || contract.status === 'TERMINATED' || (daysLeft !== null && daysLeft < 0);
@@ -83,79 +205,62 @@ function AdminManagement() {
     return counts;
   }, { normal: 0, expiring: 0, expired: 0 }), [contracts]);
 
-  return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+  // ── 회원 명단 뷰 (운동시설 선택 후) ─────────────────────────────
+  const renderMemberView = () => (
+    <>
+      <div className="admin-management__header">
         <div>
-          <h3 style={{ margin: '0 0 8px' }}>헬스장 제휴 계약 현황</h3>
-          <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>
-            각 헬스장과의 계약 기간을 확인하고, 만료 30일 전부터 갱신을 준비할 수 있습니다.
-          </p>
+          <button type="button" className="admin-management__back" onClick={handleBackToGyms}>
+            ← 운동시설 목록으로
+          </button>
+          <h3 className="admin-management__title">{selectedGym.gymName} 회원 명단</h3>
+          <p className="admin-management__desc">해당 운동시설에 등록된 회원을 확인합니다.</p>
         </div>
         <button
           type="button"
-          onClick={fetchContracts}
-          disabled={loading}
-          style={{ padding: '7px 14px', cursor: loading ? 'default' : 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}
+          className="admin-management__refresh"
+          onClick={() => fetchMembers(selectedGym.gymId)}
+          disabled={membersLoading}
         >
-          {loading ? '불러오는 중...' : '새로고침'}
+          {membersLoading ? '불러오는 중...' : '새로고침'}
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(120px, 1fr))', gap: '10px', margin: '20px 0' }}>
-        <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#f0fdf4', color: '#166534' }}>
-          <div style={{ fontSize: '12px' }}>정상</div>
-          <strong style={{ fontSize: '22px' }}>{summary.normal}</strong>건
-        </div>
-        <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#fff7ed', color: '#9a3412' }}>
-          <div style={{ fontSize: '12px' }}>30일 이내 만료</div>
-          <strong style={{ fontSize: '22px' }}>{summary.expiring}</strong>건
-        </div>
-        <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#fef2f2', color: '#991b1b' }}>
-          <div style={{ fontSize: '12px' }}>만료</div>
-          <strong style={{ fontSize: '22px' }}>{summary.expired}</strong>건
-        </div>
-      </div>
+      {membersError && <p className="admin-management__error">{membersError}</p>}
 
-      {error && (
-        <p style={{ padding: '12px', borderRadius: '6px', backgroundColor: '#fef2f2', color: '#b91c1c' }}>{error}</p>
-      )}
-
-      {!loading && !error && contracts.length === 0 ? (
-        <p style={{ padding: '30px', textAlign: 'center', color: '#999', border: '1px dashed #ddd', borderRadius: '8px' }}>
-          등록된 제휴 계약이 없습니다.
-        </p>
-      ) : !error && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse', fontSize: '14px' }}>
+      {!membersLoading && !membersError && members.length === 0 ? (
+        <p className="admin-management__empty">이 운동시설에 등록된 회원이 없습니다.</p>
+      ) : !membersError && (
+        <div className="admin-management__table-wrap">
+          <table className="admin-management__table">
             <thead>
-              <tr style={{ backgroundColor: '#f3f4f6' }}>
-                <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>헬스장</th>
-                <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>대표자</th>
-                <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>계약 상태</th>
-                <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>계약 시작일</th>
-                <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>계약 종료일</th>
-                <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>만료까지</th>
+              <tr>
+                <th>아이디(연락처)</th>
+                <th>이름</th>
+                <th>계약 유형</th>
+                <th>계약 상태</th>
+                <th>계약 기간</th>
+                <th>만료까지</th>
               </tr>
             </thead>
             <tbody>
-              {contracts.map((contract) => {
-                const expiry = getExpiryMeta(contract.endDate);
+              {members.map((item) => {
+                const expiry = getExpiryMeta(item.endDate);
                 return (
-                  <tr key={contract.dataId}>
-                    <td style={{ padding: '10px', border: '1px solid #e5e7eb', fontWeight: 700 }}>
-                      {contract.gymName || `헬스장 #${contract.gymId}`}
+                  <tr key={item.member?.username ?? item.dataId}>
+                    <td>{item.member?.username ?? '-'}</td>
+                    <td className="admin-management__cell--name">{item.member?.name ?? '-'}</td>
+                    <td className="admin-management__cell--center">
+                      {item.contract ? (CONTRACT_LABEL[item.contract] ?? item.contract) : '-'}
                     </td>
-                    <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                      {contract.member?.name || contract.receiverName || '-'}
+                    <td className="admin-management__cell--center">
+                      {STATUS_LABEL[item.status] || item.status || '-'}
                     </td>
-                    <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                      {STATUS_LABEL[contract.status] || contract.status || '-'}
+                    <td className="admin-management__cell--center">
+                      {item.startDate ? `${item.startDate} ~ ${item.endDate}` : '-'}
                     </td>
-                    <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{contract.startDate || '-'}</td>
-                    <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{contract.endDate || '-'}</td>
-                    <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                      <span style={{ display: 'inline-block', minWidth: '60px', padding: '4px 8px', borderRadius: '999px', fontWeight: 700, color: expiry.color, backgroundColor: expiry.background }}>
+                    <td className="admin-management__cell--center">
+                      <span className={`admin-management__badge admin-management__badge--${expiry.level}`}>
                         {expiry.label}
                       </span>
                     </td>
@@ -166,6 +271,174 @@ function AdminManagement() {
           </table>
         </div>
       )}
+    </>
+  );
+
+  // ── 운동시설 제휴 계약 현황 뷰 (시설 리스트) ─────────────────────
+  const renderGymList = () => (
+    <>
+      <div className="admin-management__header">
+        <div>
+          <h3 className="admin-management__title">운동시설 제휴 계약 현황</h3>
+          <p className="admin-management__desc">
+            각 운동시설과의 계약 기간을 확인하고, 만료 30일 전부터 갱신을 준비할 수 있습니다.
+            운동시설명을 누르면 해당 시설의 회원 명단을 볼 수 있습니다.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="admin-management__refresh"
+          onClick={fetchContracts}
+          disabled={loading}
+        >
+          {loading ? '불러오는 중...' : '새로고침'}
+        </button>
+      </div>
+
+      <div className="admin-management__summary">
+        <div className="admin-management__summary-card admin-management__summary-card--normal">
+          <div className="admin-management__summary-label">정상</div>
+          <strong className="admin-management__summary-value">{summary.normal}</strong>건
+        </div>
+        <div className="admin-management__summary-card admin-management__summary-card--expiring">
+          <div className="admin-management__summary-label">30일 이내 만료</div>
+          <strong className="admin-management__summary-value">{summary.expiring}</strong>건
+        </div>
+        <div className="admin-management__summary-card admin-management__summary-card--expired">
+          <div className="admin-management__summary-label">만료</div>
+          <strong className="admin-management__summary-value">{summary.expired}</strong>건
+        </div>
+      </div>
+
+      {error && <p className="admin-management__error">{error}</p>}
+
+      {!loading && !error && contracts.length === 0 ? (
+        <p className="admin-management__empty">등록된 제휴 계약이 없습니다.</p>
+      ) : !error && (
+        <div className="admin-management__table-wrap">
+          <table className="admin-management__table">
+            <thead>
+              <tr>
+                <th>운동시설</th>
+                <th>대표자</th>
+                <th>계약 상태</th>
+                <th>계약 시작일</th>
+                <th>계약 종료일</th>
+                <th>만료까지</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contracts.map((contract) => {
+                const expiry = getExpiryMeta(contract.endDate);
+                return (
+                  <tr key={contract.dataId}>
+                    <td className="admin-management__cell--gym">
+                      <button
+                        type="button"
+                        className="admin-management__gym-link"
+                        onClick={() => handleSelectGym(contract)}
+                        disabled={contract.gymId == null}
+                      >
+                        {contract.gymName || `운동시설 #${contract.gymId}`}
+                      </button>
+                    </td>
+                    <td className="admin-management__cell--center">
+                      {contract.member?.name || contract.receiverName || '-'}
+                    </td>
+                    <td className="admin-management__cell--center">
+                      {STATUS_LABEL[contract.status] || contract.status || '-'}
+                    </td>
+                    <td className="admin-management__cell--center">{contract.startDate || '-'}</td>
+                    <td className="admin-management__cell--center">{contract.endDate || '-'}</td>
+                    <td className="admin-management__cell--center">
+                      <span className={`admin-management__badge admin-management__badge--${expiry.level}`}>
+                        {expiry.label}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+
+  // ── 구인구직 뷰 (구직 트레이너 풀) ──────────────────────────────
+  const renderJobSeekers = () => (
+    <>
+      <div className="admin-management__header">
+        <div>
+          <h3 className="admin-management__title">구직 트레이너</h3>
+          <p className="admin-management__desc">
+            유효한 임금 계약이 없는(이탈) 트레이너 명단입니다. 사장님에게는 아래 연락처만
+            소개(제공)하며, 이후 접촉·채용은 사장님이 직접 진행합니다.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="admin-management__refresh"
+          onClick={fetchJobSeekers}
+          disabled={jobLoading}
+        >
+          {jobLoading ? '불러오는 중...' : '새로고침'}
+        </button>
+      </div>
+
+      {jobError && <p className="admin-management__error">{jobError}</p>}
+
+      {!jobLoading && !jobError && jobSeekers.length === 0 ? (
+        <p className="admin-management__empty">현재 구직 중인 트레이너가 없습니다.</p>
+      ) : !jobError && (
+        <div className="admin-management__table-wrap">
+          <table className="admin-management__table">
+            <thead>
+              <tr>
+                <th>이름</th>
+                <th>전화번호(아이디)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jobSeekers.map((trainer) => (
+                <tr key={trainer.username}>
+                  <td className="admin-management__cell--name">{trainer.name}</td>
+                  <td>{trainer.username}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <div className="admin-management">
+      <div className="admin-management__tabs" role="tablist" aria-label="회원 관리">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'contracts'}
+          className={`admin-management__tab${activeTab === 'contracts' ? ' admin-management__tab--active' : ''}`}
+          onClick={() => handleSelectTab('contracts')}
+        >
+          운동시설 제휴 계약
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'jobseekers'}
+          className={`admin-management__tab${activeTab === 'jobseekers' ? ' admin-management__tab--active' : ''}`}
+          onClick={() => handleSelectTab('jobseekers')}
+        >
+          구직 트레이너
+        </button>
+      </div>
+
+      {activeTab === 'contracts'
+        ? (selectedGym ? renderMemberView() : renderGymList())
+        : renderJobSeekers()}
     </div>
   );
 }

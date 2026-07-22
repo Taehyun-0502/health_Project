@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import ClientPagination from '../components/ClientPagination';
+
+const PAGE_SIZE = 10;
+
+const getLastPage = (itemCount) => Math.max(1, Math.ceil(itemCount / PAGE_SIZE));
+
+const getPageItems = (items, page) => {
+  const startIndex = (page - 1) * PAGE_SIZE;
+  return items.slice(startIndex, startIndex + PAGE_SIZE);
+};
 
 // 사장님 전용 지점 회원·직원 관리 컴포넌트 (AdminMain 회원/직원 관리 탭에 내장)
 // 탭 구성: 0) 회원(ACTIVE 계약 보유 회원 명단)  1) 트레이너별 성과 보드
@@ -12,15 +22,23 @@ function OwnerManagement({ onGoPromotion, gymId }) {
   const [trainers, setTrainers] = useState([]);
   const [rebooks, setRebooks] = useState([]);
   const [activeTab, setActiveTab] = useState('members'); // members | trainers | rebooks
+  const [memberPage, setMemberPage] = useState(1);
+  const [trainerPage, setTrainerPage] = useState(1);
+  const [rebookPage, setRebookPage] = useState(1);
 
   // 회원 탭 계약 유형 라벨 (3=이용권, 4=PT, 5=PT 체험)
   const contractLabel = { 3: '이용권', 4: 'PT', 5: 'PT 체험' };
 
   // 지점 관리 현황 통합 조회 (트레이너 성과 / 재등록 / 일정 / 수업 이력)
   // gymId prop이 있으면(총괄 관리자 드릴다운) 해당 매장 지정 조회
-  const fetchOverview = async () => {
+  const fetchOverview = async (resetPage = false) => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
+
+    if (resetPage) {
+      setTrainerPage(1);
+      setRebookPage(1);
+    }
 
     try {
       const query = gymId ? `?gymId=${gymId}` : '';
@@ -29,8 +47,12 @@ function OwnerManagement({ onGoPromotion, gymId }) {
       });
       if (response.ok) {
         const data = await response.json();
-        setTrainers(data.trainers || []);
-        setRebooks(data.rebooks || []);
+        const nextTrainers = data.trainers || [];
+        const nextRebooks = data.rebooks || [];
+        setTrainers(nextTrainers);
+        setRebooks(nextRebooks);
+        setTrainerPage((currentPage) => Math.min(currentPage, getLastPage(nextTrainers.length)));
+        setRebookPage((currentPage) => Math.min(currentPage, getLastPage(nextRebooks.length)));
       } else {
         console.error('지점 현황 로드 실패:', await response.text());
       }
@@ -41,9 +63,13 @@ function OwnerManagement({ onGoPromotion, gymId }) {
 
   // ACTIVE 계약 보유 회원 명단 조회 - 기존 GET /contract/roster 재사용, 프론트에서 MEMBER + ACTIVE만 필터
   // (roster는 서버에서 sweep으로 상태 최신화 + gym_id 테넌트 격리를 이미 처리)
-  const fetchMembers = async () => {
+  const fetchMembers = async (resetPage = false) => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
+
+    if (resetPage) {
+      setMemberPage(1);
+    }
 
     try {
       const query = gymId ? `?gymId=${gymId}` : '';
@@ -56,6 +82,7 @@ function OwnerManagement({ onGoPromotion, gymId }) {
           (r) => String(r.member?.role || '').toUpperCase() === 'MEMBER' && r.status === 'ACTIVE'
         );
         setMembers(activeMembers);
+        setMemberPage((currentPage) => Math.min(currentPage, getLastPage(activeMembers.length)));
       } else {
         console.error('회원 명단 로드 실패:', await response.text());
       }
@@ -96,8 +123,8 @@ function OwnerManagement({ onGoPromotion, gymId }) {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchOverview();
-    fetchMembers();
+    fetchOverview(true);
+    fetchMembers(true);
     fetchContractCoupons();
     // 기존 조회 함수들은 새로고침 버튼에서도 재사용하며, gymId 변경 때만 전체 재조회한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -114,6 +141,10 @@ function OwnerManagement({ onGoPromotion, gymId }) {
     { key: 'trainers', label: '트레이너 성과' },
     { key: 'rebooks', label: `재등록 임박 (${rebooks.length})` },
   ];
+
+  const memberPageItems = getPageItems(members, memberPage);
+  const trainerPageItems = getPageItems(trainers, trainerPage);
+  const rebookPageItems = getPageItems(rebooks, rebookPage);
 
   return (
     <div style={{ maxWidth: '750px', margin: '0 auto', padding: '20px' }}>
@@ -167,7 +198,7 @@ function OwnerManagement({ onGoPromotion, gymId }) {
                 </tr>
               </thead>
               <tbody>
-                {members.map((m) => {
+                {memberPageItems.map((m) => {
                   const dday = toDday(m.endDate);
                   const pay = payCouponMap?.[String(m.dataId)]; // 해당 계약(dataId)의 결제 건
                   const couponUsed = pay?.couponId != null; // 결제 시 쿠폰 적용 여부
@@ -209,6 +240,13 @@ function OwnerManagement({ onGoPromotion, gymId }) {
               </tbody>
             </table>
           )}
+          <ClientPagination
+            currentPage={memberPage}
+            totalItems={members.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setMemberPage}
+            ariaLabel="회원 명단 페이지"
+          />
         </div>
       )}
 
@@ -220,7 +258,7 @@ function OwnerManagement({ onGoPromotion, gymId }) {
         우리 지점 트레이너의 담당 회원 수와 이번 달 수업 실적입니다. 수행률 = 완료 / (완료 + 미수행).
       </p>
 
-      <button onClick={fetchOverview} style={{ marginBottom: '15px', padding: '6px 14px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>
+      <button onClick={() => fetchOverview()} style={{ marginBottom: '15px', padding: '6px 14px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>
         🔄 새로고침
       </button>
 
@@ -240,7 +278,7 @@ function OwnerManagement({ onGoPromotion, gymId }) {
             </tr>
           </thead>
           <tbody>
-            {trainers.map((trainer) => {
+            {trainerPageItems.map((trainer) => {
               const done = trainer.monthDone || 0;
               const missed = trainer.monthMissed || 0;
               const rate = done + missed > 0 ? Math.round((done / (done + missed)) * 100) : null;
@@ -269,6 +307,13 @@ function OwnerManagement({ onGoPromotion, gymId }) {
           </tbody>
         </table>
       )}
+      <ClientPagination
+        currentPage={trainerPage}
+        totalItems={trainers.length}
+        pageSize={PAGE_SIZE}
+        onPageChange={setTrainerPage}
+        ariaLabel="트레이너 성과 페이지"
+      />
 
       </div>
       )}
@@ -303,7 +348,7 @@ function OwnerManagement({ onGoPromotion, gymId }) {
             </tr>
           </thead>
           <tbody>
-            {rebooks.map((rebook) => {
+            {rebookPageItems.map((rebook) => {
               const isPt = rebook.category === 'PT';
               // 이용권은 종료일까지 남은 일수(D-day) 계산
               const dday = rebook.endDate ? Math.ceil((new Date(rebook.endDate) - new Date(todayStr)) / 86400000) : null;
@@ -328,6 +373,13 @@ function OwnerManagement({ onGoPromotion, gymId }) {
           </tbody>
         </table>
       )}
+      <ClientPagination
+        currentPage={rebookPage}
+        totalItems={rebooks.length}
+        pageSize={PAGE_SIZE}
+        onPageChange={setRebookPage}
+        ariaLabel="재등록 임박 회원 페이지"
+      />
 
       </div>
       )}
