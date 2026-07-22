@@ -349,16 +349,15 @@ function ManagerPanel({ gymId, mode, period, statKey }) {
           <div className="cs-side-body">
             <table>
               <tbody>
-                {/* 테스트용: 중복 데이터로 행을 늘려 스크롤 확인 (원복 시 rep 루프 제거) */}
-                {Array.from({ length: 10 }).flatMap((_, rep) => managers.map((x) => (
-                  <tr key={`${rep}-${x.managerId}`}>
+                {managers.map((x) => (
+                  <tr key={x.managerId}>
                     <td className="cs-slot-name">{x.managerName}</td>
                     <td style={{ width: '100%' }}>
                       <div className="cs-slotbar"><i style={{ width: `${(x.cnt / max) * 100}%` }} /></div>
                     </td>
                     <td className="r cs-num">{x.cnt}명</td>
                   </tr>
-                )))}
+                ))}
               </tbody>
             </table>
           </div>
