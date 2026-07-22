@@ -134,22 +134,41 @@ function CalendarGrid({ periods, value, onPick }) {
   );
 }
 
-// 월 목록 (월별 선택)
-function MonthList({ periods, value, onPick }) {
+// 월 달력 (월별 선택) — 일별 달력처럼 연도를 넘기며 12개월 그리드로 선택
+function MonthGrid({ periods, value, onPick }) {
+  const tierByPeriod = {};
+  periods.forEach((p) => { tierByPeriod[p.period] = tierOf(p.avgChurnRate).cls; });
+  const pad = (n) => String(n).padStart(2, '0');
+  const initYear = Number(String(value || periods[0]?.period || new Date().getFullYear()).slice(0, 4));
+  const [year, setYear] = useState(initYear);
+
   return (
-    <div className="cs-monthlist">
-      {periods.map((p) => (
-        <button
-          key={p.period}
-          type="button"
-          className={`cs-month-item${value === p.period ? ' is-sel' : ''}`}
-          onClick={() => onPick(p.period)}
-        >
-          <span>{p.period}</span>
-          <i className={`cs-cal-dot cs-bg-${tierOf(p.avgChurnRate).cls}`} />
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="cs-cal-head">
+        <button type="button" onClick={() => setYear((y) => y - 1)} aria-label="이전 해">‹</button>
+        <span>{year}년</span>
+        <button type="button" onClick={() => setYear((y) => y + 1)} aria-label="다음 해">›</button>
+      </div>
+      <div className="cs-cal-grid cs-month-grid">
+        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+          const ym = `${year}-${pad(m)}`;
+          const cls = tierByPeriod[ym];
+          const sel = value === ym;
+          return (
+            <button
+              key={ym}
+              type="button"
+              className={`cs-cal-day cs-mcell${cls ? ' has-data' : ''}${sel ? ' is-sel' : ''}`}
+              disabled={!cls}
+              onClick={() => onPick(ym)}
+            >
+              {m}월
+              {cls && <i className={`cs-cal-dot cs-bg-${cls}`} />}
+            </button>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -177,7 +196,7 @@ function PeriodPicker({ mode, periods, value, onPick }) {
         <div className="cs-period-pop">
           {mode === 'daily'
             ? <CalendarGrid periods={periods} value={value} onPick={pick} />
-            : <MonthList periods={periods} value={value} onPick={pick} />}
+            : <MonthGrid periods={periods} value={value} onPick={pick} />}
         </div>
       )}
     </div>
@@ -804,33 +823,31 @@ function B2bList() {
     <div className="cs-wrap">
       <div className="cs-inner">
 
-        {/* ── 통제: 제목 + 일별/월별 탭 + 기간 선택 ── */}
-        <div className="cs-head">
-          <h2 className="b2blist-title">
-            📊 헬스장 이탈 통계
-            <span className="b2blist-title-sub">{user.name} 사장님</span>
-          </h2>
-          <div className="cs-controls">
-            <div className="b2b-tabs" role="tablist" aria-label="집계 단위">
-              {[['daily', '일별'], ['monthly', '월별']].map(([m, label]) => (
-                <button
-                  key={m}
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === m}
-                  className={`b2b-chip${mode === m ? ' is-active' : ''}`}
-                  onClick={() => setMode(m)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <PeriodPicker mode={mode} periods={periods} value={openPeriod} onPick={setOpenPeriod} />
-          </div>
-        </div>
+        {/* ── 통제: 제목 → 안내 문구 → 일별/월별 탭 + 기간 선택 ── */}
+        <h2 className="b2blist-title">
+          📊 헬스장 이탈 통계
+          <span className="b2blist-title-sub">{user.name} 사장님</span>
+        </h2>
         <p className="b2blist-desc">
           선택한 {unit}의 위험군과 이탈 요인, 조치를 한 화면에서 확인합니다.
         </p>
+        <div className="cs-controls">
+          <div className="b2b-tabs" role="tablist" aria-label="집계 단위">
+            {[['daily', '일별'], ['monthly', '월별']].map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                role="tab"
+                aria-selected={mode === m}
+                className={`b2b-chip${mode === m ? ' is-active' : ''}`}
+                onClick={() => setMode(m)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <PeriodPicker mode={mode} periods={periods} value={openPeriod} onPick={setOpenPeriod} />
+        </div>
 
         {periodsLoading ? (
           <p className="cs-empty-state">불러오는 중…</p>
