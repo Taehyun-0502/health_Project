@@ -64,16 +64,24 @@
     <select id="selectStatPeriods" resultType="com.health.app.result.ChurnStatPeriodDTO">
         <choose>
             <when test="mode == 'monthly'">
-                <!-- 월별 = 그 달 일별 스냅샷의 평균 -->
-                select to_char(d.churn_date, 'YYYY-MM')      as period,
-                       cast(round(avg(d.total)) as int)      as totalMembers,
-                       cast(round(avg(d.risk)) as int)       as riskMembers,
-                       avg(d.avg_rate)                       as avgChurnRate
+                <!-- 월별 = 그 달 일별 스냅샷의 평균 (등급 분포도 일별 평균) -->
+                select to_char(d.churn_date, 'YYYY-MM')       as period,
+                       cast(round(avg(d.total)) as int)       as totalMembers,
+                       cast(round(avg(d.risk)) as int)        as riskMembers,
+                       avg(d.avg_rate)                        as avgChurnRate,
+                       cast(round(avg(d.stable)) as int)      as stableCount,
+                       cast(round(avg(d.watch)) as int)       as watchCount,
+                       cast(round(avg(d.intervene)) as int)   as interveneCount,
+                       cast(round(avg(d.crit)) as int)        as critCount
                 from (
                     select r.churn_date,
                            count(*)                                          as total,
                            count(*) filter (where r.churn_rate >= 0.45)      as risk,
-                           avg(r.churn_rate)                                  as avg_rate
+                           avg(r.churn_rate)                                  as avg_rate,
+                           count(*) filter (where r.churn_rate &lt; 0.25)                             as stable,
+                           count(*) filter (where r.churn_rate >= 0.25 and r.churn_rate &lt; 0.45)     as watch,
+                           count(*) filter (where r.churn_rate >= 0.45 and r.churn_rate &lt; 0.65)     as intervene,
+                           count(*) filter (where r.churn_rate >= 0.65)                             as crit
                     from "h_churn_result" r
                     join "h_member" mem on r.username = mem.username
                     where mem.gym_id = #{gymId} and r.churn_date is not null
@@ -87,7 +95,11 @@
                 select to_char(r.churn_date, 'YYYY-MM-DD')                 as period,
                        count(*)                                            as totalMembers,
                        count(*) filter (where r.churn_rate >= 0.45)        as riskMembers,
-                       avg(r.churn_rate)                                   as avgChurnRate
+                       avg(r.churn_rate)                                   as avgChurnRate,
+                       count(*) filter (where r.churn_rate &lt; 0.25)                             as stableCount,
+                       count(*) filter (where r.churn_rate >= 0.25 and r.churn_rate &lt; 0.45)     as watchCount,
+                       count(*) filter (where r.churn_rate >= 0.45 and r.churn_rate &lt; 0.65)     as interveneCount,
+                       count(*) filter (where r.churn_rate >= 0.65)                             as critCount
                 from "h_churn_result" r
                 join "h_member" mem on r.username = mem.username
                 where mem.gym_id = #{gymId}

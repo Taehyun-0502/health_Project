@@ -1,0 +1,234 @@
+/* 어드민 운동시설 제휴 계약 현황 + 회원 명단 드릴다운
+   시각 표현 전용 파일. 이 파일을 제거해도 조회·클릭·드릴다운 기능은 그대로 동작한다. */
+
+.admin-management {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* 상단 칩형 탭 (운동시설 제휴 계약 / 구인구직) */
+.admin-management__tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.admin-management__tab {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-500);
+  background: var(--gray-100);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.admin-management__tab:hover {
+  background: var(--gray-200);
+}
+
+.admin-management__tab--active {
+  color: var(--white);
+  background: var(--black);
+}
+
+.admin-management__tab--active:hover {
+  background: var(--black);
+}
+
+.admin-management__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.admin-management__title {
+  margin: 0 0 8px;
+}
+
+.admin-management__desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--gray-500);
+  line-height: 1.5;
+}
+
+.admin-management__back {
+  margin: 0 0 8px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: var(--gray-700);
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.admin-management__back:hover {
+  background: var(--gray-100);
+}
+
+.admin-management__refresh {
+  padding: 7px 14px;
+  cursor: pointer;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--gray-700);
+}
+
+.admin-management__refresh:disabled {
+  cursor: default;
+  color: var(--gray-400);
+}
+
+/* 요약 카드 3종 */
+.admin-management__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.admin-management__summary-card {
+  padding: 14px;
+  border-radius: 12px;
+}
+
+.admin-management__summary-label {
+  font-size: 12px;
+}
+
+.admin-management__summary-value {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-management__summary-card--normal {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.admin-management__summary-card--expiring {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+}
+
+.admin-management__summary-card--expired {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+/* 메시지 */
+.admin-management__error {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.admin-management__empty {
+  padding: 30px;
+  text-align: center;
+  color: var(--gray-400);
+  border: 1px dashed var(--gray-300);
+  border-radius: 12px;
+}
+
+/* 테이블 */
+.admin-management__table-wrap {
+  overflow-x: auto;
+}
+
+.admin-management__table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-management__table thead tr {
+  background: var(--gray-100);
+}
+
+.admin-management__table th,
+.admin-management__table td {
+  padding: 10px;
+  border: 1px solid var(--gray-200);
+}
+
+.admin-management__cell--center {
+  text-align: center;
+}
+
+.admin-management__cell--name {
+  font-weight: 500;
+}
+
+.admin-management__cell--gym {
+  font-weight: 700;
+}
+
+/* 운동시설명 = 회원 명단 드릴다운 진입 버튼 (텍스트 링크 형태) */
+.admin-management__gym-link {
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent-text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.admin-management__gym-link:hover {
+  color: var(--accent-strong);
+}
+
+.admin-management__gym-link:disabled {
+  color: var(--gray-400);
+  cursor: default;
+  text-decoration: none;
+}
+
+/* 만료까지 배지 (심각도별 색상) */
+.admin-management__badge {
+  display: inline-block;
+  min-width: 60px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-management__badge--none {
+  color: var(--gray-500);
+  background: var(--gray-100);
+}
+
+.admin-management__badge--expired {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.admin-management__badge--soon {
+  color: var(--accent-text);
+  background: var(--accent-bg);
+}
+
+.admin-management__badge--watch {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.admin-management__badge--normal {
+  color: var(--success);
+  background: var(--success-bg);
+}

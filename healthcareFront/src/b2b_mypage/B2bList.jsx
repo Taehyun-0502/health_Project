@@ -1,7 +1,6 @@
-import { useState, useEffect, Fragment } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-
-// 바 이름은 모델 피처키(컬럼명, statKey)를 그대로 노출한다.
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import './B2bList.css';
 
 // 이탈 요인 표시 고정 순서 (이 순서대로 위→아래로 노출, 목록에 없는 요인은 뒤로)
 const FACTOR_ORDER = [
@@ -23,39 +22,186 @@ const FACTOR_ORDER = [
   '가격불만',
 ];
 
-// 불만족 요인별 액션 버튼 라벨 (기능 미구현 — 버튼만 노출)
+// 모델 피처키(statKey) → 사용자용 자연어 라벨 (표시 전용, 매칭 로직은 원래 키 그대로 사용)
+const FACTOR_LABEL = {
+  '나이': '나이',
+  '이번달_주당방문횟수': '주당 방문 감소',
+  '총_이용개월수': '이용 기간',
+  '상대_방문공백': '방문 공백',
+  '일평균_운동시간': '운동시간 저조',
+  '주_이용_시간대_혼잡도': '시간대 혼잡',
+  '그룹수업_참여': '그룹수업 미참여',
+  'PT_가입여부': 'PT 미가입',
+  '최근한달_부상경험': '최근 부상',
+  '서비스불만_환경불편': '환경 불편',
+  '서비스불만_비매너회원': '비매너 회원',
+  '기구불만_기구부족': '기구 부족',
+  '기구불만_기구상태불만': '기구 상태 불만',
+  '직원불만_불친절': '직원 불친절',
+  '직원불만_전문성부족': '전문성 부족',
+  '가격불만': '가격 불만',
+};
+const factorLabel = (k) => FACTOR_LABEL[k] || String(k || '').replace(/_/g, ' ');
+
+// 불만족 요인별 액션 버튼 라벨
 const FACTOR_ACTION = {
   '서비스불만_환경불편': '헬퍼 요청',
   '직원불만_불친절': '교육 프로그램 제공',
-  '가격불만': '쿠폰',
-  'PT_가입여부': 'PT체험권 발송',
-  '최근한달_부상경험': 'PT체험권 발송',
-  '일평균_운동시간': '목표 설정 알림 발송',
+  '가격불만': '할인 쿠폰 발행',
+  'PT_가입여부': 'PT 체험권 보내기',
+  '최근한달_부상경험': 'PT 체험권 보내기',
+  '일평균_운동시간': '목표 알림 발송',
 };
 
 // 이 요인은 버튼 대신 '그 요인을 가진 회원들의 방문 시간대 분포'를 옆에 띄운다
 const VISIT_TIME_FACTOR = '서비스불만_비매너회원';
-
 // 이 요인은 버튼 대신 '그 헬스장 기구 목록'을 옆에 띄운다
 const EQUIP_FACTOR = '기구불만_기구부족';
-
 // 이 요인은 버튼 대신 '그 요인을 가진 회원들의 담당자(계약 manager_id)'를 옆에 띄운다
 const MANAGER_FACTOR = '직원불만_전문성부족';
-
 // 이 요인은 버튼 대신 '서비스센터 전체 목록'을 옆에 띄운다
 const SERVICE_CENTER_FACTOR = '기구불만_기구상태불만';
-
-// 이 요인의 버튼을 누르면 프로모션(쿠폰 발행) 탭이 켜진 채로 /fitb 로 이동
+// 이 요인의 버튼을 누르면 프로모션(쿠폰 발행) 페이지로 이동
 const COUPON_FACTOR = '가격불만';
-
 // 이 요인의 버튼(헬퍼)을 누르면 헬퍼 요청 팝업 → h_helper 등록
 const HELPER_FACTOR = '서비스불만_환경불편';
-
 // 이 요인들의 버튼(PT체험권 발송)을 누르면 쿠폰 발송 팝업 → 오늘자 위험군 회원에게 쿠폰 발송
 const PT_TRIAL_FACTORS = ['PT_가입여부', '최근한달_부상경험'];
 
 // 방문 시간대 표시 순서(시간순)
 const SLOT_ORDER = ['새벽(00-06)', '오전(06-11)', '점심(11-14)', '오후(14-18)', '저녁(18-22)', '야간(22-24)'];
+
+// 이탈률(0~1) → 위험 등급 (모델 tier_edges [25,45,65] 와 일치)
+function tierOf(rate) {
+  const s = (Number(rate) || 0) * 100;
+  if (s < 25) return { label: '안정', cls: 'good' };
+  if (s < 45) return { label: '관찰', cls: 'warn' };
+  if (s < 65) return { label: '개입', cls: 'serious' };
+  return { label: '긴급', cls: 'crit' };
+}
+
+// 달력 그리드 (일별 선택) — 날짜별 이탈 등급 점 표시
+function CalendarGrid({ periods, value, onPick }) {
+  const tierByDate = {};
+  periods.forEach((p) => { tierByDate[p.period] = tierOf(p.avgChurnRate).cls; });
+  const pad = (n) => String(n).padStart(2, '0');
+  const initDate = value || periods[0]?.period || new Date().toISOString().slice(0, 10);
+  const [ym, setYm] = useState(() => {
+    const parts = String(initDate).split('-').map(Number);
+    return { y: parts[0], m: parts[1] };
+  });
+  const firstDow = new Date(ym.y, ym.m - 1, 1).getDay();
+  const daysInMonth = new Date(ym.y, ym.m, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < firstDow; i += 1) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d += 1) cells.push(d);
+  const prevMonth = () => setYm((s) => (s.m === 1 ? { y: s.y - 1, m: 12 } : { y: s.y, m: s.m - 1 }));
+  const nextMonth = () => setYm((s) => (s.m === 12 ? { y: s.y + 1, m: 1 } : { y: s.y, m: s.m + 1 }));
+
+  return (
+    <>
+      <div className="cs-cal-head">
+        <button type="button" onClick={prevMonth} aria-label="이전 달">‹</button>
+        <span>{ym.y}년 {ym.m}월</span>
+        <button type="button" onClick={nextMonth} aria-label="다음 달">›</button>
+      </div>
+      <div className="cs-cal-grid cs-cal-dow">
+        {['일', '월', '화', '수', '목', '금', '토'].map((d) => (
+          <span key={d} className="cs-cal-dow-cell">{d}</span>
+        ))}
+      </div>
+      <div className="cs-cal-grid">
+        {cells.map((d, i) => {
+          if (d === null) return <span key={`b${i}`} />;
+          const ds = `${ym.y}-${pad(ym.m)}-${pad(d)}`;
+          const cls = tierByDate[ds];
+          const sel = value === ds;
+          return (
+            <button
+              key={ds}
+              type="button"
+              className={`cs-cal-day${cls ? ' has-data' : ''}${sel ? ' is-sel' : ''}`}
+              disabled={!cls}
+              onClick={() => onPick(ds)}
+            >
+              {d}
+              {cls && <i className={`cs-cal-dot cs-bg-${cls}`} />}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+// 월 달력 (월별 선택) — 일별 달력처럼 연도를 넘기며 12개월 그리드로 선택
+function MonthGrid({ periods, value, onPick }) {
+  const tierByPeriod = {};
+  periods.forEach((p) => { tierByPeriod[p.period] = tierOf(p.avgChurnRate).cls; });
+  const pad = (n) => String(n).padStart(2, '0');
+  const initYear = Number(String(value || periods[0]?.period || new Date().getFullYear()).slice(0, 4));
+  const [year, setYear] = useState(initYear);
+
+  return (
+    <>
+      <div className="cs-cal-head">
+        <button type="button" onClick={() => setYear((y) => y - 1)} aria-label="이전 해">‹</button>
+        <span>{year}년</span>
+        <button type="button" onClick={() => setYear((y) => y + 1)} aria-label="다음 해">›</button>
+      </div>
+      <div className="cs-cal-grid cs-month-grid">
+        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+          const ym = `${year}-${pad(m)}`;
+          const cls = tierByPeriod[ym];
+          const sel = value === ym;
+          return (
+            <button
+              key={ym}
+              type="button"
+              className={`cs-cal-day cs-mcell${cls ? ' has-data' : ''}${sel ? ' is-sel' : ''}`}
+              disabled={!cls}
+              onClick={() => onPick(ym)}
+            >
+              {m}월
+              {cls && <i className={`cs-cal-dot cs-bg-${cls}`} />}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+// 기간(날짜/월) 선택 — 통제 영역의 명시적 컨트롤 (전체 회원 표시와 분리)
+function PeriodPicker({ mode, periods, value, onPick }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+  const pick = (v) => { onPick(v); setOpen(false); };
+
+  return (
+    <div className="cs-periodpick" ref={ref}>
+      <button type="button" className="cs-period-ctl" aria-expanded={open} title={mode === 'daily' ? '날짜 선택' : '월 선택'}
+              onClick={() => setOpen((o) => !o)}>
+        <span className="cs-period-cal" aria-hidden="true">📅</span>
+        <span className="cs-period-val cs-num">{value || (mode === 'daily' ? '날짜' : '월')}</span>
+        <span className="cs-period-chev" aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <div className="cs-period-pop">
+          {mode === 'daily'
+            ? <CalendarGrid periods={periods} value={value} onPick={pick} />
+            : <MonthGrid periods={periods} value={value} onPick={pick} />}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // 서비스불만_비매너회원 요인을 가진 위험군 회원들이 주로 언제 오는지 (방문 시간대 분포)
 function VisitTimePanel({ gymId, mode, period, statKey }) {
@@ -79,68 +225,38 @@ function VisitTimePanel({ gymId, mode, period, statKey }) {
   const peak = slots.reduce((p, x) => (Number(x.cnt || 0) > Number(p?.cnt || 0) ? x : p), null);
 
   return (
-    <div style={{ minWidth: '260px', flex: '0 1 320px', border: '1px solid #f0c9a8', borderRadius: '8px',
-                  padding: '10px 12px', background: '#fff' }}>
-      <h5 style={{ margin: '0 0 6px' }}>🕒 이 회원들이 주로 오는 시간대</h5>
+    <div className="cs-side">
+      <h5>🕒 이 회원들이 주로 오는 시간대</h5>
       {loading ? (
-        <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>불러오는 중…</p>
+        <p className="cs-loading">불러오는 중…</p>
       ) : total === 0 ? (
-        <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>방문 기록이 없습니다.</p>
+        <p className="cs-empty">방문 기록이 없습니다.</p>
       ) : (
         <>
-          <p style={{ fontSize: '12px', color: '#666', margin: '0 0 8px' }}>
-            총 <b>{total}</b>회 방문 · 피크 <b style={{ color: '#ef6c00' }}>{peak?.slot}</b>
+          <p className="cs-hint" style={{ marginBottom: '8px' }}>
+            총 <b>{total}</b>회 방문 · 피크 <b className="cs-accent">{peak?.slot}</b>
           </p>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-            <tbody>
-              {sorted.map((x) => {
-                const cnt = Number(x.cnt || 0);
-                return (
-                  <tr key={x.slot}>
-                    <td style={{ padding: '2px 8px 2px 0', whiteSpace: 'nowrap', color: '#555' }}>{x.slot}</td>
-                    <td style={{ padding: '2px 6px', width: '100%' }}>
-                      <div style={{ background: '#eee', borderRadius: '4px', height: '12px' }}>
-                        <div style={{ background: '#ef6c00', width: `${(cnt / max) * 100}%`, height: '100%', borderRadius: '4px' }} />
-                      </div>
-                    </td>
-                    <td style={{ padding: '2px 0', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                      {cnt}회
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="cs-side-body">
+            <table>
+              <tbody>
+                {sorted.map((x) => {
+                  const cnt = Number(x.cnt || 0);
+                  return (
+                    <tr key={x.slot}>
+                      <td className="cs-slot-name">{x.slot}</td>
+                      <td style={{ width: '100%' }}>
+                        <div className="cs-slotbar"><i style={{ width: `${(cnt / max) * 100}%` }} /></div>
+                      </td>
+                      <td className="r cs-num">{cnt}회</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </div>
-  );
-}
-
-// 비율 막대
-function Bar({ pct, color }) {
-  return (
-    <div style={{ background: '#eee', borderRadius: '4px', height: '14px', width: '100%', minWidth: '80px' }}>
-      <div style={{ background: color, width: `${Math.min(pct, 100)}%`, height: '100%', borderRadius: '4px' }} />
-    </div>
-  );
-}
-
-// 이탈 요인 한 행 (클릭 → 해당 요인을 가진 위험군 회원 명단 토글)
-function StatRow({ label, pct, memberCount, riskMembers, open, onClick }) {
-  return (
-    <tr onClick={onClick}
-        style={{ background: open ? '#fff3e0' : '#fff', cursor: 'pointer' }}>
-      <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', fontWeight: 'bold' }}>
-        {label}<span style={{ color: '#999', fontSize: '11px' }}>{open ? ' ▲' : ' ▼'}</span>
-      </td>
-      <td style={{ padding: '4px 8px', width: '45%' }}>{pct != null ? <Bar pct={pct} color="#ef6c00" /> : null}</td>
-      <td style={{ padding: '4px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-        {pct != null ? (
-          <><strong>{pct}%</strong> <span style={{ color: '#999', fontSize: '12px' }}>({memberCount}명 / 위험군 {riskMembers ?? 0}명)</span></>
-        ) : null}
-      </td>
-    </tr>
   );
 }
 
@@ -163,28 +279,26 @@ function EquipmentPanel({ gymId }) {
   const sorted = [...items].sort((a, b) => Number(b.itemCount || 0) - Number(a.itemCount || 0));
 
   return (
-    <div style={{ minWidth: '220px', flex: '0 1 300px', border: '1px solid #f0c9a8', borderRadius: '8px',
-                  padding: '10px 12px', background: '#fff' }}>
-      <h5 style={{ margin: '0 0 6px' }}>🏋️ 이 헬스장 기구 목록</h5>
+    <div className="cs-side">
+      <h5>🏋️ 이 헬스장 기구 목록</h5>
       {loading ? (
-        <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>불러오는 중…</p>
+        <p className="cs-loading">불러오는 중…</p>
       ) : sorted.length === 0 ? (
-        <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>등록된 기구가 없습니다.</p>
+        <p className="cs-empty">등록된 기구가 없습니다.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-          <thead><tr style={{ color: '#888' }}>
-            <th style={{ textAlign: 'left', padding: '2px 12px 4px 0' }}>기구명</th>
-            <th style={{ textAlign: 'right', padding: '2px 0 4px' }}>보유 수량</th>
-          </tr></thead>
-          <tbody>
-            {sorted.map((it) => (
-              <tr key={it.itemName} style={{ borderTop: '1px solid #f3f3f3' }}>
-                <td style={{ padding: '3px 12px 3px 0' }}>{it.itemName}</td>
-                <td style={{ padding: '3px 0', textAlign: 'right', fontWeight: 'bold' }}>{it.itemCount}대</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="cs-side-body">
+          <table>
+            <thead><tr><th className="cs-eq-name">기구명</th><th className="r">보유 수량</th></tr></thead>
+            <tbody>
+              {sorted.map((it) => (
+                <tr key={it.itemName}>
+                  <td className="cs-eq-name">{it.itemName}</td>
+                  <td className="r cs-num">{it.itemCount}대</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
@@ -206,29 +320,46 @@ function ManagerPanel({ gymId, mode, period, statKey }) {
       .finally(() => setLoading(false));
   }, [gymId, mode, period, statKey]);
 
+  // 담당자별 회원 수 집계 (응답 행 = 회원 1명 + 담당자, managerId 기준 그룹)
+  const byManager = {};
+  list.forEach((m) => {
+    const id = m.managerId ?? m.managerName;
+    if (!byManager[id]) byManager[id] = { managerId: id, managerName: m.managerName, cnt: 0 };
+    byManager[id].cnt += 1;
+  });
+  const managers = Object.values(byManager).sort((a, b) => b.cnt - a.cnt);
+  const total = list.length;
+  const max = managers.reduce((mx, x) => Math.max(mx, x.cnt), 0) || 1;
+  const top = managers[0] || null;
+
   return (
-    <div style={{ minWidth: '260px', flex: '0 1 340px', border: '1px solid #f0c9a8', borderRadius: '8px',
-                  padding: '10px 12px', background: '#fff' }}>
-      <h5 style={{ margin: '0 0 6px' }}>🧑‍🏫 이 회원들의 담당자</h5>
+    <div className="cs-side">
+      <h5>🧑‍🏫 이 회원들의 담당자</h5>
       {loading ? (
-        <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>불러오는 중…</p>
-      ) : list.length === 0 ? (
-        <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>배정된 담당자가 없습니다.</p>
+        <p className="cs-loading">불러오는 중…</p>
+      ) : managers.length === 0 ? (
+        <p className="cs-empty">배정된 담당자가 없습니다.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-          <thead><tr style={{ color: '#888' }}>
-            <th style={{ textAlign: 'left', padding: '2px 12px 4px 0' }}>회원</th>
-            <th style={{ textAlign: 'left', padding: '2px 0 4px' }}>담당자</th>
-          </tr></thead>
-          <tbody>
-            {list.map((m) => (
-              <tr key={m.username} style={{ borderTop: '1px solid #f3f3f3' }}>
-                <td style={{ padding: '3px 12px 3px 0' }}>{m.memberName}</td>
-                <td style={{ padding: '3px 0', fontWeight: 'bold' }}>{m.managerName}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <>
+          <p className="cs-hint" style={{ marginBottom: '8px' }}>
+            총 <b>{total}</b>명 · 최다 <b className="cs-accent">{top?.managerName}</b>
+          </p>
+          <div className="cs-side-body">
+            <table>
+              <tbody>
+                {managers.map((x) => (
+                  <tr key={x.managerId}>
+                    <td className="cs-slot-name">{x.managerName}</td>
+                    <td style={{ width: '100%' }}>
+                      <div className="cs-slotbar"><i style={{ width: `${(x.cnt / max) * 100}%` }} /></div>
+                    </td>
+                    <td className="r cs-num">{x.cnt}명</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
@@ -249,33 +380,28 @@ function ServiceCenterPanel() {
   }, []);
 
   return (
-    <div style={{ minWidth: '280px', flex: '0 1 380px', border: '1px solid #f0c9a8', borderRadius: '8px',
-                  padding: '10px 12px', background: '#fff' }}>
-      <h5 style={{ margin: '0 0 8px' }}>🛠️ 서비스센터 목록</h5>
+    <div className="cs-side cs-side-sc">
+      <h5>🛠️ 서비스센터 목록</h5>
       {loading ? (
-        <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>불러오는 중…</p>
+        <p className="cs-loading">불러오는 중…</p>
       ) : centers.length === 0 ? (
-        <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>등록된 서비스센터가 없습니다.</p>
+        <p className="cs-empty">등록된 서비스센터가 없습니다.</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="cs-side-body cs-center-list">
           {centers.map((c) => (
-            <div key={c.centerId} style={{ borderTop: '1px solid #f3f3f3', paddingTop: '6px', fontSize: '13px' }}>
-              <div style={{ fontWeight: 'bold' }}>
+            <div key={c.centerId} className="cs-center">
+              <div className="cs-center-name">
                 {c.centerName}
                 {c.brandName && c.brandName !== c.centerName && (
-                  <span style={{ color: '#999', fontWeight: 'normal', fontSize: '12px' }}> ({c.brandName})</span>
+                  <span className="cs-muted cs-center-brand"> ({c.brandName})</span>
                 )}
+                <span className={`cs-center-repair ${c.onsiteRepair ? 'cs-good' : 'cs-crit'}`}>
+                  {c.onsiteRepair ? '✔ 출장 수리 가능' : '✕ 출장 수리 불가'}
+                </span>
               </div>
-              <div style={{ color: '#555' }}>📞 {c.centerPhone || '-'}</div>
-              {c.operatingHours && <div style={{ color: '#777', fontSize: '12px' }}>🕒 {c.operatingHours}</div>}
-              <div style={{ fontSize: '12px', color: c.onsiteRepair ? '#2e7d32' : '#999' }}>
-                {c.onsiteRepair ? '✔ 출장 수리 가능' : '출장 수리 불가'}
-              </div>
-              {c.url && (
-                <a href={c.url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#ef6c00' }}>
-                  홈페이지 바로가기 ↗
-                </a>
-              )}
+              <div className="cs-ink-2">📞 {c.centerPhone || '-'}</div>
+              {c.operatingHours && <div className="cs-muted cs-center-hours">🕒 {c.operatingHours}</div>}
+              {c.url && (<a href={c.url} target="_blank" rel="noreferrer">홈페이지 바로가기 ↗</a>)}
             </div>
           ))}
         </div>
@@ -284,31 +410,29 @@ function ServiceCenterPanel() {
   );
 }
 
-// 회원 명단 하위행 (요인 로우 클릭 시)
-function MemberListRow({ loading, members, statKey, gymId, mode, period }) {
+// 요인 아코디언 펼침 시 인라인 상세 — 회원 명단 + 조치 버튼/팝업 + 정보 패널
+function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
   const navigate = useNavigate();
   const action = FACTOR_ACTION[statKey];
-  const showVisitTime = statKey === VISIT_TIME_FACTOR;   // 비매너회원 → 버튼 대신 방문 시간대 패널
-  const showEquip = statKey === EQUIP_FACTOR;            // 기구부족 → 버튼 대신 기구 목록 패널
-  const showManager = statKey === MANAGER_FACTOR;        // 전문성부족 → 버튼 대신 담당자 패널
-  const showServiceCenter = statKey === SERVICE_CENTER_FACTOR;  // 기구상태불만 → 버튼 대신 서비스센터 목록
-  const isCoupon = statKey === COUPON_FACTOR;            // 가격불만 → 버튼 누르면 프로모션 탭으로 이동
-  const isHelper = statKey === HELPER_FACTOR;            // 환경불편 → 헬퍼 버튼 누르면 요청 팝업
-  const isPtTrial = PT_TRIAL_FACTORS.includes(statKey);  // PT가입여부/부상경험 → PT체험권 발송 팝업
+  const showVisitTime = statKey === VISIT_TIME_FACTOR;
+  const showEquip = statKey === EQUIP_FACTOR;
+  const showManager = statKey === MANAGER_FACTOR;
+  const showServiceCenter = statKey === SERVICE_CENTER_FACTOR;
+  const isCoupon = statKey === COUPON_FACTOR;
+  const isHelper = statKey === HELPER_FACTOR;
+  const isPtTrial = PT_TRIAL_FACTORS.includes(statKey);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [helperOpen, setHelperOpen] = useState(false);
   const [helperText, setHelperText] = useState('');
   const [helperSending, setHelperSending] = useState(false);
 
-  // PT체험권(쿠폰) 발송 팝업 상태
   const [ptOpen, setPtOpen] = useState(false);
   const [couponTypes, setCouponTypes] = useState([]);
   const [selectedCouponNum, setSelectedCouponNum] = useState('');
   const [ptExpiry, setPtExpiry] = useState('');
   const [ptSending, setPtSending] = useState(false);
 
-  // 팝업 열릴 때 그 헬스장(gym_id)의 쿠폰 종류 목록 로드
   useEffect(() => {
     if (!ptOpen || !gymId) return;
     const token = localStorage.getItem('accessToken');
@@ -320,7 +444,6 @@ function MemberListRow({ loading, members, statKey, gymId, mode, period }) {
       .catch((e) => { console.error('쿠폰 종류 조회 실패:', e); setCouponTypes([]); });
   }, [ptOpen, gymId]);
 
-  // 선택 회원들에게 쿠폰 발송 (이미 발송(status=1)된 회원은 서버가 스킵)
   const submitPtTrial = async () => {
     const token = localStorage.getItem('accessToken');
     if (!selectedCouponNum) { alert('발송할 쿠폰을 선택하세요.'); return; }
@@ -353,7 +476,6 @@ function MemberListRow({ loading, members, statKey, gymId, mode, period }) {
     }
   };
 
-  // 헬퍼 요청 등록 — username=로그인 사장님, title/status는 서버 고정
   const submitHelper = async () => {
     if (!user.username) { alert('로그인 정보를 찾을 수 없습니다.'); return; }
     setHelperSending(true);
@@ -377,184 +499,131 @@ function MemberListRow({ loading, members, statKey, gymId, mode, period }) {
     }
   };
 
+  const showActionBtn = action && !showVisitTime && !showEquip && !showManager && !showServiceCenter;
+  const actionCopy = isPtTrial ? 'PT 미가입·부상 위험군에게 체험권으로 전환을 유도합니다.'
+    : isCoupon ? '가격에 민감한 위험군에게 재등록 할인 쿠폰을 제공합니다.'
+    : isHelper ? '환경 불편을 겪는 회원을 위해 헬퍼를 요청합니다.'
+    : '이 요인 위험군에게 조치를 실행합니다.';
+  const onAction = isCoupon ? () => navigate('/fitb/promotion')
+    : isHelper ? () => setHelperOpen(true)
+    : isPtTrial ? () => setPtOpen(true)
+    : undefined;
+
   return (
-    <tr>
-      <td colSpan={3} style={{ padding: '6px 8px 10px 28px', background: '#fffdf5' }}>
-        {action && !showVisitTime && !showEquip && !showManager && !showServiceCenter && (
-          <div style={{ marginBottom: '8px' }}>
-            <button
-              type="button"
-              onClick={
-                isCoupon ? () => navigate('/fitb/promotion')
-                : isHelper ? () => setHelperOpen(true)
-                : isPtTrial ? () => setPtOpen(true)
-                : undefined
-              }
-              style={{
-                padding: '5px 14px', borderRadius: '6px', cursor: 'pointer',
-                border: '1px solid #ef6c00', background: '#fff', color: '#ef6c00',
-                fontSize: '13px', fontWeight: 'bold',
-              }}
-            >
-              {action}
-            </button>
-          </div>
-        )}
-
-        {/* 헬퍼 요청 팝업 */}
-        {helperOpen && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex',
-                        justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}
-               onClick={() => !helperSending && setHelperOpen(false)}>
-            <div style={{ background: '#fff', borderRadius: '8px', padding: '20px', width: '360px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}
-                 onClick={(e) => e.stopPropagation()}>
-              <h4 style={{ margin: '0 0 4px' }}>🛎️ 헬퍼 요청</h4>
-              <p style={{ fontSize: '12px', color: '#888', margin: '0 0 12px' }}>
-                요청자: <b>{user.name || user.username}</b> · 상태: 처리대기로 접수됩니다.
-              </p>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>추가로 적을 내용</label>
-              <textarea
-                value={helperText}
-                onChange={(e) => setHelperText(e.target.value)}
-                rows={4}
-                placeholder="요청 내용을 입력하세요 (예: 샤워실 환기 개선 요청)"
-                style={{ width: '100%', boxSizing: 'border-box', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '13px', resize: 'vertical' }}
-              />
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '14px' }}>
-                <button type="button" onClick={() => setHelperOpen(false)} disabled={helperSending}
-                        style={{ padding: '6px 12px', border: '1px solid #ccc', borderRadius: '4px', background: '#fff', cursor: 'pointer' }}>
-                  취소
-                </button>
-                <button type="button" onClick={submitHelper} disabled={helperSending}
-                        style={{ padding: '6px 15px', border: 'none', borderRadius: '4px', background: '#ef6c00', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
-                  {helperSending ? '요청 중…' : '요청'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* PT체험권(쿠폰) 발송 팝업 */}
-        {ptOpen && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex',
-                        justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}
-               onClick={() => !ptSending && setPtOpen(false)}>
-            <div style={{ background: '#fff', borderRadius: '8px', padding: '22px', width: '400px', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}
-                 onClick={(e) => e.stopPropagation()}>
-              <h4 style={{ margin: '0 0 4px' }}>🎟️ 쿠폰 발송 설정</h4>
-              <p style={{ fontSize: '12px', color: '#888', margin: '0 0 14px' }}>
-                아래 <b>{members.length}명</b>에게 선택한 쿠폰을 발송합니다. (이미 발송된 회원은 자동 제외)
-              </p>
-
-              {/* 쿠폰 선택 (그 헬스장 gym_id 쿠폰만) */}
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>발송할 쿠폰</label>
-              <select value={selectedCouponNum} onChange={(e) => setSelectedCouponNum(e.target.value)}
-                      style={{ width: '100%', boxSizing: 'border-box', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', marginBottom: '14px' }}>
-                <option value="">-- 체험권 선택 --</option>
-                {couponTypes.filter((c) => c.category === '체험권').map((c) => (
-                  <option key={c.couponNum} value={c.couponNum}>
-                    {c.couponName} ({c.percent}% / {c.couponCount}회)
-                  </option>
-                ))}
-              </select>
-              {couponTypes.filter((c) => c.category === '체험권').length === 0 && (
-                <p style={{ fontSize: '12px', color: '#c62828', margin: '-8px 0 14px' }}>
-                  등록된 체험권 쿠폰이 없습니다. 프로모션에서 먼저 체험권을 만들어 주세요.
-                </p>
-              )}
-
-              {/* 대상 회원 (바 드릴다운 회원 자동 포함, 읽기전용) */}
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
-                대상 회원 ({members.length}명)
-              </label>
-              <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid #ccc', borderRadius: '4px', padding: '8px', marginBottom: '14px', fontSize: '13px' }}>
-                {members.length === 0 ? <span style={{ color: '#888' }}>대상 회원이 없습니다.</span>
-                  : members.map((m) => (
-                      <div key={m.username} style={{ padding: '2px 0' }}>
-                        {m.name} <span style={{ color: '#999', fontSize: '11px' }}>({m.username})</span>
-                      </div>
-                    ))}
-              </div>
-
-              {/* 사용 만료 기한 */}
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>사용 만료 기한</label>
-              <input type="date" value={ptExpiry} onChange={(e) => setPtExpiry(e.target.value)}
-                     style={{ width: '100%', boxSizing: 'border-box', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} />
-
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
-                <button type="button" onClick={() => setPtOpen(false)} disabled={ptSending}
-                        style={{ padding: '6px 12px', border: '1px solid #ccc', borderRadius: '4px', background: '#fff', cursor: 'pointer' }}>
-                  취소
-                </button>
-                <button type="button" onClick={submitPtTrial} disabled={ptSending || members.length === 0}
-                        style={{ padding: '6px 15px', border: 'none', borderRadius: '4px', background: '#ef6c00', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
-                  {ptSending ? '보내는 중…' : '보내기'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          {/* 왼쪽: 해당 요인을 가진 회원 명단 */}
-          <div>
-            {loading ? <span style={{ color: '#888' }}>명단 불러오는 중…</span>
-              : members.length === 0 ? <span style={{ color: '#888' }}>해당 회원 없음</span>
-              : (
-                <table style={{ borderCollapse: 'collapse', fontSize: '13px' }}>
-                  <thead><tr style={{ color: '#888' }}>
-                    <th style={{ textAlign: 'left', padding: '2px 12px 2px 0' }}>회원</th>
-                    <th style={{ textAlign: 'left', padding: '2px 12px 2px 0' }}>ID</th>
-                    <th style={{ textAlign: 'right', padding: '2px 0' }}>이탈율</th>
-                  </tr></thead>
-                  <tbody>
-                    {members.map((m) => (
-                      <tr key={m.username}>
-                        <td style={{ padding: '2px 12px 2px 0' }}>{m.name}</td>
-                        <td style={{ padding: '2px 12px 2px 0', color: '#666' }}>{m.username}</td>
-                        <td style={{ padding: '2px 0', textAlign: 'right', fontWeight: 'bold',
-                                     color: m.churnRate >= 0.5 ? '#c62828' : m.churnRate >= 0.25 ? '#ef6c00' : '#2e7d32' }}>
-                          {(m.churnRate * 100).toFixed(1)}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-          </div>
-          {/* 오른쪽: 방문 시간대 분포 (비매너회원) / 기구 목록 (기구부족) */}
-          {showVisitTime && (
-            <VisitTimePanel gymId={gymId} mode={mode} period={period} statKey={statKey} />
-          )}
-          {showEquip && <EquipmentPanel gymId={gymId} />}
-          {showManager && (
-            <ManagerPanel gymId={gymId} mode={mode} period={period} statKey={statKey} />
-          )}
-          {showServiceCenter && <ServiceCenterPanel />}
+    <div className="cs-fd-body">
+      {loading ? (
+        <p className="cs-loading cs-muted">명단 불러오는 중…</p>
+      ) : members.length === 0 ? (
+        <p className="cs-empty cs-muted">해당 회원 없음</p>
+      ) : (
+        <div className="cs-fd-members">
+          <table className="cs-mtable">
+            <thead><tr><th>회원</th><th>ID</th><th className="r">이탈률</th></tr></thead>
+            <tbody>
+              {members.map((m) => {
+                const t = tierOf(m.churnRate);
+                return (
+                  <tr key={m.username}>
+                    <td>{m.name}</td>
+                    <td className="cs-muted cs-num">{m.username}</td>
+                    <td className={`r cs-num cs-${t.cls}`}>{(m.churnRate * 100).toFixed(1)}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      </td>
-    </tr>
+      )}
+
+      {/* 조치 버튼 (결과지향 문구) — 발송/이동형 요인 */}
+      {showActionBtn && (
+        <div className="cs-fd-action">
+          <span className="cs-fd-action-copy">{actionCopy}</span>
+          <button type="button" className="cs-action-solid" onClick={onAction}>
+            {members.length > 0 ? `이 ${members.length}명에게 ` : ''}{action} →
+          </button>
+        </div>
+      )}
+
+      {/* 정보형 요인 = 조치 버튼 대신 참고 데이터 패널 */}
+      {showVisitTime && <VisitTimePanel gymId={gymId} mode={mode} period={period} statKey={statKey} />}
+      {showEquip && <EquipmentPanel gymId={gymId} />}
+      {showManager && <ManagerPanel gymId={gymId} mode={mode} period={period} statKey={statKey} />}
+      {showServiceCenter && <ServiceCenterPanel />}
+
+      {/* 헬퍼 요청 팝업 */}
+      {helperOpen && (
+        <div className="cs-modal-back" onClick={() => !helperSending && setHelperOpen(false)}>
+          <div className="cs-modal sm" onClick={(e) => e.stopPropagation()}>
+            <h4>🛎️ 헬퍼 요청</h4>
+            <p className="cs-modal-desc">요청자: <b>{user.name || user.username}</b> · 상태: 처리대기로 접수됩니다.</p>
+            <label className="cs-field-label" htmlFor="helper-text">추가로 적을 내용</label>
+            <textarea id="helper-text" className="cs-textarea" value={helperText} onChange={(e) => setHelperText(e.target.value)} rows={4}
+                      placeholder="요청 내용을 입력하세요 (예: 샤워실 환기 개선 요청)" />
+            <div className="cs-modal-actions">
+              <button type="button" className="cs-btn-ghost" onClick={() => setHelperOpen(false)} disabled={helperSending}>취소</button>
+              <button type="button" className="cs-btn-primary" onClick={submitHelper} disabled={helperSending}>
+                {helperSending ? '요청 중…' : '요청'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PT체험권(쿠폰) 발송 팝업 */}
+      {ptOpen && (
+        <div className="cs-modal-back" onClick={() => !ptSending && setPtOpen(false)}>
+          <div className="cs-modal" onClick={(e) => e.stopPropagation()}>
+            <h4>🎟️ 쿠폰 발송 설정</h4>
+            <p className="cs-modal-desc">아래 <b>{members.length}명</b>에게 선택한 쿠폰을 발송합니다. (이미 발송된 회원은 자동 제외)</p>
+
+            <label className="cs-field-label" htmlFor="pt-coupon">발송할 쿠폰</label>
+            <select id="pt-coupon" className="cs-select" value={selectedCouponNum} onChange={(e) => setSelectedCouponNum(e.target.value)}>
+              <option value="">-- 체험권 선택 --</option>
+              {couponTypes.filter((c) => c.category === '체험권').map((c) => (
+                <option key={c.couponNum} value={c.couponNum}>
+                  {c.couponName} ({c.percent}% / {c.couponCount}회)
+                </option>
+              ))}
+            </select>
+            {couponTypes.filter((c) => c.category === '체험권').length === 0 && (
+              <p className="cs-warn-text">등록된 체험권 쿠폰이 없습니다. 프로모션에서 먼저 체험권을 만들어 주세요.</p>
+            )}
+
+            <label className="cs-field-label">대상 회원 ({members.length}명)</label>
+            <div className="cs-target-box">
+              {members.length === 0 ? <span className="cs-muted">대상 회원이 없습니다.</span>
+                : members.map((m) => (
+                    <div key={m.username} className="cs-target-row">
+                      {m.name} <span className="cs-muted cs-target-id">({m.username})</span>
+                    </div>
+                  ))}
+            </div>
+
+            <label className="cs-field-label" htmlFor="pt-expiry">사용 만료 기한</label>
+            <input id="pt-expiry" type="date" className="cs-input" value={ptExpiry} onChange={(e) => setPtExpiry(e.target.value)} />
+
+            <div className="cs-modal-actions">
+              <button type="button" className="cs-btn-ghost" onClick={() => setPtOpen(false)} disabled={ptSending}>취소</button>
+              <button type="button" className="cs-btn-primary" onClick={submitPtTrial} disabled={ptSending || members.length === 0}>
+                {ptSending ? '보내는 중…' : '보내기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-// 이탈 요인 비율(주황 바) — 요인 로우 클릭 시 그 요인을 가진 위험군 회원 명단 조회
-function Breakdown({ items, riskMembers, gymId, mode, period }) {
-  const [openKey, setOpenKey] = useState(null);   // statKey
+// 이탈 요인 아코디언 (FACTOR_ORDER 고정 순서, 펼치면 회원 명단+조치 인라인)
+function FactorList({ items, gymId, mode, period }) {
+  const [openKey, setOpenKey] = useState(null);
   const [members, setMembers] = useState([]);
   const [mLoading, setMLoading] = useState(false);
 
-  // 직전 기간 대비 '새로' 위험군에 진입한 회원 명단 + 이탈이유(top1~3) — 옆에 표시
-  const [riskList, setRiskList] = useState([]);
-  const [riskLoading, setRiskLoading] = useState(false);
-  useEffect(() => {
-    if (!gymId || !period) { setRiskList([]); return; }
-    setRiskLoading(true);
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/result/stats/riskMembers`
-      + `?gymId=${gymId}&mode=${mode}&period=${period}`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setRiskList)
-      .catch((e) => { console.error('위험군 명단 조회 실패:', e); setRiskList([]); })
-      .finally(() => setRiskLoading(false));
-  }, [gymId, mode, period]);
+  // 기간 변경 시 열린 요인 닫기
+  useEffect(() => { setOpenKey(null); setMembers([]); }, [period]);
 
   const toggle = async (statKey) => {
     if (openKey === statKey) { setOpenKey(null); setMembers([]); return; }
@@ -569,85 +638,105 @@ function Breakdown({ items, riskMembers, gymId, mode, period }) {
     } finally { setMLoading(false); }
   };
 
-  // 이탈 요인(주황)만 FACTOR_ORDER 고정 순서로 정렬
   const factorRank = (k) => { const i = FACTOR_ORDER.indexOf(k); return i === -1 ? FACTOR_ORDER.length : i; };
   const factors = items
     .filter((b) => b.statType === 'factor')
     .sort((a, b) => factorRank(a.statKey) - factorRank(b.statKey));
 
-  const rows = [];
-  factors.forEach((f) => {
-    const open = openKey === f.statKey;
-    rows.push(
-      <StatRow key={f.statKey} open={open} onClick={() => toggle(f.statKey)}
-        label={f.statKey} pct={f.pct} memberCount={f.memberCount} riskMembers={riskMembers} />
-    );
-    if (open) rows.push(<MemberListRow key={`${f.statKey}-m`} loading={mLoading} members={members} statKey={f.statKey}
-                                       gymId={gymId} mode={mode} period={period} />);
-  });
+  if (factors.length === 0) return <p className="cs-empty cs-muted cs-pad">데이터 없음</p>;
 
   return (
-    <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-      {/* 왼쪽: 이탈요인 비율 (주황) */}
-      <div style={{ flex: '1 1 520px', minWidth: 0, maxWidth: '620px' }}>
-        <h4 style={{ marginBottom: '2px' }}>📌 이탈 요인 비율 <span style={{ fontSize: '13px', color: '#c62828' }}>(위험군 {riskMembers ?? 0}명 기준)</span></h4>
-        <p style={{ fontSize: '12px', color: '#888', margin: '2px 0 8px' }}>
-          위험군(개입·긴급 등급) 회원 대상 · 주황 = 이탈 요인 비율(위험군 대비) · <b>요인 행을 누르면 해당 회원 명단</b>
-          <br />※ 회원 1명당 <b>이탈요인 top3</b>를 각각 집계 → 한 명이 최대 3개 요인에 중복 카운트됨
-        </p>
-        {rows.length === 0 ? (
-          <p style={{ color: '#888' }}>데이터 없음</p>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <tbody>{rows}</tbody>
-          </table>
-        )}
-      </div>
-
-      {/* 오른쪽: 신규 위험군 회원 명단 (별도 컬럼 · 길면 내부 스크롤) */}
-      <div style={{ flex: '0 1 380px', minWidth: '300px', border: '1px solid #ddd', borderRadius: '8px',
-                    padding: '10px 12px', background: '#fbfbfb', alignSelf: 'stretch' }}>
-        <h4 style={{ margin: '0 0 2px' }}>🚨 신규 위험군 회원 <span style={{ fontSize: '13px', color: '#c62828' }}>({riskList.length}명)</span></h4>
-        <p style={{ fontSize: '12px', color: '#888', margin: '2px 0 8px' }}>
-          직전 {mode === 'daily' ? '날' : '달'} 대비 <b>새로</b> 위험군(개입·긴급)에 진입한 회원 + 이탈이유 Top3
-        </p>
-        {riskLoading ? (
-          <p style={{ color: '#888', fontSize: '13px' }}>명단 불러오는 중…</p>
-        ) : riskList.length === 0 ? (
-          <p style={{ color: '#888', fontSize: '13px' }}>새로 진입한 위험군 회원이 없습니다.</p>
-        ) : (
-          <div style={{ maxHeight: '520px', overflowY: 'auto' }}>
-            <table style={{ borderCollapse: 'collapse', fontSize: '13px', width: '100%' }}>
-              <thead><tr style={{ color: '#888', textAlign: 'left', position: 'sticky', top: 0, background: '#fbfbfb' }}>
-                <th style={{ padding: '2px 8px 4px 0' }}>회원</th>
-                <th style={{ padding: '2px 8px 4px 0', textAlign: 'right' }}>이탈율</th>
-                <th style={{ padding: '2px 0 4px' }}>이탈이유 (Top3)</th>
-              </tr></thead>
-              <tbody>
-                {riskList.map((m) => (
-                  <tr key={m.username} style={{ borderTop: '1px solid #eee' }}>
-                    <td style={{ padding: '4px 8px 4px 0', whiteSpace: 'nowrap' }}>
-                      {m.name}<br /><span style={{ color: '#999', fontSize: '11px' }}>{m.username}</span>
-                    </td>
-                    <td style={{ padding: '4px 8px 4px 0', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap',
-                                 color: m.churnRate >= 0.5 ? '#c62828' : m.churnRate >= 0.25 ? '#ef6c00' : '#2e7d32' }}>
-                      {(m.churnRate * 100).toFixed(1)}%
-                    </td>
-                    <td style={{ padding: '4px 0' }}>
-                      {[m.top1Reason, m.top2Reason, m.top3Reason].filter(Boolean).map((rsn, i) => (
-                        <span key={i} style={{ display: 'inline-block', background: '#fff', border: '1px solid #f0c9a8',
-                                               color: '#ef6c00', borderRadius: '10px', padding: '1px 8px', margin: '1px 3px 1px 0', fontSize: '12px' }}>
-                          {i + 1}. {rsn}
-                        </span>
-                      ))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <div className="cs-factor-acc">
+      {factors.map((f) => {
+        const open = openKey === f.statKey;
+        return (
+          <div key={f.statKey} className={`cs-facc${open ? ' open' : ''}`}>
+            <button type="button" className="cs-facc-row" aria-expanded={open} onClick={() => toggle(f.statKey)}>
+              <span className="cs-facc-name"><span className="cs-facc-chev" aria-hidden="true">▸</span>{factorLabel(f.statKey)}</span>
+              <span className="cs-facc-bar">
+                {f.pct != null ? <i style={{ width: `${Math.min(f.pct, 100)}%` }} /> : null}
+              </span>
+              <span className="cs-facc-pct cs-num">
+                {f.pct != null ? (<><b>{f.pct}%</b><span className="cs-facc-cnt">{f.memberCount}명</span></>) : '-'}
+              </span>
+            </button>
+            {open && (
+              <div className="cs-facc-detail">
+                <FactorDetail statKey={f.statKey} members={members} loading={mLoading}
+                              gymId={gymId} mode={mode} period={period} />
+              </div>
+            )}
           </div>
-        )}
+        );
+      })}
+    </div>
+  );
+}
+
+// 위험도 4단계 분포 — 요약 스트립의 미니 누적 막대 + 범례
+function RiskDistBar({ dist }) {
+  const tiers = [
+    { key: 'good', label: '안정', count: dist?.stableCount || 0, color: 'var(--tier-good)' },
+    { key: 'warn', label: '관찰', count: dist?.watchCount || 0, color: 'var(--tier-warn)' },
+    { key: 'serious', label: '개입', count: dist?.interveneCount || 0, color: 'var(--tier-serious)' },
+    { key: 'crit', label: '긴급', count: dist?.critCount || 0, color: 'var(--tier-crit)' },
+  ];
+  const total = tiers.reduce((a, t) => a + t.count, 0);
+  const sum = total || 1;
+
+  return (
+    <>
+      <div className="cs-distcard-head">
+        <span className="cs-skpi-label">위험도 분포</span>
+        <span className="cs-dist-hint">경계 25 / 45 / 65%</span>
       </div>
+      {total === 0 ? (
+        <p className="cs-empty cs-muted">분포 데이터 없음</p>
+      ) : (
+        <>
+          <div className="cs-distbar" role="img"
+               aria-label={tiers.map((t) => `${t.label} ${t.count}`).join(', ')}>
+            {tiers.map((t) => (t.count > 0
+              ? <span key={t.key} style={{ width: `${(t.count / sum) * 100}%`, background: t.color }} />
+              : null))}
+          </div>
+          <ul className="cs-dist-legend">
+            {tiers.map((t) => (
+              <li key={t.key}>
+                <i style={{ background: t.color }} />{t.label}
+                <b className="cs-num">{t.count}</b>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </>
+  );
+}
+
+// 신규 위험군 명단 (우측 레일 본문) — 헤더는 부모 카드에서 렌더
+function RiskMembers({ riskList, loading }) {
+  if (loading) return <p className="cs-loading cs-muted cs-pad">명단 불러오는 중…</p>;
+  if (!riskList.length) return <p className="cs-empty cs-muted cs-pad">새로 진입한 위험군 회원이 없습니다.</p>;
+  return (
+    <div className="cs-risklist">
+      {riskList.map((m) => {
+        const t = tierOf(m.churnRate);
+        const reasons = [m.top1Reason, m.top2Reason, m.top3Reason].filter(Boolean);
+        return (
+          <div key={m.username} className="cs-rmember">
+            <div className="cs-rmember-main">
+              <div className="cs-rname">{m.name} <span className="cs-rid cs-num">{m.username}</span></div>
+              <div className="cs-chips">
+                {reasons.map((rsn, i) => (
+                  <span key={i} className="cs-chip">{factorLabel(rsn)}</span>
+                ))}
+              </div>
+            </div>
+            <span className={`cs-rrate cs-${t.cls}`}>{(m.churnRate * 100).toFixed(1)}%</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -657,115 +746,171 @@ function B2bList() {
   const gymId = user.gymId;
 
   const [mode, setMode] = useState('daily');       // 'daily' | 'monthly'
-  const [periods, setPeriods] = useState([]);      // [{period, totalMembers, avgChurnRate}]
-  const [openPeriod, setOpenPeriod] = useState(null);   // 펼쳐진 기간
-  const [breakdown, setBreakdown] = useState([]);  // [{statType, statKey, memberCount, pct}]
+  const [periods, setPeriods] = useState([]);
+  const [periodsLoading, setPeriodsLoading] = useState(true);
+  const [openPeriod, setOpenPeriod] = useState(null);
+  const [breakdown, setBreakdown] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 기간 목록 조회 (mode 변경 시 재조회)
+  // 기준 기간: 선택 기간 ?? 최신 기간
+  const focusObj = periods.find((p) => p.period === openPeriod) || periods[0] || null;
+  const focusPeriod = focusObj?.period;
+
+  const [riskList, setRiskList] = useState([]);
+  const [riskLoading, setRiskLoading] = useState(false);
+
+  // 기간 목록 조회
   useEffect(() => {
     if (!gymId) return;
     setOpenPeriod(null);
     setBreakdown([]);
+    setPeriods([]);
+    setPeriodsLoading(true);
     fetch(`${import.meta.env.VITE_BACKEND_URL}/result/stats/periods?gymId=${gymId}&mode=${mode}`)
       .then((r) => (r.ok ? r.json() : []))
-      .then(setPeriods)
-      .catch((e) => { console.error('기간 목록 조회 실패:', e); setPeriods([]); });
+      .then((d) => setPeriods(Array.isArray(d) ? d : []))
+      .catch((e) => { console.error('기간 목록 조회 실패:', e); setPeriods([]); })
+      .finally(() => setPeriodsLoading(false));
   }, [gymId, mode]);
 
-  // 행 클릭 → 해당 기간 요인 비율 조회 (토글)
-  const handleOpen = async (period) => {
-    if (openPeriod === period) { setOpenPeriod(null); setBreakdown([]); return; }
-    setOpenPeriod(period);
+  // 자동 선택: 일별=오늘 / 월별=이번 달, 없으면 최신 기간
+  useEffect(() => {
+    if (!periods.length) return;
+    if (openPeriod && periods.some((p) => p.period === openPeriod)) return;
+    const now = new Date();
+    const p2 = (n) => String(n).padStart(2, '0');
+    const target = mode === 'daily'
+      ? `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}`
+      : `${now.getFullYear()}-${p2(now.getMonth() + 1)}`;
+    const hit = periods.find((p) => p.period === target);
+    setOpenPeriod(hit ? hit.period : periods[0].period);
+  }, [periods, openPeriod, mode]);
+
+  // 선택 기간의 이탈 요인 비율 조회
+  useEffect(() => {
+    if (!gymId || !openPeriod) { setBreakdown([]); return; }
     setLoading(true);
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/result/stats/breakdown?gymId=${gymId}&mode=${mode}&period=${period}`
-      );
-      setBreakdown(res.ok ? await res.json() : []);
-    } catch (e) {
-      console.error('상세 비율 조회 실패:', e);
-      setBreakdown([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/result/stats/breakdown?gymId=${gymId}&mode=${mode}&period=${openPeriod}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setBreakdown(Array.isArray(d) ? d : []))
+      .catch((e) => { console.error('상세 비율 조회 실패:', e); setBreakdown([]); })
+      .finally(() => setLoading(false));
+  }, [gymId, mode, openPeriod]);
+
+  // 신규 위험군 명단 — 기준 기간 연동
+  useEffect(() => {
+    if (!gymId || !focusPeriod) { setRiskList([]); return; }
+    setRiskLoading(true);
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/result/stats/riskMembers?gymId=${gymId}&mode=${mode}&period=${focusPeriod}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setRiskList(Array.isArray(d) ? d : []))
+      .catch((e) => { console.error('위험군 명단 조회 실패:', e); setRiskList([]); })
+      .finally(() => setRiskLoading(false));
+  }, [gymId, mode, focusPeriod]);
 
   if (!gymId) {
-    return <div style={{ padding: '20px' }}>로그인한 사장님의 헬스장 정보를 찾을 수 없습니다.</div>;
+    return <div className="cs-wrap"><div className="cs-inner"><p className="cs-empty-state">로그인한 사장님의 헬스장 정보를 찾을 수 없습니다.</p></div></div>;
   }
 
+  const unit = mode === 'daily' ? '날' : '달';
+  const focusTier = focusObj ? tierOf(focusObj.avgChurnRate) : null;
+  const total = focusObj?.totalMembers ?? 0;
+  const risk = focusObj?.riskMembers ?? 0;
+  const riskPct = total > 0 ? ((risk / total) * 100).toFixed(1) : '0.0';
+  const avgPct = focusObj ? (focusObj.avgChurnRate * 100).toFixed(1) : '-';
+
   return (
-    <div style={{ padding: '20px', maxWidth: '900px' }}>
-      <h2>📊 헬스장 이탈 통계 ({user.name} 사장님)</h2>
-      <p style={{ fontSize: '13px', color: '#666' }}>
-        기간을 누르면 그 {mode === 'daily' ? '날' : '달'}의 이탈 요인 비율이 펼쳐집니다.
-      </p>
+    <div className="cs-wrap">
+      <div className="cs-inner">
 
-      {/* 일별 / 월별 토글 */}
-      <div style={{ display: 'flex', gap: '8px', margin: '12px 0' }}>
-        {[['daily', '일별'], ['monthly', '월별']].map(([m, label]) => (
-          <button
-            key={m}
-            onClick={() => setMode(m)}
-            style={{
-              padding: '6px 16px', borderRadius: '6px', cursor: 'pointer',
-              border: mode === m ? '2px solid #007bff' : '1px solid #ccc',
-              background: mode === m ? '#e7f1ff' : '#fff',
-              fontWeight: mode === m ? 'bold' : 'normal',
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {periods.length === 0 ? (
-        <p>집계된 통계 데이터가 없습니다. (배치 실행 후 표시됩니다)</p>
-      ) : (
-        <table border="1" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-          <thead style={{ background: '#f5f5f5' }}>
-            <tr>
-              <th style={{ padding: '8px' }}>{mode === 'daily' ? '날짜' : '월'}</th>
-              <th style={{ padding: '8px' }}>회원 수</th>
-              <th style={{ padding: '8px' }}>위험군</th>
-              <th style={{ padding: '8px' }}>이탈율</th>
-              <th style={{ padding: '8px' }}>상세</th>
-            </tr>
-          </thead>
-          <tbody>
-            {periods.map((p) => (
-              <Fragment key={p.period}>
-                <tr
-                  onClick={() => handleOpen(p.period)}
-                  style={{ cursor: 'pointer', background: openPeriod === p.period ? '#eef6ff' : '#fff' }}
-                >
-                  <td style={{ padding: '8px', fontWeight: 'bold' }}>{p.period}</td>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>{p.totalMembers}명</td>
-                  <td style={{ padding: '8px', textAlign: 'center', color: '#c62828' }}>{p.riskMembers ?? 0}명</td>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>
-                    <strong style={{ color: p.avgChurnRate >= 0.5 ? '#c62828' : p.avgChurnRate >= 0.25 ? '#ef6c00' : '#2e7d32' }}>
-                      {(p.avgChurnRate * 100).toFixed(1)}%
-                    </strong>
-                  </td>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>{openPeriod === p.period ? '▲ 닫기' : '▼ 열기'}</td>
-                </tr>
-
-                {openPeriod === p.period && (
-                  <tr>
-                    <td colSpan={5} style={{ padding: '16px', background: '#fafafa' }}>
-                      {loading ? <p>불러오는 중…</p> : <Breakdown items={breakdown} riskMembers={p.riskMembers} gymId={gymId} mode={mode} period={p.period} />}
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
+        {/* ── 통제: 제목 → 안내 문구 → 일별/월별 탭 + 기간 선택 ── */}
+        <h2 className="b2blist-title">
+          📊 헬스장 이탈 통계
+          <span className="b2blist-title-sub">{user.name} 사장님</span>
+        </h2>
+        <p className="b2blist-desc">
+          선택한 {unit}의 위험군과 이탈 요인, 조치를 한 화면에서 확인합니다.
+        </p>
+        <div className="cs-controls">
+          <div className="b2b-tabs" role="tablist" aria-label="집계 단위">
+            {[['daily', '일별'], ['monthly', '월별']].map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                role="tab"
+                aria-selected={mode === m}
+                className={`b2b-chip${mode === m ? ' is-active' : ''}`}
+                onClick={() => setMode(m)}
+              >
+                {label}
+              </button>
             ))}
-          </tbody>
-        </table>
-      )}
+          </div>
+          <PeriodPicker mode={mode} periods={periods} value={openPeriod} onPick={setOpenPeriod} />
+        </div>
 
-      <div style={{ marginTop: '20px' }}>
-        <Link to="/fitb/b2bmypage">← 마이페이지로</Link>
+        {periodsLoading ? (
+          <p className="cs-empty-state">불러오는 중…</p>
+        ) : periods.length === 0 ? (
+          <p className="cs-empty-state">집계된 통계 데이터가 없습니다. (배치 실행 후 표시됩니다)</p>
+        ) : (
+          <>
+            {/* ── 요약: 읽기 전용 KPI 스트립 + 위험도 분포 ── */}
+            <div className="cs-summary">
+              <div className="cs-skpi">
+                <div className="cs-skpi-label">전체 회원</div>
+                <div className="cs-skpi-value cs-num">{total}<small>명</small></div>
+                <div className="cs-skpi-sub">이 {unit} 기준</div>
+              </div>
+              <div className="cs-skpi">
+                <div className="cs-skpi-label">위험군</div>
+                <div className="cs-skpi-value cs-num cs-crit">{risk}<small>명</small></div>
+                <div className="cs-skpi-sub cs-num">전체의 {riskPct}%</div>
+              </div>
+              <div className="cs-skpi">
+                <div className="cs-skpi-label">평균 이탈률</div>
+                <div className={`cs-skpi-value cs-num cs-${focusTier?.cls || 'good'}`}>{avgPct}<small>%</small></div>
+                <div className="cs-skpi-sub">{focusTier && <span className={`cs-badge ${focusTier.cls}`}>{focusTier.label}</span>}</div>
+              </div>
+              <div className="cs-skpi">
+                <div className="cs-skpi-label">신규 위험군</div>
+                <div className="cs-skpi-value cs-num">{riskLoading ? '…' : riskList.length}<small>명</small></div>
+                <div className="cs-skpi-sub">직전 {unit} 대비</div>
+              </div>
+              <div className="cs-distcard">
+                <RiskDistBar dist={focusObj} />
+              </div>
+            </div>
+
+            {/* ── 조치(좌) + 신규 위험군(우) ── */}
+            <div className="cs-main" aria-busy={loading}>
+              <section className="cs-panel-card">
+                <div className="cs-cardhead">
+                  <h3>🎯 이탈 요인별 조치 <span className="cs-crit cs-cardhead-count">위험군 {risk}명</span></h3>
+                  <p className="cs-cardhead-sub">
+                    요인을 펼치면 회원 명단과 조치가 함께 나옵니다.
+                    <span className="cs-info" tabIndex={0} data-tip={"위험군(개입·긴급) 회원 대상.\n막대 = 요인 비율 (위험군 대비).\n한 회원이 이탈이유 Top3에 각각 집계되어\n최대 3개 요인에 중복될 수 있습니다."}>ⓘ</span>
+                  </p>
+                </div>
+                {openPeriod
+                  ? <FactorList items={breakdown} gymId={gymId} mode={mode} period={openPeriod} />
+                  : <p className="cs-muted cs-pad">상단에서 기간을 선택하세요.</p>}
+              </section>
+
+              <aside className="cs-rail">
+                <section className="cs-panel-card">
+                  <div className="cs-cardhead">
+                    <h3>🔔 신규 위험군 <span className="cs-crit cs-cardhead-count">{riskLoading ? '…' : riskList.length}명</span></h3>
+                    <p className="cs-cardhead-sub">직전 {unit} 대비 개입·긴급에 새로 진입</p>
+                  </div>
+                  <RiskMembers riskList={riskList} loading={riskLoading} />
+                  <div className="cs-trust">🔒 우리 지점 데이터만 보여줍니다</div>
+                </section>
+              </aside>
+            </div>
+          </>
+        )}
+
       </div>
     </div>
   );

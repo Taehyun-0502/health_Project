@@ -41,6 +41,11 @@ public class SettleController {
         }
     }
 
+    private boolean hasRole(Claims claims, String expectedRole) {
+        String role = claims == null ? null : claims.get("role", String.class);
+        return role != null && role.equalsIgnoreCase(expectedRole);
+    }
+
     // 전체 가맹점 플랫폼 수수료 커미션 내역 페이징 조회 API (ADMIN용)
     @GetMapping("/commission")
     public ResponseEntity<?> commissionList(
@@ -51,14 +56,12 @@ public class SettleController {
             @RequestParam(required = false) String month,
             @RequestParam(required = false) String sort) throws Exception {
 
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
-
-        try {
-            jwtUtill.extractAllClaims(authorization.substring(7));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        if (!hasRole(claims, "ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
         Pager pager = new Pager();
@@ -77,14 +80,12 @@ public class SettleController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String month) throws Exception {
 
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
-
-        try {
-            jwtUtill.extractAllClaims(authorization.substring(7));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        if (!hasRole(claims, "ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
         Pager pager = new Pager();
@@ -99,45 +100,51 @@ public class SettleController {
     public ResponseEntity<?> commissionStats(
             @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
 
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
-
-        try {
-            jwtUtill.extractAllClaims(authorization.substring(7));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        if (!hasRole(claims, "ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
         return ResponseEntity.ok(settleService.commissionStats());
     }
 
-    // 커미션 지급 상태 변경 API (ADMIN용)
-    @PostMapping("/commission/status")
-    public ResponseEntity<?> toggleCommissionStatus(
+    // 사장님 정산 페이지 우측 "이번 달 요약" 레일 집계 API (OWNER 전용, 본인 gym 스코프)
+    @GetMapping("/owner-summary")
+    public ResponseEntity<?> ownerSettleSummary(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestBody CommissionDTO req) throws Exception {
+            @RequestParam(required = false) String month) throws Exception {
 
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
 
-        try {
-            jwtUtill.extractAllClaims(authorization.substring(7));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        // 본인 gym 재무 요약이므로 OWNER만 허용 (username은 JWT subject에서 주입, 클라이언트 값 불신)
+        String role = claims.get("role", String.class);
+        if (role == null || !role.equalsIgnoreCase("OWNER")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
-        if (req.getSettlementId() == null) {
-            return ResponseEntity.badRequest().body("settlementId is required");
+        Long username = Long.parseLong(claims.getSubject());
+        return ResponseEntity.ok(settleService.ownerSettleSummary(username, month));
+    }
+
+    // OWNER 본인 gym의 월별 미지급 커미션 목록
+    @GetMapping("/owner-commissions/unpaid")
+    public ResponseEntity<?> ownerUnpaidCommissionList(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+        if (!hasRole(claims, "OWNER")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
-        int result = settleService.toggleCommissionStatus(req.getSettlementId());
-        if (result > 0) {
-            return ResponseEntity.ok("Success");
-        } else {
-            return ResponseEntity.badRequest().body("Fail");
-        }
+        return ResponseEntity.ok(settleService.ownerUnpaidCommissionList(Long.parseLong(claims.getSubject())));
     }
 
     // 소속 가맹점 지출 내역 페이징 조회 API (OWNER용)
@@ -154,11 +161,12 @@ public class SettleController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
 
-        Claims claims;
-        try {
-            claims = jwtUtill.extractAllClaims(authorization.substring(7));
-        } catch (Exception e) {
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        }
+        if (!hasRole(claims, "OWNER")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
         Long username = Long.parseLong(claims.getSubject());
@@ -183,11 +191,12 @@ public class SettleController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
 
-        Claims claims;
-        try {
-            claims = jwtUtill.extractAllClaims(authorization.substring(7));
-        } catch (Exception e) {
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        }
+        if (!hasRole(claims, "OWNER")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
         Long username = Long.parseLong(claims.getSubject());
@@ -209,17 +218,19 @@ public class SettleController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
 
-        try {
-            jwtUtill.extractAllClaims(authorization.substring(7));
-        } catch (Exception e) {
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
         }
+        if (!hasRole(claims, "OWNER")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
+        }
 
-        int result = settleService.expenseAdd(expenseDTO);
-        if (result > 0) {
-            return ResponseEntity.ok("Success");
-        } else {
-            return ResponseEntity.badRequest().body("Fail");
+        try {
+            int result = settleService.expenseAddForOwner(Long.parseLong(claims.getSubject()), expenseDTO);
+            return result > 0 ? ResponseEntity.ok("Success") : ResponseEntity.badRequest().body("Fail");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
@@ -229,21 +240,17 @@ public class SettleController {
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @PathVariable("expenseId") Long expenseId) throws Exception {
 
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
-
-        try {
-            jwtUtill.extractAllClaims(authorization.substring(7));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        if (!hasRole(claims, "OWNER")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
-        int result = settleService.expenseDelete(expenseId);
+        int result = settleService.expenseDelete(Long.parseLong(claims.getSubject()), expenseId);
         if (result > 0) {
             return ResponseEntity.ok("Success");
-        } else if (result == -2) {
-            return ResponseEntity.badRequest().body("이미 정산에 반영된 지출은 삭제할 수 없습니다.");
         } else {
             return ResponseEntity.badRequest().body("Fail");
         }
@@ -255,22 +262,24 @@ public class SettleController {
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestBody CommissionDTO req) throws Exception {
 
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
-
-        try {
-            jwtUtill.extractAllClaims(authorization.substring(7));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        if (!hasRole(claims, "ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
         if (req.getSettleMonth() == null) {
             return ResponseEntity.badRequest().body("settleMonth is required");
         }
 
-        int count = settleService.generateMonthlyCommissions(req.getSettleMonth());
-        return ResponseEntity.ok("Successfully generated " + count + " commission records.");
+        try {
+            int count = settleService.generateMonthlyCommissions(req.getSettleMonth());
+            return ResponseEntity.ok("Successfully generated " + count + " commission records.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // 사장님용: 지출 처리해야 할 임금/제휴 계약서 목록 페이징 조회 API (지출 등록 연동용, UserDTO -> ContractDTO 정정)
@@ -280,15 +289,12 @@ public class SettleController {
             @RequestParam(required = false) Long page,
             @RequestParam(required = false) Long pageSize) throws Exception {
 
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
-        }
-
-        Claims claims;
-        try {
-            claims = jwtUtill.extractAllClaims(authorization.substring(7));
-        } catch (Exception e) {
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        }
+        if (!hasRole(claims, "OWNER")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         }
 
         Long ownerPhone = Long.parseLong(claims.getSubject());

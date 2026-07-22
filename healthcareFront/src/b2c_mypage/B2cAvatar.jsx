@@ -343,7 +343,7 @@ function B2cAvatar() {
           <div style={{ padding: '10px', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid var(--gray-200)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <span style={{ fontSize: '14px', color: 'var(--gray-500)' }}>
-                연속 출석: <strong style={{ fontSize: '18px', color: 'var(--b2c-accent)' }}>{days}</strong>일
+                출석: <strong style={{ fontSize: '18px', color: 'var(--b2c-accent)' }}>{days}</strong>일
               </span>
               <span style={{
                 fontSize: '11px',
