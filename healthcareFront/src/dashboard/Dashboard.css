@@ -56,11 +56,14 @@
 }
 
 .dash-card {
+  position: relative;
   border: 1px solid var(--gray-200);
   border-radius: 12px;
   background: var(--white);
   box-shadow: var(--shadow-card);
   padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .dash-card h2 {
@@ -88,6 +91,14 @@
   color: var(--gray-500);
 }
 
+/* 전월 대비 증감 — 오름 빨강 / 내림 파랑 */
+.dash-delta {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.dash-delta.up { color: var(--danger); }
+.dash-delta.down { color: var(--info); }
+
 .dash-empty {
   color: var(--gray-500);
   font-size: 13px;
@@ -98,6 +109,8 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  max-height: 120px;
+  overflow-y: auto;
 }
 
 .dash-list li {
@@ -166,16 +179,22 @@
 }
 
 /* 헬스장 이탈율 위젯 — 좌: 이탈율 % KPI, 우: 위험도 분포 도넛 (세로 중앙 정렬) */
+/* 글씨(이탈율 %·분석)는 다른 카드처럼 좌상단 일반 흐름, 도넛만 카드 기준 세로 중앙 배치 */
 .gymchurn-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  flex: 1;
+  min-height: 124px;
 }
 
 .gymchurn-info {
   display: flex;
   flex-direction: column;
+}
+
+.gymchurn-donut {
+  position: absolute;
+  top: 50%;
+  right: 32px;
+  transform: translateY(-50%);
 }
 
 /* ===== AI 영역 (위젯 그리드 아래 좌우 분할, OWNER 전용) ===== */
