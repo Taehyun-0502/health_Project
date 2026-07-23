@@ -76,19 +76,8 @@ function Itempage() {
   // 물품 등록 폼 자동완성용 물품명 목록 (페이징과 무관하게 해당 gym의 전체 물품명을 별도 API로 조회)
   const [itemNames, setItemNames] = useState([]);
 
-  // 로그인된 유저의 사업장 id (localStorage에서 조회, 없을 시 기본값 1)
-  const gymId = (() => {
-    const saved = localStorage.getItem('user');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.gymId || 1;
-      } catch {
-        return 1;
-      }
-    }
-    return 1;
-  })();
+  const token = localStorage.getItem('accessToken');
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
 
 
@@ -106,14 +95,13 @@ function Itempage() {
   const fetchItems = async (targetPage, keyword, sort, category) => {
     try {
       const query = new URLSearchParams({
-        gymId,
         page: targetPage,
         pageSize,
         keyword: keyword || '',
         sort: sort || '',
         category: category || ''
       });
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/list?${query.toString()}`);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/list?${query.toString()}`, { headers: authHeaders });
       if (response.ok) {
         const data = await response.json();
         setItems(data.items || []);
@@ -127,7 +115,7 @@ function Itempage() {
   // 물품 등록 폼 자동완성용 물품명 전체 목록 조회 API 호출 (페이징 없이 gym 전체)
   const fetchItemNames = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/names?gymId=${gymId}`);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/names`, { headers: authHeaders });
       if (response.ok) {
         setItemNames(await response.json());
       }
@@ -145,7 +133,7 @@ function Itempage() {
     fetchItems(1, '', sortOption, '');
     fetchItemNames();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gymId]);
+  }, [token]);
 
   // 검색어가 바뀔 때마다 300ms 디바운스 후 1페이지부터 재조회 (매 입력마다 요청이 나가는 것을 방지)
   useEffect(() => {
@@ -190,8 +178,8 @@ function Itempage() {
   // CSV 내보내기: 현재 검색어 조건을 반영한 전체 목록을 서버에서 받아와 CSV 파일로 다운로드 (페이징 무시, 전체 건수)
   const handleExportCsv = async () => {
     try {
-      const query = new URLSearchParams({ gymId, keyword: searchTerm || '' });
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/export?${query.toString()}`);
+      const query = new URLSearchParams({ keyword: searchTerm || '' });
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/export?${query.toString()}`, { headers: authHeaders });
       if (!response.ok) {
         alert('내보내기에 실패했습니다.');
         return;
@@ -212,7 +200,7 @@ function Itempage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `물품목록_${gymId}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `물품목록_${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -229,7 +217,7 @@ function Itempage() {
     setDetailList([]);
     setSelectedMonthFilter(currentMonthKey); // 상세 클릭 시 항상 이번 달 필터로 리셋
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/detail?gymId=${gymId}&itemName=${encodeURIComponent(item.itemName)}`);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/detail?itemName=${encodeURIComponent(item.itemName)}`, { headers: authHeaders });
       if (response.ok) {
         setDetailList(await response.json());
       }
@@ -270,7 +258,6 @@ function Itempage() {
 
     const updatedItem = {
       itemId: editingItem.itemId !== undefined ? editingItem.itemId : editingItem.item_id,
-      gymId: gymId,
       itemCategory: editFormData.itemCategory.trim(),
       itemName: editFormData.itemName.trim(),
       itemDate: editFormData.itemDate || editFormData.itemBuy || '',
@@ -283,7 +270,8 @@ function Itempage() {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/update`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...authHeaders
         },
         body: JSON.stringify(updatedItem)
       });
@@ -311,7 +299,6 @@ function Itempage() {
 
     const payload = {
       itemId: item.itemId !== undefined ? item.itemId : item.item_id,
-      gymId: gymId,
       itemName: item.itemName || item.item_name || ''
     };
 
@@ -319,7 +306,8 @@ function Itempage() {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/delete`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...authHeaders
         },
         body: JSON.stringify(payload)
       });
@@ -455,7 +443,6 @@ function Itempage() {
     const finalCount = parseInt(formData.itemCount, 10);
     const newItem = {
       itemId: 0,
-      gymId: gymId,
       itemCategory: finalItemCategory,
       itemName: finalItemName,
       itemDate: formData.itemDate,
@@ -471,7 +458,8 @@ function Itempage() {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/add`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...authHeaders
         },
         body: JSON.stringify(newItem)
       });

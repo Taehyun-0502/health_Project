@@ -266,10 +266,12 @@ function EquipmentPanel({ gymId }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!gymId) { setItems([]); return; }
+    const token = localStorage.getItem('accessToken');
     setLoading(true);
     fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/byCategory`
-      + `?gymId=${gymId}&category=${encodeURIComponent('기구')}`)
+      + `?gymId=${gymId}&category=${encodeURIComponent('기구')}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setItems(Array.isArray(d) ? d : []))
       .catch((e) => { console.error('기구 목록 조회 실패:', e); setItems([]); })

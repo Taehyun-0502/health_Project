@@ -817,15 +817,25 @@
 
 /* 지출 대기 계약 아이템 (선택 상태 = .selected) */
 .expense-contract-item {
+  display: block;
+  width: 100%;
   padding: 12px;
   border: 1px solid var(--gray-200);
   border-radius: 8px;
   margin-bottom: 10px;
   cursor: pointer;
   background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  appearance: none;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .expense-contract-item:hover { border-color: var(--gray-300); }
+.expense-contract-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .expense-contract-item.selected {
   background: var(--accent-bg);
   border-color: var(--accent);

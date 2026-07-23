@@ -17,6 +17,9 @@ public class CheckInoutService {
     // 재등록 제안 알림을 보내는 잔여 횟수 기준 (이 값에 도달하는 순간 1회 발송)
     private static final int REBOOK_THRESHOLD = 3;
 
+    // 헬스장 출석의 근거가 되는 계약 유형 탐색 순서 (3=이용권, 4=PT, 5=PT 체험)
+    private static final Long[] GYM_ACCESS_CONTRACT_TYPES = { 3L, 4L, 5L };
+
     @Autowired
     private CheckInoutMapper checkInoutMapper;
 
@@ -33,14 +36,18 @@ public class CheckInoutService {
     }
 
     // 헬스장 출석 처리 (키오스크)
-    // 1. 계정 검증 -> 2. 유효한 이용권 계약(3) 또는 기간 내 PT 계약(4) 확인 -> 3. 하루 1회 제한 -> 4. 출석 기록
-    // PT 회원(체험권 포함)은 계약 기간 동안 이용권처럼 헬스장 이용 가능 (기간 기준 - 잔여 횟수와 무관)
+    // 1. 계정 검증 -> 2. 유효한 이용권(3) 또는 기간 내 PT형 계약(4·5) 확인 -> 3. 하루 1회 제한 -> 4. 출석 기록
+    // PT 회원(PT 체험 포함)은 계약 기간 동안 이용권처럼 헬스장 이용 가능 (기간 기준 - 잔여 횟수와 무관)
+    // 이용권을 먼저 조회하는 이유: 병행 보유 시 헬스장 이용의 근거가 되는 계약이 이용권이므로 gym_id를 그쪽에서 취한다
     public CheckInoutDTO gymCheckIn(MemberDTO credential) throws Exception {
         MemberDTO member = verifyMember(credential);
 
-        ContractDTO contract = checkInoutMapper.findActiveContract(member.getUsername(), 3L);
-        if (contract == null) {
-            contract = checkInoutMapper.findActiveContract(member.getUsername(), 4L);
+        ContractDTO contract = null;
+        for (Long contractType : GYM_ACCESS_CONTRACT_TYPES) {
+            contract = checkInoutMapper.findActiveContract(member.getUsername(), contractType);
+            if (contract != null) {
+                break;
+            }
         }
         if (contract == null) {
             throw new IllegalStateException("이용 가능한 헬스장 이용권 또는 PT 계약이 없습니다.");
@@ -62,7 +69,7 @@ public class CheckInoutService {
     // PT 출석 접수 (키오스크)
     // 1. 계정 검증 -> 2. 소진 대상 PT 계약(잔여가 남은 가장 오래된 계약) + 담당 트레이너 확인 -> 3. 하루 1회 제한
     // -> 4. 미확인 상태로 출석 기록 (잔여횟수 차감은 트레이너 확인 시점에 수행)
-    // 팀 정책: 일반 PT·체험권이 함께 있으면 먼저 계약한 건부터 소진
+    // 팀 정책: PT(4)·PT 체험(5)이 함께 있으면 먼저 계약한 건부터 소진 (data_id 오름차순)
     public CheckInoutDTO ptCheckIn(MemberDTO credential) throws Exception {
         MemberDTO member = verifyMember(credential);
 
@@ -118,7 +125,7 @@ public class CheckInoutService {
             throw new IllegalStateException("이미 확인 처리된 출석입니다.");
         }
 
-        // 소진 대상 계약(잔여가 남은 가장 오래된 계약)에서 차감 - 일반 PT 소진 후 체험권 순서 자동 보장
+        // 소진 대상 계약(잔여가 남은 가장 오래된 계약)에서 차감 - PT(4)·PT 체험(5) 중 먼저 계약한 건부터 소진 자동 보장
         ContractDTO contract = checkInoutMapper.findConsumablePtContract(row.getUsername());
         if (contract == null) {
             throw new IllegalStateException("잔여 횟수가 남은 유효한 PT 계약이 없습니다.");

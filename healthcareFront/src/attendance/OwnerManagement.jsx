@@ -349,7 +349,9 @@ function OwnerManagement({ onGoPromotion, gymId }) {
           </thead>
           <tbody>
             {rebookPageItems.map((rebook) => {
-              const isPt = rebook.category === 'PT';
+              // PT형(PT·PT 체험)은 잔여 횟수가, 이용권은 null이 내려온다.
+              // category 문자열이 아니라 데이터 형태로 판별해야 유형이 늘어도 표시가 깨지지 않는다.
+              const isPt = rebook.remainingCount != null;
               // 이용권은 종료일까지 남은 일수(D-day) 계산
               const dday = rebook.endDate ? Math.ceil((new Date(rebook.endDate) - new Date(todayStr)) / 86400000) : null;
               return (
