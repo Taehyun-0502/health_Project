@@ -30,7 +30,7 @@
   padding: 2px 0 60px;
 }
 .cs-wrap * { box-sizing: border-box; }
-.cs-inner { max-width: 1080px; margin: 0 auto; padding: 20px 24px 20px; }
+.cs-inner { max-width: 1080px; margin: 0 auto; padding: 20px 24px 16px; }
 
 .cs-num { font-variant-numeric: tabular-nums; }
 .cs-muted { color: var(--cs-ink-3); }
@@ -215,7 +215,14 @@
 
 /* 요인 인라인 상세 본문 */
 .cs-fd-body { display: flex; flex-direction: column; gap: 12px; }
-.cs-fd-members { max-height: 307px; overflow-y: auto; border: 1px solid var(--cs-border); border-radius: 10px; }
+.cs-fd-members { max-height: 307px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--cs-border); border-radius: 10px; }
+/* 헤더(회원/ID/이탈률)는 스크롤 밖 고정, 스크롤바는 본문(행)에만 — 서비스센터 목록처럼 */
+.cs-fd-memberscroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--cs-border-strong) transparent; }
+.cs-fd-memberscroll::-webkit-scrollbar { width: 4px; }
+.cs-fd-memberscroll::-webkit-scrollbar-thumb { background: var(--cs-border-strong); border-radius: 4px; }
+.cs-in-drawer .cs-fd-memberscroll { scrollbar-gutter: stable; }
+/* 본문이 스크롤바 gutter(4px)만큼 좁아지므로 헤더도 우측 4px 확보해 컬럼 정렬 맞춤. 회색 바는 그 4px까지 채움 */
+.cs-in-drawer .cs-mtable-head { padding-right: 4px; background: var(--cs-surface-2); }
 .cs-fd-action {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
   background: var(--cs-surface-2); border: 1px dashed var(--cs-border-strong); border-radius: 10px; padding: 12px 14px;
@@ -229,6 +236,56 @@
 .cs-action-solid:hover { filter: brightness(1.06); }
 .cs-action-solid:active { transform: translateY(1px); }
 
+/* ── 우측 통합 드로어 안의 요인 상세 (FactorDetailLoader) ──
+   본문(cs-fd-scroll)은 카드(회원 리스트·참고 패널) 스택을 담고, 스택이 넘치면 여기서 스크롤.
+   회원 리스트는 '이 헬스장 기구 목록' 카드처럼 자체 스크롤 + 헤더(회원/ID/이탈률) 고정.
+   조치 버튼 칸은 스크롤 밖에서 계약 드로어 '계약서 상세 열기' 푸터처럼 바닥 고정. */
+.cs-in-drawer {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+  padding: 0;
+}
+.cs-in-drawer .cs-fd-body { flex: 1; min-height: 0; gap: 0; }
+.cs-in-drawer .cs-fd-scroll {
+  flex: 1; min-height: 0;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 16px;
+}
+/* 회원 리스트 = 기구 목록 카드처럼 자체 스크롤. 헤더는 base 규칙(thead th sticky)으로 고정,
+   scrollbar-gutter 로 스크롤바 자리를 예약해 오른쪽 잘림 방지 */
+.cs-in-drawer .cs-fd-members { max-height: calc(50vh - 2px); }
+/* 요인마다 컬럼 위치가 같도록 고정 레이아웃 (내용에 따라 안 바뀌게) */
+.cs-in-drawer .cs-mtable { table-layout: fixed; }
+.cs-in-drawer .cs-mtable th:nth-child(2), .cs-in-drawer .cs-mtable td:nth-child(2) { width: 108px; }
+.cs-in-drawer .cs-mtable th:nth-child(3), .cs-in-drawer .cs-mtable td:nth-child(3) { width: 72px; }
+.cs-in-drawer .cs-mtable td:nth-child(1) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-in-drawer .cs-fd-action {          /* 계약 드로어 '계약서 상세 열기' 푸터처럼: 박스 X, 위 구분선만 + 전폭 버튼 */
+  flex: 0 0 auto;
+  flex-direction: column; align-items: stretch; gap: 15px; flex-wrap: nowrap;
+  margin: 0; padding: 14px 16px;
+  border: 0; border-top: 1px solid var(--cs-border); border-radius: 0;
+  background: var(--cs-surface);
+}
+.cs-in-drawer .cs-action-solid {
+  width: 100%; height: 40px; justify-content: center;
+  border-radius: 8px; font-size: 14px; font-weight: 600; padding: 0 16px;
+}
+/* 나이 요인 하단 조언 안내 = 스크롤 밖 바닥 바(위 구분선) */
+.cs-in-drawer .cs-fd-advice {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border-top: 1px solid var(--cs-border); background: var(--cs-surface);
+  font-size: var(--text-xs); line-height: 1.5; color: var(--cs-ink-2);
+}
+/* 나이 요인: 회원 리스트가 조언 문구(구분선) 위까지 높이를 채우도록 */
+.cs-in-drawer .cs-fd-body--fill .cs-fd-scroll { overflow: visible; padding-bottom: 16px; }
+/* 나이·방문 공백(하단 문구 cs-fd-advice가 있는 요인)만 리스트↔구분선 간격 12px */
+.cs-in-drawer .cs-fd-body--fill:has(.cs-fd-advice) .cs-fd-scroll { padding-bottom: 12px; }
+/* fill 요인: 카드를 최대치로 늘리지 않고 회원 수(내용)에 맞춰 표현. 많으면 가용 높이(100%)까지 채우고 내부 스크롤.
+   하단 바/문구/버튼(cs-fd-scroll 밖 형제 footer)은 cs-fd-scroll(flex:1) 덕에 항상 드로어 바닥 고정 유지. */
+.cs-in-drawer .cs-fd-body--fill .cs-fd-members { max-height: 100%; }
+
 /* 회원 명단 테이블 */
 .cs-mtable { border-collapse: collapse; font-size: var(--text-sm); width: 100%; }
 .cs-mtable th { text-align: left; color: var(--cs-ink-3); font-weight: 600; font-size: var(--text-xs); }
@@ -236,10 +293,14 @@
 .cs-mtable td.r { font-weight: 700; }
 .cs-fd-members .cs-mtable th, .cs-fd-members .cs-mtable td { padding: 7px 14px; }
 .cs-fd-members .cs-mtable td { border-top: 1px solid var(--cs-border); }
-.cs-fd-members .cs-mtable thead th { position: sticky; top: 0; background: var(--cs-surface-2); z-index: 1; }
+.cs-fd-members .cs-mtable thead th { background: var(--cs-surface-2); }
 
 /* ── 신규 위험군 리스트 (우측 레일) ── */
 .cs-risklist { max-height: 560px; overflow-y: auto; padding: 6px 8px; }
+/* 드로어: 신규 위험군 명단 패널 — 리스트가 드로어 높이를 채우고 신뢰 문구는 하단 고정 */
+.cs-riskdrawer { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 7px 16px 16px; }
+.cs-riskdrawer .cs-risklist { flex: 1; min-height: 0; max-height: none; }
+.cs-riskdrawer .cs-trust { flex: 0 0 auto; margin: 10px 0 0; }
 .cs-rmember { display: flex; align-items: flex-start; gap: 10px; padding: 10px 8px; border-top: 1px solid var(--cs-border); }
 .cs-rmember:first-child { border-top: 0; }
 .cs-rmember-main { min-width: 0; }
@@ -255,11 +316,17 @@
 .cs-side .cs-hint { font-size: var(--text-xs); color: var(--cs-ink-3); margin: 0; line-height: 1.45; }
 .cs-side-body { max-height: 200px; overflow-y: auto; }
 .cs-side-sc .cs-side-body { max-height: 180px; }
-.cs-side-eq .cs-side-body { max-height: 182px; }
+.cs-side-eq .cs-side-body { max-height: 179px; }
 .cs-side-vt .cs-side-body { max-height: 105px; }
 .cs-side-mgr .cs-side-body { max-height: 105px; }
 /* 기구 목록 헤더(기구명/보유 수량) 스크롤 시 상단 고정 */
-.cs-side-eq .cs-side-body thead th { position: sticky; top: 0; z-index: 1; background: var(--cs-surface); }
+.cs-side-eq .cs-side-body thead th { position: sticky; top: 0; z-index: 1; background: var(--cs-surface); padding-bottom: 2px; }
+/* 기구 목록 카드: 제목(h5)과 기구명/보유수량 헤더 사이 간격 2px 축소 (8→6) */
+.cs-side-eq h5 { margin-bottom: 6px; }
+/* 서비스센터 목록 카드: 제목(h5)과 아래 첫 구분선 사이 간격 2px 축소 (8→6) */
+.cs-side-sc h5 { margin-bottom: 7px; }
+/* 서비스센터 카드: 위 경계와 제목 사이 여백 1px 축소 (14→13) */
+.cs-side-sc { padding-top: 11px; }
 .cs-side table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 .cs-side th { color: var(--cs-ink-3); font-weight: 600; text-align: left; padding: 2px 12px 6px 0; font-size: var(--text-xs); }
 .cs-side td { padding: 3px 12px 3px 0; border-top: 1px solid var(--cs-border); }

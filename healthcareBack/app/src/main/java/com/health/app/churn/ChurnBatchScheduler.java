@@ -20,7 +20,7 @@ import org.springframework.web.client.RestTemplate;
  * - EC2 단일 인스턴스 상시 실행 전제. 다중 인스턴스로 확장 시 분산 락(ShedLock 등) 필요.
  * - EC2 기본 타임존(UTC)과 무관하게 한국시간으로 돌도록 zone 지정.
  */
-// @Component
+@Component
 public class ChurnBatchScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(ChurnBatchScheduler.class);
@@ -30,14 +30,15 @@ public class ChurnBatchScheduler {
     @Value("${app.churn.fastapi-url:http://localhost:8000}")
     private String churnFastapiUrl;
 
-    // 매일 새벽 3시(한국시간) 전체 회원 이탈 예측 갱신
-    @Scheduled(cron = "0 0 3 * * *", zone = "Asia/Seoul")
+    // 매일 새벽 4시(한국시간) 전체 회원 이탈 예측 갱신
+    @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")
     public void runDailyChurnBatch() {
         triggerBatch("일일 스케줄");
     }
 
-    // 앱 시작 시 1회 실행 (배포/재시작 직후 최신화). 스케줄 대체가 아니라 보완.
-    @EventListener(ApplicationReadyEvent.class)
+    // 앱 시작 시 1회 실행 — 새벽 4시 스케줄만 쓰기로 해서 비활성화(재시작·재배포마다 운영 DB 배치가 도는 것 방지).
+    // 다시 켜려면 아래 @EventListener 주석을 해제한다.
+    // @EventListener(ApplicationReadyEvent.class)
     public void runOnStartup() {
         triggerBatch("앱 시작");
     }
