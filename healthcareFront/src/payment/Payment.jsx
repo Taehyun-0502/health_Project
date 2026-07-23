@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import './Payment.css';
 
-const TYPE_LABEL = { 3: '이용권', 4: 'PT' };
+// 계약 유형 라벨 (백엔드 h_contract_data.contract 코드 기준)
+// 결제 대상은 3·4·5뿐 (PayMapper.findPayableContract의 contract IN (3,4,5)와 동일 범위)
+const TYPE_LABEL = { 3: '이용권', 4: 'PT', 5: 'PT 체험' };
+
+// 횟수(quantity)를 갖는 PT형 계약 - 이용권(3)은 횟수 개념이 없다
+const PT_CONTRACTS = [4, 5];
 
 const money = (v) => (v == null ? '-' : Number(v).toLocaleString('ko-KR'));
 
@@ -62,12 +67,12 @@ function Payment() {
   }, [dataId]);
 
   // 쿠폰 카테고리별 적용 규칙 (백엔드 PayService.validateCouponForContract와 동일, 새 카테고리는 항목 추가로 확장)
-  // 헬스: 이용권 계약(3) / PT·체험권: PT 계약(4)
+  // 헬스: 이용권 계약(3) / PT: PT 계약(4) / 체험권: PT 체험 계약(5), 기존 PT(4)도 하위 호환 허용
   // 개월수/횟수 일치 제약은 정책 결정으로 제거됨 — 카테고리만 맞으면 목록에 노출
   const COUPON_CATEGORY_RULES = {
     '헬스': (c, d) => d.contract === 3,
     'PT': (c, d) => d.contract === 4,
-    '체험권': (c, d) => d.contract === 4,
+    '체험권': (c, d) => PT_CONTRACTS.includes(d.contract),
   };
 
   // 이 계약에 실제로 적용 가능한 쿠폰만 추리기 (백엔드 PayService.checkout 검증 규칙과 동일)
@@ -157,7 +162,7 @@ function Payment() {
                 <span className="pay-field-label">계약 기간</span>
                 <span className="pay-field-value">{detail.startDate ?? '-'} ~ {detail.endDate ?? '-'}</span>
               </div>
-              {detail.contract === 4 && (
+              {PT_CONTRACTS.includes(detail.contract) && (
                 <div className="pay-field">
                   <span className="pay-field-label">PT 횟수</span>
                   <span className="pay-field-value">{detail.quantity ?? '-'}회</span>

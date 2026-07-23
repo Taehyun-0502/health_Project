@@ -26,6 +26,18 @@ public class PaymentService {
         return paymentMapper.paymentAdd(paymentDTO);
     }
 
+    public int paymentAddForOwner(Long username, PaymentDTO paymentDTO) throws Exception {
+        Long gymId = paymentMapper.getOwnerGymId(username);
+        if (gymId == null) {
+            throw new IllegalArgumentException("OWNER 소속 사업장을 찾을 수 없습니다.");
+        }
+        paymentDTO.setGymId(gymId);
+        if (paymentMapper.isValidOwnerPaymentTarget(gymId, paymentDTO.getUsername(), paymentDTO.getDataId()) != 1) {
+            throw new IllegalArgumentException("해당 사업장의 회원과 계약만 매출로 등록할 수 있습니다.");
+        }
+        return paymentMapper.paymentAdd(paymentDTO);
+    }
+
     // 매출 목록 페이징 조회 처리: 목록 조회 -> 전체 건수/합계 조회 -> Pager에 offset/블록 정보 계산 후 함께 반환
     public PagedResponse<PaymentDTO> paymentList(Long username, Pager pager, String sort) throws Exception {
         pager.makeOffset();
@@ -52,19 +64,23 @@ public class PaymentService {
     // - 커미션이 '미지급' 상태인 달: 삭제 후 남은 매출 기준으로 즉시 재계산하여 반영
     // - 커미션이 '지급' 상태인 달: 이미 지급 완료된 금액이라 자동으로 낮추지 않고, 관리자 확인이 필요하다는 경고만 반환
     @org.springframework.transaction.annotation.Transactional
-    public PaymentDeleteResult paymentDelete(Long payId) throws Exception {
-        PaymentDTO pay = paymentMapper.getPaymentById(payId);
+    public PaymentDeleteResult paymentDeleteForOwner(Long username, Long payId) throws Exception {
+        Long gymId = paymentMapper.getOwnerGymId(username);
+        if (gymId == null) {
+            return new PaymentDeleteResult(false, false);
+        }
+
+        PaymentDTO pay = paymentMapper.getPaymentByIdForGym(payId, gymId);
         if (pay == null) {
             return new PaymentDeleteResult(false, false);
         }
 
-        int result = paymentMapper.paymentDelete(payId);
+        int result = paymentMapper.paymentDeleteForGym(payId, gymId);
         if (result <= 0) {
             return new PaymentDeleteResult(false, false);
         }
 
-        boolean alreadyPaidWarning = settleService.recalcCommissionAfterPaymentDeleted(pay.getGymId(),
-                pay.getPayDate());
+        boolean alreadyPaidWarning = settleService.recalcCommissionAfterPaymentDeleted(gymId, pay.getPayDate());
         return new PaymentDeleteResult(true, alreadyPaidWarning);
     }
 

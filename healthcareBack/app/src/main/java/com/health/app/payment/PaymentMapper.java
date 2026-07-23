@@ -12,6 +12,11 @@ import com.health.app.pager.Pager;
 @Mapper
 public interface PaymentMapper {
 
+    public Long getOwnerGymId(@Param("username") Long username) throws Exception;
+
+    public int isValidOwnerPaymentTarget(@Param("gymId") Long gymId,
+            @Param("payerUsername") Long payerUsername, @Param("dataId") Long dataId) throws Exception;
+
     // 신규 매출(결제) 내역 추가 등록
     public int paymentAdd(PaymentDTO paymentDTO) throws Exception;
 
@@ -31,9 +36,9 @@ public interface PaymentMapper {
     public List<ContractDTO> unpaidContractList(Long username) throws Exception;
 
     // 매출(결제) 단건 조회 (삭제 전 gymId/payDate 확인용 - 커미션 재계산에 필요)
-    public PaymentDTO getPaymentById(Long payId) throws Exception;
+    public PaymentDTO getPaymentByIdForGym(@Param("payId") Long payId, @Param("gymId") Long gymId) throws Exception;
 
     // 매출(결제) 내역 삭제
-    public int paymentDelete(Long payId) throws Exception;
+    public int paymentDeleteForGym(@Param("payId") Long payId, @Param("gymId") Long gymId) throws Exception;
 
 }
