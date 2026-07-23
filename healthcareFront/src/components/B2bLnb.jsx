@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   B2B_PRIMARY_NAV,
@@ -13,29 +12,9 @@ import './B2bLnb.css';
 function B2bLnb() {
   const location = useLocation();
   const logout = useLogout();
-  const profileDetailsRef = useRef(null);
-
-  const closeProfileMenu = () => {
-    // 클릭 이벤트의 기본 동작(Link 네비게이션)이 먼저 처리되도록 다음 틱에 닫는다.
-    // 같은 틱에서 즉시 닫으면 <details> 콘텐츠가 사라지며 네이티브 앵커 네비게이션이 취소될 수 있다.
-    setTimeout(() => {
-      profileDetailsRef.current?.removeAttribute('open');
-    }, 0);
-  };
-
-  const handleLogoutClick = () => {
-    closeProfileMenu();
-    logout();
-  };
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const role = ROLE_LABEL[normalizeRole(user.role)] || user.role || '사용자';
   const initial = String(user.name || user.username || 'U').trim().slice(0, 1).toUpperCase();
-
-  // LNB 상단 브랜드 영역 — 소속 지점명(gymName) 노출 (OWNER·TRAINER 한정, ADMIN·gymName 없음은 기존 브랜드 폴백)
-  const gymName = String(user.gymName || '').trim();
-  const hasGymBrand = gymName.length > 0;
-  const gymBrandLabel = gymName.length > 5 ? `${gymName.slice(0, 5)}…` : gymName;
-  const gymBrandInitial = gymName.slice(0, 1).toUpperCase();
   const isItemPage = location.pathname.startsWith('/fitb/itempage');
   const itemView = new URLSearchParams(location.search).get('view') === 'form' ? 'form' : 'list';
   const isProfilePage = location.pathname.startsWith('/fitb/b2bmypage');
@@ -51,20 +30,10 @@ function B2bLnb() {
   return (
     <aside className="b2b-lnb" aria-label="B2B 관리 메뉴">
       <Link to="/fitb" className="b2b-lnb__brand" aria-label="Haru Health Home">
-        {hasGymBrand ? (
-          <>
-            <span className="b2b-lnb__brand-mark" aria-hidden="true">{gymBrandInitial}</span>
-            <span className="b2b-lnb__brand-copy">
-              <strong title={gymName}>{gymBrandLabel}</strong>
-              <small>Haru Health</small>
-            </span>
-          </>
-        ) : (
-          <span className="b2b-lnb__brand-copy">
-            <strong>Haru Health</strong>
-            <small>MANAGEMENT</small>
-          </span>
-        )}
+        <span className="b2b-lnb__brand-copy">
+          <strong>Haru Health</strong>
+          <small>MANAGEMENT</small>
+        </span>
       </Link>
 
       <nav className="b2b-lnb__nav" aria-label="주요 메뉴">
@@ -100,20 +69,18 @@ function B2bLnb() {
         ))}
       </nav>
 
-      <details ref={profileDetailsRef} className={`b2b-profile${isProfilePage ? ' is-active' : ''}`}>
+      <details className={`b2b-profile${isProfilePage ? ' is-active' : ''}`}>
         <summary className="b2b-profile__summary">
           <span className="b2b-profile__avatar" aria-hidden="true">{initial}</span>
           <span className="b2b-profile__copy">
             <strong>{user.name || user.username || '사용자'}</strong>
             <small>{role} · {user.gymId ? `지점 ${user.gymId}` : '지점 미지정'}</small>
           </span>
-          <span className="b2b-profile__chevron" aria-hidden="true">
-            <NavIcon id="chevron" size={16} />
-          </span>
+          <span className="b2b-profile__chevron" aria-hidden="true">⌃</span>
         </summary>
         <div className="b2b-profile__menu">
-          <Link to="/fitb/b2bmypage" onClick={closeProfileMenu}>마이페이지</Link>
-          <button type="button" onClick={handleLogoutClick}>로그아웃</button>
+          <Link to="/fitb/b2bmypage">마이페이지</Link>
+          <button type="button" onClick={logout}>로그아웃</button>
         </div>
       </details>
     </aside>

@@ -175,10 +175,11 @@ function Itempage() {
     return str;
   };
 
-  // CSV 내보내기: 현재 검색어 조건을 반영한 전체 목록을 서버에서 받아와 CSV 파일로 다운로드 (페이징 무시, 전체 건수)
+  // CSV 내보내기: 현재 검색어 + 카테고리 칩 조건을 반영한 전체 목록을 서버에서 받아와 CSV 파일로 다운로드 (페이징 무시, 전체 건수)
+  // 목록 조회(fetchItems)와 같은 필터를 보내야 화면에서 보고 있는 것과 같은 결과가 파일로 나간다
   const handleExportCsv = async () => {
     try {
-      const query = new URLSearchParams({ keyword: searchTerm || '' });
+      const query = new URLSearchParams({ keyword: searchTerm || '', category: categoryFilter || '' });
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/export?${query.toString()}`, { headers: authHeaders });
       if (!response.ok) {
         alert('내보내기에 실패했습니다.');
@@ -217,7 +218,12 @@ function Itempage() {
     setDetailList([]);
     setSelectedMonthFilter(currentMonthKey); // 상세 클릭 시 항상 이번 달 필터로 리셋
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/detail?itemName=${encodeURIComponent(item.itemName)}`, { headers: authHeaders });
+      // 물품은 (분류 + 물품명)으로 식별한다. 물품명만 보내면 이름이 같고 분류가 다른 물품의 이력이 섞인다.
+      const detailQuery = new URLSearchParams({
+        itemName: item.itemName,
+        itemCategory: item.itemCategory,
+      });
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/fitb/itempage/detail?${detailQuery.toString()}`, { headers: authHeaders });
       if (response.ok) {
         setDetailList(await response.json());
       }
@@ -278,7 +284,7 @@ function Itempage() {
 
       if (response.ok) {
         alert('물품 정보가 성공적으로 수정되었습니다.');
-        fetchItems(page, searchTerm, sortOption); // 현재 보고 있던 페이지/검색어/정렬 조건 그대로 재조회
+        fetchItems(page, searchTerm, sortOption, categoryFilter); // 현재 보고 있던 페이지/검색어/정렬/분류 조건 그대로 재조회
         fetchItemNames(); // 물품명이 바뀌었을 수 있으므로 자동완성 목록도 갱신
         handleItemClick(updatedItem); // 수정한 데이터 이름 기준으로 목록 새로고침 및 갱신
         setEditingItem(null);
@@ -314,7 +320,7 @@ function Itempage() {
 
       if (response.ok) {
         alert('물품이 삭제되었습니다.');
-        fetchItems(page, searchTerm, sortOption); // 현재 보고 있던 페이지/검색어/정렬 조건 그대로 재조회
+        fetchItems(page, searchTerm, sortOption, categoryFilter); // 현재 보고 있던 페이지/검색어/정렬/분류 조건 그대로 재조회
         fetchItemNames(); // 해당 물품명의 이력이 전부 삭제됐을 수 있으므로 자동완성 목록도 갱신
         const deletedId = item.itemId !== undefined ? item.itemId : item.item_id;
         setDetailList(prev => {
@@ -467,7 +473,10 @@ function Itempage() {
       if (response.ok) {
         alert('물품이 성공적으로 등록되었습니다.');
         setPage(1);
-        fetchItems(1, searchTerm, sortOption); // 새로 등록된 물품을 확인할 수 있도록 1페이지부터 재조회
+        // 등록한 물품이 활성 칩과 다른 분류일 수 있으므로 분류 필터를 함께 해제한다.
+        // (필터를 유지한 채 재조회하면 방금 등록한 물품이 목록에 없어 등록 실패로 오인된다)
+        setCategoryFilter('');
+        fetchItems(1, searchTerm, sortOption, ''); // 새로 등록된 물품을 확인할 수 있도록 1페이지부터 재조회
         fetchItemNames(); // 새 물품명이 자동완성 목록에 반영되도록 갱신
 
         // 폼 초기화 및 목록으로 돌아가기

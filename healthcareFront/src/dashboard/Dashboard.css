@@ -79,31 +79,142 @@
   font-size: var(--text-sm);
 }
 
-/* 위젯 편집 패널 */
-.dash-edit {
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
+/* 위젯 편집 모달(팝업) — 계약 페이지 모달과 동일 규격(딤 0.45 · 라운드 16 · 카드 그림자) */
+.dash-modal-back {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 23, 23, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.dash-modal {
+  width: 420px;
+  max-width: 100%;
+  max-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border-radius: 16px;
   background: var(--white);
-  padding: 12px 16px;
-  margin-bottom: 14px;
+  color: var(--gray-900);
+  box-shadow: var(--shadow-lg);
 }
 
-.dash-edit ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.dash-edit li {
+.dash-modal__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 0;
+  gap: 12px;
+}
+
+.dash-modal__title {
+  margin: 0;
+  font-size: var(--text-h3);
+  font-weight: 700;
+}
+
+.dash-modal__close {
+  border: 0;
+  background: none;
+  padding: 4px;
+  color: var(--gray-500);
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dash-modal__close:hover {
+  color: var(--gray-900);
+}
+
+.dash-modal__desc {
+  margin: 6px 0 12px;
+  color: var(--gray-500);
+  font-size: var(--text-sm);
+}
+
+.dash-modal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  border-top: 1px solid var(--gray-200);
+}
+
+.dash-modal__list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--gray-100);
   font-size: 14px;
 }
 
-.dash-edit li.locked {
+.dash-modal__list li.locked {
   color: var(--gray-400);
+}
+
+.dash-modal__list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.dash-modal__list li.locked label {
+  cursor: not-allowed;
+}
+
+.dash-modal__order {
+  display: inline-flex;
+  flex: none;
+  gap: 4px;
+}
+
+.dash-modal__order button {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--gray-700);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dash-modal__order button:hover {
+  background: var(--gray-100);
+}
+
+.dash-modal__hint {
+  margin: 12px 0 0;
+  color: var(--gray-500);
+  font-size: var(--text-sm);
+}
+
+.dash-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.dash-modal__done {
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent-strong);
+  color: var(--white);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* 위젯 카드 — 4열 그리드에 카드별 span 지정 (KPI 1 / 리스트 2 / 차트 4) */

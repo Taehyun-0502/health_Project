@@ -15,7 +15,9 @@
   border-radius: 28px;
   padding: 7px 7px 7px 16px;
   box-shadow: 0 8px 28px rgba(23, 23, 23, 0.18);
-  z-index: 1000;
+  /* 입력바 스태킹(2026-07-22 확정): 위계 LNB 프로필 플라이아웃 950 > 드로어 900 > 플로팅 입력바 890.
+     드로어(900) 아래에 두어 드로어가 겹칠 때 입력바를 덮는다. */
+  z-index: 890;
 }
 
 .ai-fabbar-icon {
@@ -131,12 +133,16 @@
   border-bottom-right-radius: 4px;
 }
 
-/* 비서: 좌측 정렬 */
+/* 비서: 좌측 정렬 — 말풍선 박스 제거, 플레인 텍스트 블록 (2026-07-22 확정)
+   .ai-bubble 공통 규칙의 배경·테두리·라운드·좌우 패딩을 걷어내 본문처럼 읽히게 한다.
+   답변 내부 차트/리스트 카드·바로가기 버튼(.ai-links)은 자체 스타일 유지. */
 .ai-bubble-assistant {
   align-self: flex-start;
-  background: #fff;
-  border: 1px solid var(--gray-200);
-  border-bottom-left-radius: 4px;
+  max-width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 2px 0;
 }
 
 /* 크레딧 소진/오류 안내 - 경고 톤 카드 (노란 배경) */
@@ -147,6 +153,8 @@
   color: var(--warning);
 }
 
+/* 진행 인디케이터 — 비서 답변과 동일하게 플레인 처리(회색 보조 텍스트 톤).
+   .ai-bubble-assistant 클래스를 함께 가지므로 배경·테두리·라운드는 위 규칙에서 제거된다. */
 .ai-bubble-loading {
   color: var(--gray-400);
   font-style: italic;

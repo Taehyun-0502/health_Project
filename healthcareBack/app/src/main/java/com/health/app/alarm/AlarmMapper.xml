@@ -27,10 +27,13 @@ where receiver = #{receiver}
 order by alarm_id desc
 </select>
 
-<!-- 알림 읽음 처리: read 플래그와 read_at 시각을 함께 갱신 -->
-<update id="alarmRead" parameterType="Long">
+<!-- 알림 읽음 처리: read 플래그와 read_at 시각을 함께 갱신
+     receiver 조건은 필수 - 없으면 alarm_id만 바꿔가며 타인의 알림을 읽음 처리할 수 있다(IDOR).
+     receiver는 컨트롤러가 JWT subject에서 주입하며 클라이언트 값은 받지 않는다. -->
+<update id="alarmRead">
 update "h_alarm" set read = 'Y', read_at = now()
 where alarm_id = #{alarmId}
+  and receiver = #{receiver}
 </update>
 
 <!-- 수신 회원의 모든 알림 일괄 읽음 처리 (신규 메서드 전용 쿼리) -->

@@ -20,6 +20,7 @@ import com.health.app.config.JwtUtill;
 import com.health.app.member.MemberDTO;
 
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * 출석 키오스크(회원용, 무로그인) + PT 출석 트레이너 확인(사장님 포털)을 처리하는 REST 컨트롤러
@@ -36,9 +37,11 @@ public class AttendanceController {
 
     // 헬스장 출석 API (키오스크, 무로그인) - 계정 검증 후 출석 기록
     @PostMapping("/fitc/attendance/gym")
-    public ResponseEntity<?> gymCheckIn(@RequestBody MemberDTO credential) throws Exception {
+    public ResponseEntity<?> gymCheckIn(@RequestBody MemberDTO credential, HttpServletRequest request) throws Exception {
         try {
-            return ResponseEntity.ok(checkInoutService.gymCheckIn(credential));
+            return ResponseEntity.ok(checkInoutService.gymCheckIn(credential, clientIp(request)));
+        } catch (AttendanceLockedException e) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(e.getMessage());
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -46,12 +49,27 @@ public class AttendanceController {
 
     // PT 출석 접수 API (키오스크, 무로그인) - 미확인 상태로 기록, 차감은 트레이너 확인 시점
     @PostMapping("/fitc/attendance/pt")
-    public ResponseEntity<?> ptCheckIn(@RequestBody MemberDTO credential) throws Exception {
+    public ResponseEntity<?> ptCheckIn(@RequestBody MemberDTO credential, HttpServletRequest request) throws Exception {
         try {
-            return ResponseEntity.ok(checkInoutService.ptCheckIn(credential));
+            return ResponseEntity.ok(checkInoutService.ptCheckIn(credential, clientIp(request)));
+        } catch (AttendanceLockedException e) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(e.getMessage());
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    // 인증 시도 제한의 출발지 키로 쓸 클라이언트 IP 추출
+    // X-Forwarded-For는 프록시가 붙이는 값이지만 클라이언트가 직접 써넣어도 서버가 구분할 수 없다.
+    // 이 값이 시도 제한의 버킷 키라 신뢰하면 요청마다 다른 IP를 보내 제한을 그냥 빠져나갈 수 있으므로 읽지 않는다.
+    // 현재 구성은 프록시 없이 브라우저가 직접 붙으므로 getRemoteAddr()가 곧 실제 접속자 IP다.
+    // 프록시 뒤로 배포하게 되면 여기서 헤더를 파싱하지 말고
+    // application.yml에 server.forward-headers-strategy: framework 를 설정한다(신뢰 프록시 판단은 프레임워크가 처리).
+    private String clientIp(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        return request.getRemoteAddr();
     }
 
     // 트레이너 본인 담당 당일 미확인 PT 출석 대기 목록 API (TRAINER용)

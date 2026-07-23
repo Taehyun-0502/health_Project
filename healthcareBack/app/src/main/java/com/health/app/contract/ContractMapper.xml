@@ -508,7 +508,8 @@
      current_date)
     </insert>
 
-    <!-- (OWNER 대시보드) 30일 내 만료 임박 회원 계약(3·4·5, SIGNED/ACTIVE) distinct 회원 수 집계 SQL -->
+    <!-- 만료 임박 회원 계약(이용권3·PT4·PT 체험5, SIGNED·ACTIVE) 대상 회원 수 집계 SQL
+         현재 날짜부터 30일 내에 end_date가 도래하는 계약의 distinct 수신자 수 (gym_id 격리) -->
     <select id="expiringMemberCount" parameterType="Long" resultType="map">
     select count(distinct d.receiver_id) as "total"
     from "h_contract_data" d

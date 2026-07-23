@@ -19,25 +19,9 @@
 .b2b-lnb__brand {
   display: flex;
   align-items: center;
-  gap: 10px;
   padding: 6px 10px 22px;
   color: var(--gray-900);
   text-decoration: none;
-}
-
-/* 소속 지점 이니셜 마크 — 프로필 이미지 미보유로 인한 폴백 */
-.b2b-lnb__brand-mark {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  color: var(--white);
-  background: var(--accent);
-  font-size: 14px;
-  font-weight: 700;
 }
 
 .b2b-lnb__brand-copy strong,
@@ -207,27 +191,26 @@
 }
 
 .b2b-profile__chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   color: var(--gray-400);
+  transition: transform 0.16s ease;
 }
 
-/* 드롭다운 = 프로필 카드 오른쪽으로 플라이아웃 (LNB 밖 콘텐츠 영역 쪽)
-   z-index는 우측 드로어(900)보다 위 — 드로어와 동시 오픈 시 메뉴가 가려지지 않게 */
+.b2b-profile[open] .b2b-profile__chevron {
+  transform: rotate(180deg);
+}
+
 .b2b-profile__menu {
   position: absolute;
-  left: calc(100% + 10px);
-  bottom: 0;
-  z-index: 950;
-  min-width: 180px;
+  right: 0;
+  bottom: 68px;
+  left: 0;
   display: grid;
   gap: 4px;
   padding: 8px;
   border: 1px solid var(--gray-200);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--white);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .b2b-profile__menu a,
@@ -280,14 +263,5 @@
 
   .b2b-profile {
     margin-top: 14px;
-  }
-
-  /* 모바일: 오른쪽 플라이아웃이 화면 밖으로 나가지 않도록 카드 하단에 노출 */
-  .b2b-profile__menu {
-    left: 0;
-    right: 0;
-    bottom: auto;
-    top: calc(100% + 6px);
-    min-width: 0;
   }
 }
