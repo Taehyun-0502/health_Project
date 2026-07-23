@@ -46,7 +46,4 @@ public interface CouponMapper {
 
     // 이탈위험 회원 발송 claim: 오늘자 h_churn_result status 0→1 (반환=갱신행수, 1이면 발송확정/0이면 스킵)
     public int claimChurnStatusToday(@org.apache.ibatis.annotations.Param("username") Long username) throws Exception;
-
-    // (OWNER 대시보드) 본인이 발급한(from_id) 쿠폰 전체 개수 + 사용완료 개수 집계
-    public java.util.Map<String, Object> usageSummary(Long fromId) throws Exception;
 }

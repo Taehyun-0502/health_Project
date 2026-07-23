@@ -152,8 +152,8 @@ public class MemberService {
         Long formattedUsername = this.formatUsernameToEightDigits(memberDTO.getUsername());
         memberDTO.setUsername(formattedUsername);
 
-        // 아이디(전화번호)에 해당하는 회원 정보 조회 (h_gym left join으로 gymName 포함, 로그인 전용 쿼리)
-        MemberDTO existMember = memberMapper.loginLookup(memberDTO);
+        // 아이디(전화번호)에 해당하는 회원 정보 조회 (기존 idcheck 쿼리 재활용)
+        MemberDTO existMember = memberMapper.idcheck(memberDTO);
         if (existMember == null) {
             return null; // 가입되지 않은 전화번호
         }

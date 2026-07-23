@@ -377,7 +377,8 @@ public class ContractService {
         return contractMapper.jobSeekingTrainers();
     }
 
-    // (OWNER 대시보드) 30일 내 만료 임박 회원 계약(3·4·5) 수 집계 - 조회 직전 만료 sweep으로 상태 최신화
+    // 만료 임박(30일 내 종료일 도래) 회원 계약(이용권3·PT4·PT 체험5) 대상 회원 수 집계 비즈니스 로직
+    // 판정이 계약 status(SIGNED·ACTIVE)에 의존하므로 조회 직전 sweep으로 만료·활성 전이를 최신화
     public java.util.Map<String, Object> expiringMemberCount(Long gymId) throws Exception {
         contractSweep();
         return contractMapper.expiringMemberCount(gymId);

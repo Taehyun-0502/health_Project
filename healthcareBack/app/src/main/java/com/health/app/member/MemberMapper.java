@@ -13,9 +13,6 @@ public interface MemberMapper {
     // 아이디 중복확인 메서드
     public MemberDTO idcheck(MemberDTO memberDTO) throws Exception;
 
-    // 로그인 전용 조회 메서드 - h_gym left join으로 gymName(소속 지점명)까지 함께 반환 (LNB 브랜드 노출용)
-    public MemberDTO loginLookup(MemberDTO memberDTO) throws Exception;
-
     // 회원정보 수정 메서드
     public int update(MemberDTO memberDTO) throws Exception;
 

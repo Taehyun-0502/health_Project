@@ -70,6 +70,7 @@ function AiPanel() {
         value={fabInput}
         placeholder="매출, 계약, 회원에 대해 물어보세요"
         onChange={(e) => setFabInput(e.target.value)}
+        onFocus={() => askAi('')}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.nativeEvent.isComposing) sendFromFab();
         }}
