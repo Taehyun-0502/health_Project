@@ -683,8 +683,8 @@ function FactorList({ items, gymId, mode, period }) {
     window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
       detail: {
         kind: 'report',
-        id: f.statKey,
-        title: factorLabel(f.statKey),
+        id: `${f.statKey}:${mode}:${period}`,
+        title: `${factorLabel(f.statKey)} · ${period}`,
         data: { statKey: f.statKey, gymId, mode, period },
       },
     }));
