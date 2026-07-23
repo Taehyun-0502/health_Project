@@ -1,6 +1,7 @@
 package com.health.app.alarm;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,13 +42,39 @@ public class AlarmController {
         }
     }
 
+    // SSE 구독 티켓 발급 API (POST /alarm/ticket)
+    // EventSource는 Authorization 헤더를 보낼 수 없으므로, Bearer 인증은 이 단계에서 받고
+    // 구독 단계는 여기서 발급한 1회용 티켓으로 대신한다. 발급 대상은 JWT subject로 고정한다.
+    @PostMapping("/ticket")
+    public ResponseEntity<?> issueSubscribeTicket(
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+
+        Claims claims = extractClaims(authorization);
+        if (claims == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+
+        Long receiver = Long.parseLong(claims.getSubject());
+        return ResponseEntity.ok(Map.of("ticket", alarmService.issueSubscribeTicket(receiver)));
+    }
+
     // 실시간 알람 채널 구독 API
-    // GET /alarm/subscribe?username=번호
+    // GET /alarm/subscribe?ticket=발급받은티켓
+    // 구독 대상은 티켓에 봉인된 발급 대상으로만 결정된다(클라이언트가 username을 지정할 수 없음).
     // produces = MediaType.TEXT_EVENT_STREAM_VALUE 속성 지정을 통해 SSE 규격으로 송출합니다.
+    // ResponseEntity<SseEmitter>로 감싸는 이유: 인증 실패 시 상태코드만 돌려줘야 하는데,
+    // 예외를 던지면 produces=text/event-stream과 오류 응답의 콘텐츠 협상이 어긋날 수 있다.
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribe(@RequestParam("username") String username) throws Exception {
+    public ResponseEntity<SseEmitter> subscribe(
+            @RequestParam(value = "ticket", required = false) String ticket) throws Exception {
+
         // 서비스로부터 개설 및 더미 이벤트 전송을 마친 Emitter 자원을 획득하여 반환
-        return alarmService.subscribe(username);
+        SseEmitter emitter = alarmService.subscribeByTicket(ticket);
+        if (emitter == null) {
+            // 티켓이 없거나 만료·이미 사용된 경우
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(emitter);
     }
 
     // 로그인한 사용자의 알림 이력 목록 조회 API
@@ -76,7 +103,13 @@ public class AlarmController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
 
-        int result = alarmService.alarmRead(alarmId);
+        // 수신자는 클라이언트 값이 아니라 JWT subject로 강제 - 타인 알림 읽음 처리(IDOR) 차단
+        Long receiver = Long.parseLong(claims.getSubject());
+        int result = alarmService.alarmRead(alarmId, receiver);
+        if (result == 0) {
+            // 존재하지 않거나 본인 수신 알림이 아님 (구분해서 알려주면 타인 알림 존재 여부가 노출되므로 통합)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("알림을 찾을 수 없습니다.");
+        }
         return ResponseEntity.ok(result);
     }
 

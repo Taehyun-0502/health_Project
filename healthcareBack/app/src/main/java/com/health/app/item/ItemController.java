@@ -104,15 +104,17 @@ public class ItemController {
         return ResponseEntity.ok(itemService.itemNamesForOwner(subject(claims)));
     }
 
-    // CSV 내보내기용 전체 목록 조회 메서드: 현재 화면의 검색조건(keyword)은 반영하되 페이징은 없이 전체 반환 (CSV 변환은 프론트에서 처리)
+    // CSV 내보내기용 전체 목록 조회 메서드: 현재 화면의 검색조건(keyword + category)은 반영하되 페이징은 없이 전체 반환 (CSV 변환은 프론트에서 처리)
+    // 목록(list)과 같은 조건을 받아야 사용자가 화면에서 보고 있는 것과 같은 결과가 파일로 나간다
     @GetMapping("export")
     public ResponseEntity<?> itemListAll(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestParam(required = false) String keyword) throws Exception {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category) throws Exception {
         Claims claims = authenticate(authorization);
         if (claims == null || subject(claims) == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         if (!isOwner(claims)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
-        return ResponseEntity.ok(itemService.itemListAllForOwner(subject(claims), keyword));
+        return ResponseEntity.ok(itemService.itemListAllForOwner(subject(claims), keyword, category));
     }
 
     // 특정 카테고리(기본:기구) 아이템 목록 조회 — 이탈통계 기구불만 옆 표시용
@@ -132,7 +134,7 @@ public class ItemController {
         }
     }
 
-    // 아이템 상세보기 메서드
+    // 아이템 상세보기 메서드 (itemName + itemCategory 필수 - 목록의 그룹 키와 동일하게 식별해야 동명이품이 섞이지 않음)
     @GetMapping("detail")
     public ResponseEntity<?> itemDetail(
             @RequestHeader(value = "Authorization", required = false) String authorization,
@@ -140,8 +142,11 @@ public class ItemController {
         Claims claims = authenticate(authorization);
         if (claims == null || subject(claims) == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         if (!isOwner(claims)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
-        return ResponseEntity.ok(itemService.itemDetailForOwner(subject(claims), itemDTO));
-
+        try {
+            return ResponseEntity.ok(itemService.itemDetailForOwner(subject(claims), itemDTO));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // 아이템 업테이트(수정) 메서드

@@ -20,6 +20,7 @@ import com.health.app.config.JwtUtill;
 import com.health.app.member.MemberDTO;
 
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * 출석 키오스크(회원용, 무로그인) + PT 출석 트레이너 확인(사장님 포털)을 처리하는 REST 컨트롤러
@@ -36,9 +37,11 @@ public class AttendanceController {
 
     // 헬스장 출석 API (키오스크, 무로그인) - 계정 검증 후 출석 기록
     @PostMapping("/fitc/attendance/gym")
-    public ResponseEntity<?> gymCheckIn(@RequestBody MemberDTO credential) throws Exception {
+    public ResponseEntity<?> gymCheckIn(@RequestBody MemberDTO credential, HttpServletRequest request) throws Exception {
         try {
-            return ResponseEntity.ok(checkInoutService.gymCheckIn(credential));
+            return ResponseEntity.ok(checkInoutService.gymCheckIn(credential, clientIp(request)));
+        } catch (AttendanceLockedException e) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(e.getMessage());
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -46,12 +49,28 @@ public class AttendanceController {
 
     // PT 출석 접수 API (키오스크, 무로그인) - 미확인 상태로 기록, 차감은 트레이너 확인 시점
     @PostMapping("/fitc/attendance/pt")
-    public ResponseEntity<?> ptCheckIn(@RequestBody MemberDTO credential) throws Exception {
+    public ResponseEntity<?> ptCheckIn(@RequestBody MemberDTO credential, HttpServletRequest request) throws Exception {
         try {
-            return ResponseEntity.ok(checkInoutService.ptCheckIn(credential));
+            return ResponseEntity.ok(checkInoutService.ptCheckIn(credential, clientIp(request)));
+        } catch (AttendanceLockedException e) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(e.getMessage());
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    // 인증 시도 제한의 출발지 키로 쓸 클라이언트 IP 추출
+    // 리버스 프록시 뒤에 있으면 getRemoteAddr()가 프록시 IP로 고정되므로 X-Forwarded-For의 첫 값을 우선한다.
+    // (이 헤더는 클라이언트가 위조할 수 있어 인증·권한 판단에는 쓰지 않고, 시도 제한 버킷 구분에만 사용한다)
+    private String clientIp(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     // 트레이너 본인 담당 당일 미확인 PT 출석 대기 목록 API (TRAINER용)

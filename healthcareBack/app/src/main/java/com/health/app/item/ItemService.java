@@ -50,11 +50,16 @@ public class ItemService {
         return itemNames(ownerGymId(username));
     }
 
-    public List<ItemDTO> itemListAllForOwner(Long username, String keyword) throws Exception {
-        return itemListAll(ownerGymId(username), keyword);
+    public List<ItemDTO> itemListAllForOwner(Long username, String keyword, String category) throws Exception {
+        return itemListAll(ownerGymId(username), keyword, category);
     }
 
+    // 상세는 목록의 그룹 키(분류+물품명)로 식별한다. 분류가 없으면 동명이품이 섞이므로 조회 자체를 막는다.
     public List<ItemDTO> itemDetailForOwner(Long username, ItemDTO itemDTO) throws Exception {
+        if (itemDTO.getItemName() == null || itemDTO.getItemName().isBlank()
+                || itemDTO.getItemCategory() == null || itemDTO.getItemCategory().isBlank()) {
+            throw new IllegalArgumentException("물품명과 분류를 함께 지정해 주세요.");
+        }
         itemDTO.setGymId(ownerGymId(username));
         return itemDetail(itemDTO);
     }
@@ -132,10 +137,10 @@ public class ItemService {
         return itemMapper.itemNames(gymId);
     }
 
-    // CSV 내보내기용 전체 목록(현재 검색조건 반영, 페이징 없음) 맵퍼 호출
-    public List<ItemDTO> itemListAll(Long gymId, String keyword) throws Exception {
+    // CSV 내보내기용 전체 목록(현재 검색어 + 카테고리 칩 조건 반영, 페이징 없음) 맵퍼 호출
+    public List<ItemDTO> itemListAll(Long gymId, String keyword, String category) throws Exception {
 
-        return itemMapper.itemListAll(gymId, keyword);
+        return itemMapper.itemListAll(gymId, keyword, category);
     }
 
     // 아이템 디테일 맵퍼 호출
