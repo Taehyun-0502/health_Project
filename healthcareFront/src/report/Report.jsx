@@ -69,6 +69,9 @@ const HELPER_FACTOR = '서비스불만_환경불편';
 const PT_TRIAL_FACTORS = ['PT_가입여부', '최근한달_부상경험'];
 // 이 요인의 버튼(교육 프로그램)은 회원이 아니라 직원 대상 교육 프로그램을 제공한다
 const TRAINING_FACTOR = '직원불만_불친절';
+// 이 요인들은 조치 버튼/패널 없이 회원 리스트를 높이 가득 채워 보여준다 (나이는 하단 조언 문구도 추가)
+const FILL_FACTORS = ['나이', '이번달_주당방문횟수', '총_이용개월수', '일평균_운동시간', '주_이용_시간대_혼잡도', '그룹수업_참여',
+  'PT_가입여부', '최근한달_부상경험', '서비스불만_환경불편', '직원불만_불친절', '가격불만', '상대_방문공백'];
 
 // 방문 시간대 표시 순서(시간순)
 const SLOT_ORDER = ['새벽(00-06)', '오전(06-11)', '점심(11-14)', '오후(14-18)', '저녁(18-22)', '야간(22-24)'];
@@ -515,33 +518,59 @@ function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
     : isPtTrial ? () => setPtOpen(true)
     : undefined;
 
+  // 방문 공백 요인: 이 명단 중 오늘 이미 출석한 회원 수 (lastDays === 0 = 오늘 방문)
+  const todayVisitedCount = members.filter((m) => m.lastDays === 0).length;
+
   return (
-    <div className="cs-fd-body">
+    <div className={`cs-fd-body${FILL_FACTORS.includes(statKey) ? ' cs-fd-body--fill' : ''}`}>
+      {/* 스크롤 영역 = 표(리스트) 바깥. 표 자체는 전체를 보여주고 스크롤바는 이 영역 가장자리에서 나온다 */}
+      <div className="cs-fd-scroll">
       {loading ? (
         <p className="cs-loading cs-muted">명단 불러오는 중…</p>
       ) : members.length === 0 ? (
         <p className="cs-empty cs-muted">해당 회원 없음</p>
       ) : (
         <div className="cs-fd-members">
-          <table className="cs-mtable">
+          <table className="cs-mtable cs-mtable-head">
             <thead><tr><th>회원</th><th>ID</th><th className="r">이탈률</th></tr></thead>
-            <tbody>
-              {members.map((m) => {
-                const t = tierOf(m.churnRate);
-                return (
-                  <tr key={m.username}>
-                    <td>{m.name}</td>
-                    <td className="cs-muted cs-num">{m.username}</td>
-                    <td className={`r cs-num cs-${t.cls}`}>{(m.churnRate * 100).toFixed(1)}%</td>
-                  </tr>
-                );
-              })}
-            </tbody>
           </table>
+          <div className="cs-fd-memberscroll">
+            <table className="cs-mtable">
+              <tbody>
+                {members.map((m) => {
+                  const t = tierOf(m.churnRate);
+                  return (
+                    <tr key={m.username}>
+                      <td>{m.name}</td>
+                      <td className="cs-muted cs-num">{m.username}</td>
+                      <td className={`r cs-num cs-${t.cls}`}>{(m.churnRate * 100).toFixed(1)}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* 조치 버튼 (결과지향 문구) — 발송/이동형 요인 */}
+        {/* 정보형 요인 = 조치 버튼 대신 참고 데이터 패널 (스크롤 영역 안) */}
+        {showVisitTime && <VisitTimePanel gymId={gymId} mode={mode} period={period} statKey={statKey} />}
+        {showEquip && <EquipmentPanel gymId={gymId} />}
+        {showManager && <ManagerPanel gymId={gymId} mode={mode} period={period} statKey={statKey} />}
+        {showServiceCenter && <ServiceCenterPanel />}
+      </div>
+
+      {/* 나이 요인: 회원 리스트 아래 가벼운 조언·지도 안내 (스크롤 밖 바닥 바, 구분선 위) */}
+      {statKey === '나이' && (
+        <div className="cs-fd-advice">위 회원들에게는 헬스장에서 따로 가벼운 조언·지도가 필요해요.</div>
+      )}
+
+      {/* 방문 공백 요인: 명단 중 오늘 이미 출석한 회원 수 안내 */}
+      {statKey === '상대_방문공백' && (
+        <div className="cs-fd-advice">이 명단 중 오늘 출석한 회원은 {todayVisitedCount}명이에요.</div>
+      )}
+
+      {/* 조치 버튼 (결과지향 문구) — 스크롤 영역 밖, 바닥 고정 푸터 */}
       {showActionBtn && (
         <div className="cs-fd-action">
           <span className="cs-fd-action-copy">{actionCopy}</span>
@@ -550,12 +579,6 @@ function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
           </button>
         </div>
       )}
-
-      {/* 정보형 요인 = 조치 버튼 대신 참고 데이터 패널 */}
-      {showVisitTime && <VisitTimePanel gymId={gymId} mode={mode} period={period} statKey={statKey} />}
-      {showEquip && <EquipmentPanel gymId={gymId} />}
-      {showManager && <ManagerPanel gymId={gymId} mode={mode} period={period} statKey={statKey} />}
-      {showServiceCenter && <ServiceCenterPanel />}
 
       {/* 헬퍼 요청 팝업 */}
       {helperOpen && (
@@ -622,59 +645,68 @@ function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
   );
 }
 
-// 이탈 요인 아코디언 (FACTOR_ORDER 고정 순서, 펼치면 회원 명단+조치 인라인)
-function FactorList({ items, gymId, mode, period }) {
-  const [openKey, setOpenKey] = useState(null);
+// 드로어(우측)에서 요인 상세를 여는 로더 — 회원 명단을 조회해 FactorDetail 을 그대로 렌더한다.
+// .cs-wrap 으로 감싸 Report.css 의 --cs-* 토큰이 드로어 안에서도 해석되게 한다.
+export function FactorDetailLoader({ statKey, gymId, mode, period }) {
   const [members, setMembers] = useState([]);
-  const [mLoading, setMLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    setLoading(true); setMembers([]);
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/result/stats/members`
+      + `?gymId=${gymId}&mode=${mode}&period=${period}`
+      + `&statType=factor&statKey=${encodeURIComponent(statKey)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => { if (alive) setMembers(Array.isArray(d) ? d : []); })
+      .catch((e) => { console.error('회원 명단 조회 실패:', e); if (alive) setMembers([]); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [statKey, gymId, mode, period]);
 
-  // 기간 변경 시 열린 요인 닫기
-  useEffect(() => { setOpenKey(null); setMembers([]); }, [period]);
+  return (
+    <div className="cs-wrap cs-in-drawer">
+      <FactorDetail statKey={statKey} members={members} loading={loading}
+                    gymId={gymId} mode={mode} period={period} />
+    </div>
+  );
+}
 
-  const toggle = async (statKey) => {
-    if (openKey === statKey) { setOpenKey(null); setMembers([]); return; }
-    setOpenKey(statKey); setMLoading(true); setMembers([]);
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/result/stats/members`
-        + `?gymId=${gymId}&mode=${mode}&period=${period}`
-        + `&statType=factor&statKey=${encodeURIComponent(statKey)}`);
-      setMembers(res.ok ? await res.json() : []);
-    } catch (e) {
-      console.error('회원 명단 조회 실패:', e); setMembers([]);
-    } finally { setMLoading(false); }
-  };
-
+// 이탈 요인 리스트 (FACTOR_ORDER 고정 순서) — 바 클릭 시 우측 통합 드로어로 상세를 연다
+function FactorList({ items, gymId, mode, period }) {
   const factorRank = (k) => { const i = FACTOR_ORDER.indexOf(k); return i === -1 ? FACTOR_ORDER.length : i; };
   const factors = items
     .filter((b) => b.statType === 'factor')
     .sort((a, b) => factorRank(a.statKey) - factorRank(b.statKey));
 
+  // 바 클릭 시 우측 통합 드로어(kind='report')로 상세를 연다 (계약 리스트와 동일 동선).
+  const openInDrawer = (f) => {
+    window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
+      detail: {
+        kind: 'report',
+        id: f.statKey,
+        title: factorLabel(f.statKey),
+        data: { statKey: f.statKey, gymId, mode, period },
+      },
+    }));
+  };
+
   if (factors.length === 0) return <p className="cs-empty cs-muted cs-pad">데이터 없음</p>;
 
   return (
     <div className="cs-factor-acc">
-      {factors.map((f) => {
-        const open = openKey === f.statKey;
-        return (
-          <div key={f.statKey} className={`cs-facc${open ? ' open' : ''}`}>
-            <button type="button" className="cs-facc-row" aria-expanded={open} onClick={() => toggle(f.statKey)}>
-              <span className="cs-facc-name"><span className="cs-facc-chev" aria-hidden="true">▸</span>{factorLabel(f.statKey)}</span>
-              <span className="cs-facc-bar">
-                {f.pct != null ? <i style={{ width: `${Math.min(f.pct, 100)}%` }} /> : null}
-              </span>
-              <span className="cs-facc-pct cs-num">
-                {f.pct != null ? (<><b>{f.pct}%</b><span className="cs-facc-cnt">{f.memberCount}명</span></>) : '-'}
-              </span>
-            </button>
-            {open && (
-              <div className="cs-facc-detail">
-                <FactorDetail statKey={f.statKey} members={members} loading={mLoading}
-                              gymId={gymId} mode={mode} period={period} />
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {factors.map((f) => (
+        <div key={f.statKey} className="cs-facc">
+          <button type="button" className="cs-facc-row" onClick={() => openInDrawer(f)}>
+            <span className="cs-facc-name"><span className="cs-facc-chev" aria-hidden="true">›</span>{factorLabel(f.statKey)}</span>
+            <span className="cs-facc-bar">
+              {f.pct != null ? <i style={{ width: `${Math.min(f.pct, 100)}%` }} /> : null}
+            </span>
+            <span className="cs-facc-pct cs-num">
+              {f.pct != null ? (<><b>{f.pct}%</b><span className="cs-facc-cnt">{f.memberCount}명</span></>) : '-'}
+            </span>
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
@@ -743,6 +775,18 @@ function RiskMembers({ riskList, loading }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// 드로어(우측)에서 신규 위험군 명단을 여는 패널 — 돋보기 버튼이 b2b-drawer-open(kind='riskmembers')로 연다.
+// .cs-wrap 으로 감싸 Report.css 의 --cs-* 토큰이 드로어 안에서도 해석되게 한다.
+export function RiskMembersPanel({ data }) {
+  const riskList = Array.isArray(data?.riskList) ? data.riskList : [];
+  return (
+    <div className="cs-wrap cs-riskdrawer">
+      <RiskMembers riskList={riskList} loading={false} />
+      <p className="cs-trust">🔒 우리 지점 데이터만 보여줍니다</p>
     </div>
   );
 }
@@ -945,22 +989,12 @@ function Report() {
                 <div className="cs-skpi-sub">직전 {unit} 대비</div>
                 <button
                   type="button"
-                  className={`cs-riskpop-toggle${showRiskPop ? ' is-open' : ''}`}
-                  aria-expanded={showRiskPop}
+                  className="cs-riskpop-toggle"
                   aria-label="신규 위험군 명단 열기"
-                  onClick={() => setShowRiskPop((v) => !v)}
-                >▾</button>
-                {showRiskPop && (
-                  <div className="cs-riskpop" role="dialog" aria-label="신규 위험군 명단">
-                    <div className="cs-riskpop-head">
-                      <h3>🔔 신규 위험군 <span className="cs-crit cs-cardhead-count">{riskLoading ? '…' : riskList.length}명</span></h3>
-                      <button type="button" className="cs-riskpop-close" aria-label="닫기" onClick={() => setShowRiskPop(false)}>✕</button>
-                    </div>
-                    <p className="cs-riskpop-sub">직전 {unit} 대비 개입·긴급에 새로 진입</p>
-                    <RiskMembers riskList={riskList} loading={riskLoading} />
-                    <div className="cs-trust">🔒 우리 지점 데이터만 보여줍니다</div>
-                  </div>
-                )}
+                  onClick={() => window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
+                    detail: { kind: 'riskmembers', id: 'new-risk', title: '신규 위험군', data: { riskList } },
+                  }))}
+                >🔍</button>
               </div>
             </div>
 

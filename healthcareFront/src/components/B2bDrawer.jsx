@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AiChat from '../ai/AiChat.jsx';
+import { FactorDetailLoader, RiskMembersPanel } from '../report/Report.jsx';
 import './B2bDrawer.css';
 
 // 우측 통합 드로어 (추가 동선) - 리스트 행 클릭 시 'b2b-drawer-open' 커스텀 이벤트로 탭이 쌓인다.
-// detail = { kind: 'contract'|'settle'|'item'|'ai', id, title, data? }
+// detail = { kind: 'contract'|'settle'|'item'|'ai'|'report', id, title, data? }
 // 같은 kind+id 탭은 중복 생성 없이 활성화만 전환. 바깥 클릭 = 접힘(탭 보존), ✕ = 전체 닫기.
 // AI 비서(2026-07-21 기획서)도 같은 드로어의 한 탭으로 편입되며, 탭 상태는 'b2b-drawer-state'로 방송한다.
 
@@ -350,6 +351,15 @@ function B2bDrawer() {
                 <AiChat onNavigate={openPage} />
               ) : tab.kind === 'contract' ? (
                 <ContractTabContent id={tab.id} onOpenPage={openPage} />
+              ) : tab.kind === 'report' ? (
+                <FactorDetailLoader
+                  statKey={tab.data?.statKey}
+                  gymId={tab.data?.gymId}
+                  mode={tab.data?.mode}
+                  period={tab.data?.period}
+                />
+              ) : tab.kind === 'riskmembers' ? (
+                <RiskMembersPanel data={tab.data} />
               ) : (
                 <DataTabContent kind={tab.kind} data={tab.data} onOpenPage={openPage} />
               )}
