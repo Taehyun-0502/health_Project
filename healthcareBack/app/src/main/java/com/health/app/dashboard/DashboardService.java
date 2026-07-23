@@ -21,7 +21,8 @@ public class DashboardService {
     @Autowired
     private DashboardMapper dashboardMapper;
 
-    // OWNER 위젯 세트 개편(2026-07-22 확정)에 필요한 타 패키지 집계 서비스
+    // OWNER 위젯 세트에 필요한 타 패키지 집계는 각 패키지의 기존 서비스를 주입해 사용한다
+    // (대시보드 전용 쿼리를 타 패키지에 추가하지 않는다 - 필요한 집계가 없으면 아래 TODO(논의 필요)로 표시)
     @Autowired
     private ContractService contractService;
 
@@ -142,6 +143,25 @@ public class DashboardService {
         return data;
     }
 
+    // 쿠폰 사용 위젯 집계 - 쿠폰 패키지의 기존 조회 메서드(couponStatus: 본인이 발급한 쿠폰 목록)로 발급/사용 건수를 집계
+    // (쿠폰 패키지에 별도 집계 메서드를 추가하지 않고 대시보드에서만 파생)
+    private Map<String, Long> couponUsageSummary(Long fromId) throws Exception {
+        List<com.health.app.coupon.CouponDTO> coupons = couponService.couponStatus(fromId);
+        long total = coupons == null ? 0 : coupons.size();
+        long used = 0;
+        if (coupons != null) {
+            for (com.health.app.coupon.CouponDTO coupon : coupons) {
+                if ("사용완료".equals(coupon.getStatus())) {
+                    used++;
+                }
+            }
+        }
+        Map<String, Long> summary = new LinkedHashMap<>();
+        summary.put("total", total);
+        summary.put("used", used);
+        return summary;
+    }
+
     // 위젯별 데이터 적재 여부 확인
     private boolean checkHasData(String widgetKey, String role, Long gymId, Long username) throws Exception {
 
@@ -163,7 +183,7 @@ public class DashboardService {
                 // 오늘 0명이어도 위젯은 노출되도록, 지점에 체크인 기록이 하나라도 있으면 활성
                 return countOf(checkInoutService.ownerAttendanceHasData(gymId)) > 0;
             case "couponUsage":
-                return countOf(couponService.usageSummary(username)) > 0;
+                return couponUsageSummary(username).get("total") > 0;
             case "gymChurn":
                 return countOf(dashboardMapper.ownerChurnSummary(gymId)) > 0;
             case "churnTrend":
@@ -202,7 +222,7 @@ public class DashboardService {
             case "todayAttendance":
                 return checkInoutService.ownerTodayAttendanceCount(gymId);
             case "couponUsage":
-                return couponService.usageSummary(username);
+                return couponUsageSummary(username);
             case "gymChurn":
                 return dashboardMapper.ownerChurnSummary(gymId);
             case "churnTrend":

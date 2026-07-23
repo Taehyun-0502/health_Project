@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 
@@ -81,6 +81,65 @@ const AI_QUESTIONS = [
 ];
 
 // 역할별 커스텀 대시보드 (1부: 위젯 조회/토글/순서 변경/데이터 표시)
+// 위젯 편집 모달(팝업) — ESC·바깥 클릭·닫기 버튼으로 닫힌다.
+// 표시 전용 컴포넌트로, 토글·순서 변경은 상위에서 내려준 기존 핸들러(같은 API)를 그대로 호출한다.
+function WidgetEditModal({ widgets, onToggle, onMove, onClose }) {
+  const boxRef = useRef(null);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
+  const onBackdropClick = (e) => {
+    if (boxRef.current && !boxRef.current.contains(e.target)) onClose();
+  };
+
+  return (
+    <div className="dash-modal-back" onClick={onBackdropClick}>
+      <div className="dash-modal" ref={boxRef} role="dialog" aria-modal="true" aria-label="위젯 편집">
+        <div className="dash-modal__head">
+          <h4 className="dash-modal__title">위젯 편집</h4>
+          <button type="button" className="dash-modal__close" onClick={onClose} aria-label="닫기">✕</button>
+        </div>
+        <p className="dash-modal__desc">대시보드에 표시할 위젯을 켜고 끌 수 있어요</p>
+
+        <ul className="dash-modal__list">
+          {widgets.map((widget) => (
+            <li key={widget.widgetKey} className={widget.hasData ? '' : 'locked'}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={widget.isActive}
+                  disabled={!widget.hasData}
+                  onChange={() => onToggle(widget)}
+                />
+                {WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey}
+              </label>
+              {widget.hasData ? (
+                <span className="dash-modal__order">
+                  <button type="button" onClick={() => onMove(widget.widgetKey, -1)} aria-label="위로">▲</button>
+                  <button type="button" onClick={() => onMove(widget.widgetKey, 1)} aria-label="아래로">▼</button>
+                </span>
+              ) : (
+                <span className="dash-badge">데이터 없음</span>
+              )}
+            </li>
+          ))}
+        </ul>
+
+        <p className="dash-modal__hint">데이터가 없는 위젯은 켤 수 없어요. 데이터가 쌓이면 켤 수 있어요.</p>
+        <div className="dash-modal__actions">
+          <button type="button" className="dash-modal__done" onClick={onClose}>완료</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Dashboard() {
   const navigate = useNavigate();
   const [widgets, setWidgets] = useState([]);
@@ -367,35 +426,14 @@ function Dashboard() {
       {!token && <p className="dash-message">로그인이 필요합니다. 먼저 로그인해 주세요.</p>}
       {message && <p className="dash-message">{message}</p>}
 
-      {/* 위젯 편집 패널: 데이터 없는 위젯은 잠금 표시 */}
+      {/* 위젯 편집 모달(팝업): 데이터 없는 위젯은 잠금 표시 — 토글·순서 변경 API는 기존 그대로 */}
       {editOpen && (
-        <div className="dash-edit">
-          <p>대시보드에 표시할 위젯을 켜고 끌 수 있어요</p>
-          <ul>
-            {visibleWidgets.map((widget) => (
-              <li key={widget.widgetKey} className={widget.hasData ? '' : 'locked'}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={widget.isActive}
-                    disabled={!widget.hasData}
-                    onChange={() => handleToggle(widget)}
-                  />
-                  {WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey}
-                </label>
-                {widget.hasData ? (
-                  <span>
-                    <button type="button" onClick={() => handleMove(widget.widgetKey, -1)}>▲</button>
-                    <button type="button" onClick={() => handleMove(widget.widgetKey, 1)}>▼</button>
-                  </span>
-                ) : (
-                  <span className="dash-badge">데이터 없음</span>
-                )}
-              </li>
-            ))}
-          </ul>
-          <p className="dash-sub">데이터가 없는 위젯은 켤 수 없어요. 데이터가 쌓이면 켤 수 있어요.</p>
-        </div>
+        <WidgetEditModal
+          widgets={visibleWidgets}
+          onToggle={handleToggle}
+          onMove={handleMove}
+          onClose={() => setEditOpen(false)}
+        />
       )}
 
       {/* 활성 위젯 카드 목록 — KPI 4열 / 리스트 2열 / 차트 전폭 (목업 배치) */}
