@@ -244,6 +244,22 @@
   word-break: break-all;
 }
 
+/* 값 톤: 금액 강조 / 지출·할인(danger) / 날짜 등 숫자 정렬 */
+.b2b-drawer__value--strong {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.b2b-drawer__value--danger {
+  font-weight: 600;
+  color: var(--danger);
+  font-variant-numeric: tabular-nums;
+}
+
+.b2b-drawer__value--num {
+  font-variant-numeric: tabular-nums;
+}
+
 /* 상태 pill 배지 */
 .b2b-drawer__badge {
   display: inline-block;
