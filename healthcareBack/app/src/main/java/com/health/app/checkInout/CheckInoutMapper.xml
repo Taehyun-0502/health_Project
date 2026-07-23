@@ -23,9 +23,9 @@ select d.data_id, d.contract, d.gym_id, d.receiver_id, d.manager_id,
  limit 1
 </select>
 
-<!-- 현재 소진 대상 PT 계약 조회 - 유효 PT형 계약(일반 PT·체험권 모두 contract=4) 중
+<!-- 현재 소진 대상 PT 계약 조회 - 유효 PT형 계약(PT=4, PT 체험=5) 중
      잔여(quantity - h_pt_manage.used_count)가 남은 가장 오래된 계약 1건
-     팀 정책: 먼저 계약한 건 전부 소진 후 다음 계약(체험권 등) 이용 가능 (data_id 오름차순 = 계약 생성 순서) -->
+     팀 정책: 먼저 계약한 건 전부 소진 후 다음 계약(체험 등) 이용 가능 (data_id 오름차순 = 계약 생성 순서) -->
 <select id="findConsumablePtContract" parameterType="Long" resultType="com.health.app.contract.ContractDTO">
 select d.data_id, d.contract, d.gym_id, d.receiver_id, d.manager_id,
        d.quantity, d.start_date, d.end_date,
@@ -33,7 +33,7 @@ select d.data_id, d.contract, d.gym_id, d.receiver_id, d.manager_id,
   from "h_contract_data" d
   left join "h_pt_manage" p on p.data_id = d.data_id
  where d.receiver_id = #{username}
-   and d.contract = 4
+   and d.contract in (4, 5)
    and d.status = 'ACTIVE'
    and d.start_date &lt;= current_date
    and (d.end_date is null or d.end_date &gt;= current_date)
@@ -57,7 +57,8 @@ values (#{username}, now(), #{gymId}, #{inoutType}, #{trainerId})
 </insert>
 
 <!-- 트레이너 본인 담당 당일 미확인 PT 출석 대기 목록 (회원 이름 + 현재 잔여횟수 표시용 조인)
-     잔여횟수 = 계약 총 횟수(quantity) - h_pt_manage 사용 횟수 -->
+     잔여횟수 = 계약 총 횟수(quantity) - h_pt_manage 사용 횟수
+     소진 대상 계약 선택 규칙은 findConsumablePtContract와 동일하게 유지(PT=4·PT 체험=5, data_id 오름차순) -->
 <select id="pendingList" parameterType="Long" resultType="com.health.app.checkInout.CheckInoutDTO">
 select c.id, c.username, c.check_in, c.gym_id, c.inout_type, c.trainer_id, c.trainer_confirm,
        m.name as member_name, d.remaining_count
@@ -67,7 +68,7 @@ select c.id, c.username, c.check_in, c.gym_id, c.inout_type, c.trainer_id, c.tra
        select d.quantity - coalesce(p.used_count, 0) as remaining_count
          from "h_contract_data" d
          left join "h_pt_manage" p on p.data_id = d.data_id
-        where d.receiver_id = c.username and d.contract = 4 and d.status = 'ACTIVE'
+        where d.receiver_id = c.username and d.contract in (4, 5) and d.status = 'ACTIVE'
           and d.quantity - coalesce(p.used_count, 0) &gt; 0
         order by d.data_id asc limit 1
   ) d on true
@@ -134,12 +135,13 @@ select coalesce((select used_count from "h_pt_manage" where data_id = #{dataId})
 
 <!-- ===== PT 수업 일정(h_pt_schedule) - 트레이너 주도 등록, h_contract_data는 검증용 조회만 ===== -->
 
-<!-- 트레이너 본인 담당 회원 목록 - 유효(ACTIVE·기간 내) PT 계약(4) 기준, 일정 등록 폼의 회원 선택용 -->
+<!-- 트레이너 본인 담당 회원 목록 - 유효(ACTIVE·기간 내) PT형 계약(4·5) 기준, 일정 등록 폼의 회원 선택용
+     PT 체험(5) 회원도 수업 일정을 잡아야 하므로 함께 포함 (group by로 중복 계약 1행 축약) -->
 <select id="myMembers" parameterType="Long" resultType="com.health.app.member.MemberDTO">
 select m.username, m.name
   from "h_contract_data" d
   join "h_member" m on m.username = d.receiver_id
- where d.contract = 4
+ where d.contract in (4, 5)
    and d.status = 'ACTIVE'
    and d.manager_id = #{trainerId}
    and d.start_date &lt;= current_date
@@ -148,10 +150,11 @@ select m.username, m.name
  order by m.name
 </select>
 
-<!-- 트레이너 담당 회원 현황 - 유효(ACTIVE·기간 내) PT 계약별 총횟수/사용/잔여
-     잔여 0(완료됐지만 아직 중지 전) 계약도 포함해 노출, 잔여 적은 순 정렬 (재등록 제안 대상이 위로) -->
+<!-- 트레이너 담당 회원 현황 - 유효(ACTIVE·기간 내) PT형 계약(4·5)별 총횟수/사용/잔여
+     잔여 0(완료됐지만 아직 중지 전) 계약도 포함해 노출, 잔여 적은 순 정렬 (재등록 제안 대상이 위로)
+     contract를 함께 반환해 트레이너 화면이 PT/PT 체험을 구분 표기 -->
 <select id="memberStatusList" parameterType="Long" resultType="com.health.app.checkInout.PtMemberStatusDTO">
-select d.data_id, d.receiver_id as username, m.name as member_name,
+select d.data_id, d.contract, d.receiver_id as username, m.name as member_name,
        d.quantity as total_count,
        coalesce(p.used_count, 0) as used_count,
        d.quantity - coalesce(p.used_count, 0) as remaining_count,
@@ -159,7 +162,7 @@ select d.data_id, d.receiver_id as username, m.name as member_name,
   from "h_contract_data" d
   join "h_member" m on m.username = d.receiver_id
   left join "h_pt_manage" p on p.data_id = d.data_id
- where d.contract = 4
+ where d.contract in (4, 5)
    and d.status = 'ACTIVE'
    and d.manager_id = #{trainerId}
    and d.start_date &lt;= current_date
@@ -167,14 +170,14 @@ select d.data_id, d.receiver_id as username, m.name as member_name,
  order by remaining_count asc, m.name
 </select>
 
-<!-- 회원+트레이너 조합의 유효 PT 계약 조회 - 일정 등록 검증용
+<!-- 회원+트레이너 조합의 유효 PT형 계약(4·5) 조회 - 일정 등록 검증용
      회원이 유효 PT 계약을 여러 개 가진 경우에도 담당 조합이 있으면 통과되도록 manager_id를 조건에 포함 -->
 <select id="findActivePtByTrainer" resultType="com.health.app.contract.ContractDTO">
 select d.data_id, d.contract, d.gym_id, d.receiver_id, d.manager_id,
        d.quantity, d.start_date, d.end_date
   from "h_contract_data" d
  where d.receiver_id = #{username}
-   and d.contract = 4
+   and d.contract in (4, 5)
    and d.status = 'ACTIVE'
    and d.manager_id = #{trainerId}
    and d.start_date &lt;= current_date
@@ -241,7 +244,7 @@ select gym_id from "h_member" where username = #{username}
 select t.username, t.name,
        (select count(distinct d.receiver_id)
           from "h_contract_data" d
-         where d.contract = 4 and d.status = 'ACTIVE' and d.manager_id = t.username
+         where d.contract in (4, 5) and d.status = 'ACTIVE' and d.manager_id = t.username
            and d.start_date &lt;= current_date and (d.end_date is null or d.end_date &gt;= current_date)) as member_count,
        (select count(*)
           from "h_check_inout" c
@@ -259,7 +262,7 @@ select t.username, t.name,
        (select count(*)
           from "h_contract_data" d
           left join "h_pt_manage" p on p.data_id = d.data_id
-         where d.contract = 4 and d.status = 'ACTIVE' and d.manager_id = t.username
+         where d.contract in (4, 5) and d.status = 'ACTIVE' and d.manager_id = t.username
            and d.start_date &lt;= current_date and (d.end_date is null or d.end_date &gt;= current_date)
            and d.quantity - coalesce(p.used_count, 0) &lt;= 3) as rebook_count
   from "h_member" t
@@ -268,9 +271,11 @@ select t.username, t.name,
  order by t.name
 </select>
 
-<!-- 지점 재등록 임박 리스트 - PT(잔여 3회 이하) + 이용권(종료 7일 이내) 통합, 임박한 순 -->
+<!-- 지점 재등록 임박 리스트 - PT형(잔여 3회 이하) + 이용권(종료 7일 이내) 통합, 임박한 순
+     PT(4)와 PT 체험(5)은 category로 구분한다 - 체험 잔여 소진은 유료 PT 전환 제안 타이밍이라 사장님이 구별해야 함 -->
 <select id="ownerRebookList" parameterType="Long" resultType="com.health.app.checkInout.RebookDTO">
-select 'PT' as category, d.data_id, d.receiver_id as username, m.name as member_name,
+select case when d.contract = 5 then 'PT 체험' else 'PT' end as category,
+       d.data_id, d.receiver_id as username, m.name as member_name,
        tr.name as trainer_name,
        d.quantity - coalesce(p.used_count, 0) as remaining_count,
        d.end_date
@@ -278,7 +283,7 @@ select 'PT' as category, d.data_id, d.receiver_id as username, m.name as member_
   join "h_member" m on m.username = d.receiver_id
   left join "h_member" tr on tr.username = d.manager_id
   left join "h_pt_manage" p on p.data_id = d.data_id
- where d.gym_id = #{gymId} and d.contract = 4 and d.status = 'ACTIVE'
+ where d.gym_id = #{gymId} and d.contract in (4, 5) and d.status = 'ACTIVE'
    and d.start_date &lt;= current_date and (d.end_date is null or d.end_date &gt;= current_date)
    and d.quantity - coalesce(p.used_count, 0) &lt;= 3
 union all
@@ -324,7 +329,7 @@ select g.gym_id, g.gym_name,
                               and c2.check_in::date = s.schedule_at::date)) as month_missed,
        (select count(*) from "h_contract_data" d
           left join "h_pt_manage" p on p.data_id = d.data_id
-         where d.gym_id = g.gym_id and d.contract = 4 and d.status = 'ACTIVE'
+         where d.gym_id = g.gym_id and d.contract in (4, 5) and d.status = 'ACTIVE'
            and d.start_date &lt;= current_date and (d.end_date is null or d.end_date &gt;= current_date)
            and d.quantity - coalesce(p.used_count, 0) &lt;= 3) as rebook_count,
        (select count(*) from "h_contract_data" d

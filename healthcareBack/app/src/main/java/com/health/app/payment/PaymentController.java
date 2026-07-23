@@ -31,6 +31,19 @@ public class PaymentController {
     @Autowired
     private JwtUtill jwtUtill;
 
+    private boolean isOwner(Claims claims) {
+        Object role = claims.get("role");
+        return role != null && "OWNER".equalsIgnoreCase(role.toString());
+    }
+
+    private Long subject(Claims claims) {
+        try {
+            return Long.valueOf(claims.getSubject());
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     // 신규 결제(매출) 등록 API (OWNER용)
     @PostMapping("/payadd")
     public ResponseEntity<?> paymentAdd(
@@ -41,13 +54,23 @@ public class PaymentController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
 
+        Claims claims;
         try {
-            jwtUtill.extractAllClaims(authorization.substring(7));
+            claims = jwtUtill.extractAllClaims(authorization.substring(7));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
         }
 
-        int result = paymentService.paymentAdd(paymentDTO);
+        Long ownerPhone = subject(claims);
+        if (ownerPhone == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        if (!isOwner(claims)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
+
+        int result;
+        try {
+            result = paymentService.paymentAddForOwner(ownerPhone, paymentDTO);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
         if (result > 0) {
             return ResponseEntity.ok("Success");
         } else {
@@ -77,6 +100,7 @@ public class PaymentController {
         }
 
         Long ownerPhone = Long.parseLong(claims.getSubject());
+        if (!isOwner(claims)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
 
         Pager pager = new Pager();
         pager.setCurrentPage(page);
@@ -106,6 +130,7 @@ public class PaymentController {
         }
 
         Long ownerPhone = Long.parseLong(claims.getSubject());
+        if (!isOwner(claims)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
 
         Pager pager = new Pager();
         pager.setSearchKeyword(keyword);
@@ -124,15 +149,20 @@ public class PaymentController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
         }
 
+        Claims claims;
         try {
-            jwtUtill.extractAllClaims(authorization.substring(7));
+            claims = jwtUtill.extractAllClaims(authorization.substring(7));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
         }
 
-        PaymentDeleteResult result = paymentService.paymentDelete(payId);
+        Long ownerPhone = subject(claims);
+        if (ownerPhone == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        if (!isOwner(claims)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
+
+        PaymentDeleteResult result = paymentService.paymentDeleteForOwner(ownerPhone, payId);
         if (!result.isDeleted()) {
-            return ResponseEntity.badRequest().body("Fail");
+            return ResponseEntity.notFound().build();
         }
 
         return ResponseEntity.ok(result);
@@ -155,6 +185,7 @@ public class PaymentController {
         }
 
         Long ownerPhone = Long.parseLong(claims.getSubject());
+        if (!isOwner(claims)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("접근 권한이 없습니다.");
         List<ContractDTO> list = paymentService.unpaidContractList(ownerPhone);
         return ResponseEntity.ok(list);
     }

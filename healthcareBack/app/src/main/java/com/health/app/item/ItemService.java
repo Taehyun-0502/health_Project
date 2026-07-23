@@ -28,6 +28,68 @@ public class ItemService {
     @Autowired
     private MemberService memberService;
 
+    private Long ownerGymId(Long username) throws Exception {
+        Long gymId = itemMapper.getOwnerGymId(username);
+        if (gymId == null) {
+            throw new IllegalArgumentException("OWNER 소속 사업장을 찾을 수 없습니다.");
+        }
+        return gymId;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public int itemAddForOwner(Long username, ItemDTO itemDTO) throws Exception {
+        itemDTO.setGymId(ownerGymId(username));
+        return itemAdd(itemDTO);
+    }
+
+    public ItemListResponse itemListForOwner(Long username, Pager pager, String sort, String category) throws Exception {
+        return itemList(ownerGymId(username), pager, sort, category);
+    }
+
+    public List<ItemDTO> itemNamesForOwner(Long username) throws Exception {
+        return itemNames(ownerGymId(username));
+    }
+
+    public List<ItemDTO> itemListAllForOwner(Long username, String keyword) throws Exception {
+        return itemListAll(ownerGymId(username), keyword);
+    }
+
+    public List<ItemDTO> itemDetailForOwner(Long username, ItemDTO itemDTO) throws Exception {
+        itemDTO.setGymId(ownerGymId(username));
+        return itemDetail(itemDTO);
+    }
+
+    public int itemUpdateForOwner(Long username, ItemDTO itemDTO) throws Exception {
+        itemDTO.setGymId(ownerGymId(username));
+        return itemUpdate(itemDTO);
+    }
+
+    public int itemDeleteForOwner(Long username, ItemDTO itemDTO) throws Exception {
+        itemDTO.setGymId(ownerGymId(username));
+        return itemDelete(itemDTO);
+    }
+
+    public List<ItemDTO> selectByCategoryForOwner(Long username, String category) throws Exception {
+        return selectByCategory(ownerGymId(username), category);
+    }
+
+    public List<ItemDTO> selectByCategoryForGymUser(
+            Long username, String role, Long adminGymId, String category) throws Exception {
+        Long gymId;
+        if (role != null && role.equalsIgnoreCase("ADMIN")) {
+            if (adminGymId == null) {
+                throw new IllegalArgumentException("조회할 사업장을 선택해 주세요.");
+            }
+            gymId = adminGymId;
+        } else {
+            gymId = itemMapper.getGymIdForGymUser(username);
+            if (gymId == null) {
+                throw new IllegalArgumentException("소속 사업장을 찾을 수 없습니다.");
+            }
+        }
+        return selectByCategory(gymId, category);
+    }
+
     // 아이템 등록 맵퍼 호출. item insert + (구매인 경우) 연동 지출 insert를 하나의 트랜잭션으로 묶어 실패 시 함께 롤백
     @Transactional(rollbackFor = Exception.class)
     public int itemAdd(ItemDTO itemDTO) throws Exception {

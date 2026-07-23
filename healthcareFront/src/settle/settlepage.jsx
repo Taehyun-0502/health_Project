@@ -1,10 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './settlepage.css';
 import Pagination from './Pagination';
 
 const UNPAID_CONTRACTS_PER_PAGE = 5;
 const UNPAID_CONTRACT_PAGE_BLOCK_SIZE = 5;
+const formatLocalDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+const formatLocalMonth = (date) => formatLocalDate(date).slice(0, 7);
 
 function Settlepage() {
   const navigate = useNavigate();
@@ -22,7 +29,10 @@ function Settlepage() {
   const [pays, setPays] = useState([]);
   const [unpaidContracts, setUnpaidContracts] = useState([]);
   const [unpaidExpenses, setUnpaidExpenses] = useState([]);
+  const [unpaidExpenseTotalCount, setUnpaidExpenseTotalCount] = useState(0);
+  const [unpaidCommissions, setUnpaidCommissions] = useState([]);
   const [selectedExpenseContractId, setSelectedExpenseContractId] = useState('');
+  const [selectedSettlementId, setSelectedSettlementId] = useState('');
 
   // 페이징 상태 관리 (결재/매출 내역, 지출 내역, 지출 정산 대기 계약서)
   const [payPager, setPayPager] = useState(null);
@@ -40,6 +50,7 @@ function Settlepage() {
   const [commissionPager, setCommissionPager] = useState(null);
   const [commissionTotalCount, setCommissionTotalCount] = useState(0);
   const [commissionStats, setCommissionStats] = useState({ totalPaidAmount: 0, unpaidCount: 0, avgCommissionRate: 0 });
+  const [ownerSummary, setOwnerSummary] = useState(null);
 
   // UI 상태 관리
   const [loading, setLoading] = useState(false);
@@ -47,6 +58,9 @@ function Settlepage() {
   
   // 사장님 뷰 서브 탭
   const [ownerTab, setOwnerTab] = useState('sales'); // 'sales', 'expenses'
+  const [expenseDrawerOpen, setExpenseDrawerOpen] = useState(false);
+  const expenseDrawerTriggerRef = useRef(null);
+  const expenseDrawerRef = useRef(null);
 
   // 필터 상태
   const [adminStatusFilter, setAdminStatusFilter] = useState('ALL');
@@ -60,8 +74,13 @@ function Settlepage() {
   const [ownerSortOption, setOwnerSortOption] = useState('');
   const [adminSortOption, setAdminSortOption] = useState('');
 
-  // 커미션 수동 집계 생성 대상 월 (YYYY-MM, 기본값은 이번 달)
-  const [generateMonth, setGenerateMonth] = useState(() => new Date().toISOString().split('T')[0].substring(0, 7));
+  // 커미션 수동 집계 생성 대상 월 (YYYY-MM, 기본값은 완료된 전월)
+  const [generateMonth, setGenerateMonth] = useState(() => {
+    const previousMonth = new Date();
+    previousMonth.setDate(1);
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+    return formatLocalMonth(previousMonth);
+  });
 
   // 1월부터 12월까지의 연월 리스트 생성 (2026년 기준)
   const filterMonths = Array.from({ length: 12 }, (_, i) => {
@@ -77,6 +96,7 @@ function Settlepage() {
   const [newExpensePrice, setNewExpensePrice] = useState('');
   const [newExpenseDate, setNewExpenseDate] = useState('');
   const [newExpenseRate, setNewExpenseRate] = useState('0');
+  const [expenseSubmitting, setExpenseSubmitting] = useState(false);
 
   // 미결제 계약은 유형 필터를 먼저 적용한 뒤 5건씩 페이지로 나눠 표시
   const filteredUnpaidContracts = unpaidContracts.filter((contract) => (
@@ -153,6 +173,133 @@ function Settlepage() {
       setErrorInfo('커미션 요약 통계를 불러오지 못했습니다.');
       setCommissionStats({ totalPaidAmount: 0, unpaidCount: 0, avgCommissionRate: 0 });
     }
+  };
+
+  // OWNER 본인 사업장의 월별 정산 요약 조회
+  const fetchOwnerSummary = async (month) => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    try {
+      const query = month ? `?month=${month}` : '';
+      const response = await fetch(`${backendUrl}/fitb/settle/owner-summary${query}`, { headers });
+      if (!response.ok) throw new Error('요약 조회 실패');
+      setOwnerSummary(await response.json());
+    } catch (err) {
+      console.warn('사장님 정산 요약 API 조회 실패:', err.message);
+      setOwnerSummary(null);
+    }
+  };
+
+  const currentMonthKey = formatLocalMonth(new Date());
+  const summaryMonth = ownerMonthFilter !== 'ALL' ? ownerMonthFilter : null;
+
+  useEffect(() => {
+    if (activeRole === 'OWNER') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchOwnerSummary(summaryMonth);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeRole, summaryMonth]);
+
+  useEffect(() => {
+    if (!expenseDrawerOpen) return undefined;
+
+    const drawer = expenseDrawerRef.current;
+    const drawerTrigger = expenseDrawerTriggerRef.current;
+    const focusableSelector = [
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      'a[href]',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+    const getFocusableElements = () => (
+      drawer ? Array.from(drawer.querySelectorAll(focusableSelector)) : []
+    );
+    const focusFrame = window.requestAnimationFrame(() => {
+      getFocusableElements()[0]?.focus();
+    });
+
+    const handleDrawerKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setExpenseDrawerOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+    window.addEventListener('keydown', handleDrawerKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener('keydown', handleDrawerKeyDown);
+      drawerTrigger?.focus();
+    };
+  }, [expenseDrawerOpen]);
+
+  const formatManwon = (won) => `${Math.round((won || 0) / 10000).toLocaleString()}만`;
+
+  const renderSummaryRail = () => {
+    const summary = ownerSummary || {};
+    const salesTotal = summary.salesTotal || 0;
+    const expenseTotal = summary.expenseTotal || 0;
+    const railTitle = !summaryMonth
+      ? '전체 요약'
+      : (summaryMonth === currentMonthKey ? '이번 달 요약' : `${summaryMonth} 요약`);
+
+    return (
+      <aside className="settle-summary-rail">
+        <div className="settle-summary-rail__title">{railTitle}</div>
+        <div className="summary-hero">
+          <div className="summary-hero__label">순이익</div>
+          <div className="summary-hero__value">{formatWon(salesTotal - expenseTotal)}</div>
+          <div className="summary-hero__sub">
+            <span><span className="summary-hero__sub-key">매출</span> <b className="summary-hero__sub-sales">{formatManwon(salesTotal)}</b></span>
+            <span><span className="summary-hero__sub-key">지출</span> <b>{formatManwon(expenseTotal)}</b></span>
+          </div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-card__head">
+            <span className="summary-card__label">커미션 지급</span>
+            <span className={`summary-badge ${(summary.commissionPending || 0) > 0 ? 'summary-badge--pending' : 'summary-badge--done'}`}>
+              {(summary.commissionPending || 0) > 0 ? `${summary.commissionPending}건 대기` : '완료'}
+            </span>
+          </div>
+          <div className="summary-card__value">{formatWon(summary.commissionPaid || 0)}</div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-card__head">
+            <span className="summary-card__label">월급 지급</span>
+            <span className={`summary-badge ${(summary.wagePending || 0) > 0 ? 'summary-badge--pending' : 'summary-badge--done'}`}>
+              {(summary.wagePending || 0) > 0 ? `전체 ${summary.wagePending}건 대기` : '전체 완료'}
+            </span>
+          </div>
+          <div className="summary-card__value">{formatWon(summary.wagePaid || 0)}</div>
+        </div>
+        <div className="summary-card summary-card--filtered">
+          <div className="summary-card__head">
+            <span className="summary-card__label">현재 필터 매출</span>
+            <span className="summary-badge summary-badge--done">{payTotalCount}건</span>
+          </div>
+          <div className="summary-card__value">{formatWon(payTotalAmount)}</div>
+        </div>
+      </aside>
+    );
   };
 
   // 커미션 내역 페이지네이션 클릭 핸들러
@@ -244,6 +391,7 @@ function Settlepage() {
       if (response.ok) {
         const data = await response.json();
         setUnpaidExpenses(data.items || []);
+        setUnpaidExpenseTotalCount(data.totalCount || 0);
         setContractPager(data.pager || null);
       } else {
         throw new Error('지출 계약 목록 조회 실패');
@@ -252,7 +400,22 @@ function Settlepage() {
       console.warn('지출 계약 API 조회 실패:', err.message);
       setErrorInfo('지출 정산 대기 계약서 목록을 불러오지 못했습니다.');
       setUnpaidExpenses([]);
+      setUnpaidExpenseTotalCount(0);
       setContractPager(null);
+    }
+  };
+
+  const fetchUnpaidCommissions = async () => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    try {
+      const response = await fetch(`${backendUrl}/fitb/settle/owner-commissions/unpaid`, { headers });
+      if (!response.ok) throw new Error(await response.text() || '미지급 커미션 조회 실패');
+      setUnpaidCommissions(await response.json());
+    } catch (err) {
+      console.warn('미지급 커미션 API 조회 실패:', err.message);
+      setErrorInfo('미지급 커미션 목록을 불러오지 못했습니다.');
+      setUnpaidCommissions([]);
     }
   };
 
@@ -298,15 +461,20 @@ function Settlepage() {
       setLoading(true);
       setErrorInfo('');
 
-      await Promise.all([
-        fetchCommissions(1, 'ALL', 'ALL', ''),
-        fetchCommissionStats(),
-        fetchPays(1, '', 'ALL', ''),
-        // 지출 API는 OWNER·TRAINER 전용(그 외 403)이라 OWNER일 때만 호출 - ADMIN 뷰 오류 배너 방지
-        activeRole === 'OWNER' ? fetchExpenses(1, '', 'ALL', '') : Promise.resolve(),
-        fetchUnpaidContracts(),
-        fetchUnpaidExpenses(1),
-      ]);
+      if (activeRole === 'ADMIN') {
+        await Promise.all([
+          fetchCommissions(1, 'ALL', 'ALL', ''),
+          fetchCommissionStats(),
+        ]);
+      } else if (activeRole === 'OWNER') {
+        await Promise.all([
+          fetchPays(1, '', 'ALL', ''),
+          fetchExpenses(1, '', 'ALL', ''),
+          fetchUnpaidContracts(),
+          fetchUnpaidExpenses(1),
+          fetchUnpaidCommissions(),
+        ]);
+      }
 
       setLoading(false);
     };
@@ -317,6 +485,7 @@ function Settlepage() {
 
   // 검색어/조회월/탭이 바뀔 때마다 300ms 디바운스 후 현재 활성 탭의 1페이지부터 재조회
   useEffect(() => {
+    if (activeRole !== 'OWNER') return undefined;
     const timer = setTimeout(() => {
       if (ownerTab === 'sales') {
         fetchPays(1, ownerSearchQuery, ownerMonthFilter, ownerSortOption);
@@ -331,40 +500,13 @@ function Settlepage() {
 
   // 커미션 지급상태/조회월 필터가 바뀔 때마다 300ms 디바운스 후 1페이지부터 재조회
   useEffect(() => {
+    if (activeRole !== 'ADMIN') return undefined;
     const timer = setTimeout(() => {
       fetchCommissions(1, adminStatusFilter, adminMonthFilter, adminSortOption);
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminStatusFilter, adminMonthFilter]);
-
-  // 커미션 지급 상태 토글 (ADMIN 기능)
-  const handleToggleCommissionStatus = async (settlementId) => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL;
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-    };
-
-    try {
-      const response = await fetch(`${backendUrl}/fitb/settle/commission/status`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ settlementId })
-      });
-      if (!response.ok) {
-        throw new Error('상태 변경 실패');
-      }
-    } catch (err) {
-      console.warn('백엔드 커미션 상태 변경 실패:', err.message);
-      alert('상태 변경에 실패했습니다.');
-      return;
-    }
-
-    // 상태 변경(필터 적용 시 목록에서 사라질 수도 있음)과 요약 통계를 함께 재조회
-    fetchCommissions(commissionPager?.currentPage || 1, adminStatusFilter, adminMonthFilter, adminSortOption);
-    fetchCommissionStats();
-  };
 
   // 커미션 수동 집계 생성 핸들러 (ADMIN 기능) - 이미 생성된 가맹점/월 조합은 서버에서 자동으로 건너뜀 (중복 생성 안전)
   const handleGenerateCommissions = async () => {
@@ -405,71 +547,122 @@ function Settlepage() {
   // 지출 등록 핸들러 (OWNER 기능)
   const handleAddExpense = async (e) => {
     e.preventDefault();
+    if (expenseSubmitting) return;
     if (!newExpenseName || !newExpensePrice || !newExpenseDate) {
       alert('모든 지출 정보를 올바르게 입력해 주세요.');
       return;
     }
 
-    const gymId = loginUser?.gymId || 101; // 사장님의 소속 gymId 사용
     const newExpenseObj = {
-      gymId: parseInt(gymId, 10),
       dataId: selectedExpenseContractId ? parseInt(selectedExpenseContractId, 10) : null,
+      settlementId: selectedSettlementId ? parseInt(selectedSettlementId, 10) : null,
       expenseName: newExpenseName,
       expenseDate: newExpenseDate,
       expensePrice: parseInt(newExpensePrice, 10),
       expenseRate: parseFloat(newExpenseRate) || 0.0,
     };
 
-    // 입력 폼 리셋
-    setNewExpenseName('');
-    setNewExpensePrice('');
-    setNewExpenseDate('');
-    setNewExpenseRate('0');
-    setSelectedExpenseContractId('');
-
-    // 백엔드 전송 시도
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const headers = {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
     };
+    setExpenseSubmitting(true);
     try {
       const response = await fetch(`${backendUrl}/fitb/settle/expense`, {
         method: 'POST',
         headers,
         body: JSON.stringify(newExpenseObj)
       });
-      if (response.ok) {
-        alert('지출이 성공적으로 등록되었습니다.');
-      } else {
-        throw new Error('서버 등록 실패');
-      }
+      if (!response.ok) throw new Error(await response.text() || '서버 등록 실패');
     } catch (err) {
       console.warn('백엔드 지출 저장 실패:', err.message);
+      alert(err.message || '지출 등록에 실패했습니다.');
+      return;
+    } finally {
+      setExpenseSubmitting(false);
     }
 
-    // 새로 등록된 지출을 확인할 수 있도록 지출/지출 대기 계약서 목록을 1페이지부터 재조회
+    setNewExpenseName('');
+    setNewExpensePrice('');
+    setNewExpenseDate('');
+    setNewExpenseRate('0');
+    setSelectedExpenseContractId('');
+    setSelectedSettlementId('');
+    setExpenseDrawerOpen(false);
+    setOwnerSearchQuery('');
+    setOwnerMonthFilter('ALL');
+    setOwnerSortOption('');
     setExpensePage(1);
     setContractPage(1);
-    fetchExpenses(1, ownerSearchQuery, ownerMonthFilter, ownerSortOption);
-    fetchUnpaidExpenses(1);
+    await Promise.all([
+      fetchExpenses(1, '', 'ALL', ''),
+      fetchUnpaidExpenses(1),
+      fetchUnpaidCommissions(),
+      fetchOwnerSummary(null),
+    ]);
+    alert('지출이 확정되어 지출 내역에 반영되었습니다.');
   };
 
   // 직원(트레이너) 인센티브 추가금 계산 헬퍼 함수
   const getIncentiveAmount = (c) => {
     if (!c || c.contract !== 2 || !c.contractRate) return 0;
     let rate = parseFloat(c.contractRate);
-    if (rate > 1) {
+    if (rate >= 1) {
       rate = rate / 100; // 데이터베이스에 10.0 또는 15.0 형식으로 저장된 경우 대응
     }
     return Math.floor(c.amount * rate);
   };
 
+  const renderExpenseSummaryRail = () => {
+    const commissionPendingTotal = unpaidCommissions.reduce(
+      (total, commission) => total + Number(commission.commission || 0),
+      0,
+    );
+    const wagePendingTotal = unpaidExpenses.reduce(
+      (total, contract) => total + Number(contract.amount || 0) + getIncentiveAmount(contract),
+      0,
+    );
+    const railTitle = !summaryMonth ? '전체 지출 요약' : `${summaryMonth} 지출 요약`;
+
+    return (
+      <aside className="settle-summary-rail">
+        <div className="settle-summary-rail__title">{railTitle}</div>
+        <div className="summary-hero summary-hero--expense">
+          <div className="summary-hero__label">현재 필터 지출</div>
+          <div className="summary-hero__value">{formatWon(expenseTotalAmount)}</div>
+          <div className="summary-hero__sub summary-hero__sub--single">
+            <span><span className="summary-hero__sub-key">등록 건수</span> <b>{expenseTotalCount}건</b></span>
+          </div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-card__head">
+            <span className="summary-card__label">커미션 결제 대기 · 전체 기간</span>
+            <span className={`summary-badge ${unpaidCommissions.length > 0 ? 'summary-badge--pending' : 'summary-badge--done'}`}>
+              {unpaidCommissions.length > 0 ? `전체 ${unpaidCommissions.length}건` : '전체 완료'}
+            </span>
+          </div>
+          <div className="summary-card__value">{formatWon(commissionPendingTotal)}</div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-card__head">
+            <span className="summary-card__label">임금 지급 대기 · 전체 기간</span>
+            <span className={`summary-badge ${unpaidExpenseTotalCount > 0 ? 'summary-badge--pending' : 'summary-badge--done'}`}>
+              {unpaidExpenseTotalCount > 0 ? `전체 ${unpaidExpenseTotalCount}건` : '전체 완료'}
+            </span>
+          </div>
+          <div className="summary-card__value">현재 페이지 금액 {formatWon(wagePendingTotal)}</div>
+        </div>
+      </aside>
+    );
+  };
+
   // 사장님용 지출 대기 계약서 클릭 핸들러
   const handleSelectExpenseContract = (contract) => {
+    setSelectedSettlementId('');
     setSelectedExpenseContractId(contract.dataId.toString());
-    const labelName = contract.contract === 2 ? '임금' : '제휴 수수료';
-    const otherParty = contract.contract === 2 ? `${contract.receiverName} 트레이너` : '플랫폼';
+    const labelName = '임금';
+    const otherParty = `${contract.receiverName} 트레이너`;
     const name = `[계약 #${contract.dataId}] ${labelName} - ${otherParty}`;
     setNewExpenseName(name);
 
@@ -478,13 +671,13 @@ function Settlepage() {
     const totalPrice = contract.amount + incentive;
     setNewExpensePrice(totalPrice.toString());
 
-    setNewExpenseDate(new Date().toISOString().split('T')[0]);
+    setNewExpenseDate(formatLocalDate(new Date()));
     
     // contractRate 값 포맷 정리 (예: 10 또는 0.1 -> 0.10, 0 -> 0)
     let rateStr = '0';
     if (contract.contractRate) {
       let rateNum = parseFloat(contract.contractRate);
-      if (rateNum > 1) {
+      if (rateNum >= 1) {
         rateNum = rateNum / 100;
       }
       if (rateNum > 0) {
@@ -494,14 +687,27 @@ function Settlepage() {
     setNewExpenseRate(rateStr);
   };
 
+  const handleSelectCommission = (commission) => {
+    setSelectedExpenseContractId('');
+    setSelectedSettlementId(commission.settlementId.toString());
+    setNewExpenseName(`[${commission.settleMonth}] 플랫폼 커미션`);
+    setNewExpensePrice(String(commission.commission));
+    setNewExpenseDate(formatLocalDate(new Date()));
+    setNewExpenseRate(String(commission.commissionRate));
+  };
+
   // 지출 삭제 핸들러 (OWNER 기능)
-  const handleDeleteExpense = async (expenseId) => {
-    if (!window.confirm('해당 지출 내역을 삭제하시겠습니까?')) return;
+  const handleDeleteExpense = async (expense) => {
+    const isCommissionExpense = Boolean(expense.settlementId);
+    const confirmMessage = isCommissionExpense
+      ? '해당 커미션 지출을 삭제하시겠습니까? 삭제하면 커미션이 미지급 상태로 돌아가 다시 확정할 수 있습니다.'
+      : '해당 지출 내역을 삭제하시겠습니까?';
+    if (!window.confirm(confirmMessage)) return;
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     try {
-      const response = await fetch(`${backendUrl}/fitb/settle/expense/${expenseId}`, {
+      const response = await fetch(`${backendUrl}/fitb/settle/expense/${expense.expenseId}`, {
         method: 'DELETE',
         headers,
       });
@@ -516,9 +722,12 @@ function Settlepage() {
       return;
     }
 
-    // 삭제 후 현재 보고 있던 지출 페이지와 지출 대기 계약서 목록을 재조회
-    fetchExpenses(expensePage, ownerSearchQuery, ownerMonthFilter, ownerSortOption);
-    fetchUnpaidExpenses(contractPage);
+    await Promise.all([
+      fetchExpenses(expensePage, ownerSearchQuery, ownerMonthFilter, ownerSortOption),
+      fetchUnpaidExpenses(contractPage),
+      fetchUnpaidCommissions(),
+      fetchOwnerSummary(summaryMonth),
+    ]);
   };
 
   // 매출 삭제 핸들러 (OWNER 기능) - 삭제 시 해당 월 커미션이 미지급 상태면 서버에서 자동 재계산됨
@@ -546,9 +755,12 @@ function Settlepage() {
       return;
     }
 
-    // 삭제 후 현재 보고 있던 매출 페이지를 재조회하고, 해당 계약서가 다시 미결제 목록에 나타나도록 드롭다운도 갱신
-    fetchPays(payPager?.currentPage || 1, ownerSearchQuery, ownerMonthFilter, ownerSortOption);
-    fetchUnpaidContracts();
+    // 삭제 결과가 목록·미결제 계약·요약에 즉시 반영되도록 관련 데이터를 함께 갱신
+    await Promise.all([
+      fetchPays(payPager?.currentPage || 1, ownerSearchQuery, ownerMonthFilter, ownerSortOption),
+      fetchUnpaidContracts(),
+      fetchOwnerSummary(summaryMonth),
+    ]);
   };
 
   // 금액 포맷 함수
@@ -710,24 +922,19 @@ function Settlepage() {
 
   return (
     <div className="settle-container">
-      {/* 헤더 */}
-      <header className="settle-header">
-        <div className="settle-title-area">
-          <h1 className="gradient-title" style={{ fontSize: '32px', marginBottom: '0' }}>정산 관리 시스템</h1>
-          <span className="settle-subtitle">
-            {activeRole === 'ADMIN' 
-              ? '가맹점 계약에 따른 플랫폼 커미션 정산 관리 화면' 
-              : '사업장 운영 매출 내역 및 지출 비용 손익 대시보드'}
-          </span>
+      <div className="settle-pagehead">
+        <p className="settle-pagehead__meta">
+          {activeRole === 'ADMIN'
+            ? '가맹점 계약에 따른 플랫폼 커미션 정산 관리'
+            : '사업장 운영 매출 내역 및 지출 비용 손익 관리'}
+          <br />
+          접속자: <span className="settle-pagehead__name">{loginUser?.name || '사용자'}</span>
+          <span className="settle-pagehead__role">{activeRole}</span>
+        </p>
+        <div className="settle-pagehead__actions">
+          <Link to="/fitb" className="settle-pagehead__link">대시보드</Link>
         </div>
-        <div className="settle-user-info">
-          <span>접속자: <span className="settle-user-name">{loginUser?.name || '사용자'}</span></span>
-          <span className={`settle-role-badge ${activeRole.toLowerCase()}`}>{activeRole}</span>
-          <Link to="/fitb" style={{ fontSize: '13px', color: 'var(--primary-accent)', textDecoration: 'none', marginLeft: '10px' }}>
-            대시보드로 돌아가기
-          </Link>
-        </div>
-      </header>
+      </div>
 
       {errorInfo && (
         <div className="settle-error-banner">
@@ -736,7 +943,7 @@ function Settlepage() {
         </div>
       )}
 
-      {loading && <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-secondary)' }}>데이터 로드 중...</div>}
+      {loading && <div className="settle-loading">데이터 로드 중...</div>}
 
       {/* ======================================================== */}
       {/* 2. 관리자 (ADMIN) 뷰 구현                                */}
@@ -745,21 +952,21 @@ function Settlepage() {
         <div>
           {/* 주요 지표 요약 카드 */}
           <section className="settle-stats">
-            <div className="card-premium stat-card">
+            <div className="stat-card">
               <div className="stat-card-title">누적 수수료 수익</div>
-              <div className="stat-card-value" style={{ color: 'var(--primary-accent)' }}>
+              <div className="stat-card-value is-accent">
                 {formatWon(commissionStats.totalPaidAmount)}
               </div>
               <div className="stat-card-desc">지급 완료 기준 총 정산 금액</div>
             </div>
-            <div className="card-premium stat-card">
+            <div className="stat-card">
               <div className="stat-card-title">미지급 정산 대기</div>
-              <div className="stat-card-value" style={{ color: '#f59e0b' }}>
+              <div className="stat-card-value is-warning">
                 {commissionStats.unpaidCount} 건
               </div>
               <div className="stat-card-desc">신속한 확인 및 지급 처리가 필요합니다.</div>
             </div>
-            <div className="card-premium stat-card">
+            <div className="stat-card">
               <div className="stat-card-title">평균 커미션 수수료율</div>
               <div className="stat-card-value">
                 {(commissionStats.avgCommissionRate * 100).toFixed(1)}%
@@ -769,12 +976,12 @@ function Settlepage() {
           </section>
 
           {/* 커미션 수동 집계 생성 컨트롤: 매달 1일 자동 스케줄러와 별개로, 관리자가 특정 월을 즉시 강제 집계할 수 있음 */}
-          <div className="card-premium generate-commission-card">
-            <h3 style={{ margin: '0 0 6px 0', fontSize: '15px' }}>⚙️ 정산 커미션 수동 집계</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 12px 0' }}>
+          <div className="settle-panel generate-commission-card">
+            <h3>⚙️ 정산 커미션 수동 집계</h3>
+            <p>
               매달 1일 자동으로 전월 정산이 생성되지만, 필요 시 특정 월을 수동으로 즉시 집계할 수 있습니다. 이미 집계된 가맹점/월 조합은 자동으로 건너뜁니다.
             </p>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="gen-commission-controls">
               <input
                 type="month"
                 className="select-premium"
@@ -819,7 +1026,7 @@ function Settlepage() {
               </select>
             </div>
             <div className="filter-right">
-              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+              <span className="filter-count">
                 총 <strong>{commissionTotalCount}</strong>건 검색됨
               </span>
               <button type="button" className="btn-export-premium" onClick={handleExportCommissionsCsv}>
@@ -840,7 +1047,7 @@ function Settlepage() {
                   <th>커미션율</th>
                   <th>상태</th>
                   <th>지급일(결제 완료일)</th>
-                  <th>작업</th>
+                  <th>지급 경로</th>
                 </tr>
               </thead>
               <tbody>
@@ -851,7 +1058,7 @@ function Settlepage() {
                         <strong>{c.gymName || `사업장 ID: ${c.gymId}`}</strong>
                       </td>
                       <td>{getYearMonth(c.settleMonth)}</td>
-                      <td style={{ fontWeight: '600' }}>{formatWon(c.commission)}</td>
+                      <td className="cell-amount">{formatWon(c.commission)}</td>
                       <td>{(c.commissionRate * 100).toFixed(0)}%</td>
                       <td>
                         <span className={`status-badge ${c.status === '지급' ? 'paid' : 'pending'}`}>
@@ -859,15 +1066,7 @@ function Settlepage() {
                         </span>
                       </td>
                       <td>{c.settledAt || '-'}</td>
-                      <td>
-                        <button 
-                          className={`btn-action btn-action-primary`}
-                          style={{ padding: '6px 12px', fontSize: '12px' }}
-                          onClick={() => handleToggleCommissionStatus(c.settlementId)}
-                        >
-                          {c.status === '지급' ? '미지급 처리' : '지급 완료 처리'}
-                        </button>
-                      </td>
+                      <td>{c.status === '지급' ? '지출 등록 완료' : '사장님 지출 탭에서 결제'}</td>
                     </tr>
                   ))}
                 {commissions.length === 0 && (
@@ -902,10 +1101,6 @@ function Settlepage() {
               💸 지출 관리
             </button>
           </div>
-
-          {/* 목업 기준 2단 구성: 좌측 리스트 + 우측 요약 레일 */}
-          <div className="settle-owner-grid">
-            <div className="settle-owner-main">
 
           {/* 공통 필터 영역 (매출 및 지출 목록용) */}
           {ownerTab !== 'pnl' && (
@@ -945,17 +1140,32 @@ function Settlepage() {
                 >
                   CSV 내보내기
                 </button>
+                {ownerTab === 'expenses' && (
+                  <button
+                    type="button"
+                    className="btn-premium expense-confirm-open"
+                    ref={expenseDrawerTriggerRef}
+                    onClick={() => setExpenseDrawerOpen(true)}
+                  >
+                    지출 확정하기
+                    {(unpaidCommissions.length + unpaidExpenseTotalCount) > 0 && (
+                      <span className="expense-confirm-count">
+                        {unpaidCommissions.length + unpaidExpenseTotalCount}
+                      </span>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           )}
 
           {/* 3.1 매출 내역 탭 */}
           {ownerTab === 'sales' && (
-            <div>
-              {/* 합계·건수는 우측 요약 레일로 이동 */}
+            <div className="settle-sales-layout">
+              <div className="settle-sales-main">
 
               {/* 매출 테이블 */}
-              <div className="settle-table-container" style={{ marginBottom: '30px' }}>
+              <div className="settle-table-container is-spaced">
                 <table className="settle-table">
                   <thead>
                     <tr>
@@ -974,7 +1184,7 @@ function Settlepage() {
                       // 행 클릭 = 우측 통합 드로어에 매출 탭 추가 (삭제 버튼은 stopPropagation으로 기존 동작 유지)
                       <tr
                         key={p.payId || p.dataId || index}
-                        style={{ cursor: 'pointer' }}
+                        className="row-clickable"
                         onClick={() =>
                           window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
                             detail: { kind: 'settle', id: p.payId ?? p.dataId ?? index, title: p.payName ?? p.username ?? '매출', data: p },
@@ -984,22 +1194,21 @@ function Settlepage() {
                         <td>{p.payId ? `#${p.payId}` : `임시 (계약 #${p.dataId})`}</td>
                         <td>{p.username ?? '-'}</td>
                         <td><strong>{p.payName}</strong></td>
-                        <td style={{ fontWeight: '600' }}>{formatWon(p.payPrice)}</td>
+                        <td className="cell-amount">{formatWon(p.payPrice)}</td>
                         <td>
                           {p.couponId ? (
-                            <span style={{ color: 'var(--accent-color, #2563eb)' }}>
+                            <span className="pay-coupon-used">
                               {p.couponName} (-{formatWon(p.discountAmount)})
                             </span>
                           ) : (
-                            <span style={{ color: 'var(--text-secondary, #999)' }}>미사용</span>
+                            <span className="pay-coupon-unused">미사용</span>
                           )}
                         </td>
                         <td>{p.installment === 0 ? '일시불' : `${p.installment}개월 할부`}</td>
                         <td>{p.payDate}</td>
                         <td>
                           <button
-                            className="btn-action btn-action-danger"
-                            style={{ padding: '4px 10px', fontSize: '12px' }}
+                            className="btn-action btn-action-danger btn-xs"
                             onClick={(e) => { e.stopPropagation(); handleDeletePay(p.payId); }}
                           >
                             삭제
@@ -1019,9 +1228,9 @@ function Settlepage() {
 
               {/* 미결제 계약 목록 (h_pay 연동, /fitb/payment 페이지로 이동) */}
               {unpaidContracts.length > 0 && (
-                <div className="card-premium expense-form-card">
+                <div className="settle-panel expense-form-card">
                   <h3>💳 미결제 리스트</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
+                  <p className="settle-form-desc">
                     회원이 보유한 쿠폰을 확인하고 할인을 적용해 결제를 확정합니다.
                   </p>
                   <div className="unpaid-contract-filter">
@@ -1037,9 +1246,9 @@ function Settlepage() {
                       <option value="4">PT 계약</option>
                     </select>
                   </div>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  <ul className="unpaid-contract-ul">
                     {pagedUnpaidContracts.map((c) => (
-                      <li key={c.dataId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-color, #e5e7eb)' }}>
+                      <li key={c.dataId} className="unpaid-contract-li">
                         <span>[{c.contract === 3 ? '이용권' : 'PT'}] {c.receiverName} (₩{c.amount?.toLocaleString()}) - #{c.dataId}</span>
                         <Link to={`/fitb/payment/${c.dataId}`} className="btn-premium">쿠폰 적용 결제하기</Link>
                       </li>
@@ -1052,13 +1261,16 @@ function Settlepage() {
                 </div>
               )}
 
+              </div>
+              {renderSummaryRail()}
             </div>
           )}
 
           {/* 3.2 지출 관리 탭 */}
           {ownerTab === 'expenses' && (
-            <div>
-              {/* 합계·건수는 우측 요약 레일로 이동 */}
+            <>
+              <div className="settle-sales-layout settle-expense-layout">
+                <div className="settle-sales-main">
 
               {/* 지출 리스트 테이블 */}
               <div className="settle-table-container">
@@ -1078,7 +1290,7 @@ function Settlepage() {
                         <tr key={e.expenseId}>
                           <td>#{e.expenseId}</td>
                           <td><strong>{e.expenseName}</strong></td>
-                           <td style={{ fontWeight: '600', color: 'var(--danger-solid)' }}>
+                           <td className="cell-amount is-danger">
                              {(() => {
                                if (e.expenseRate > 0) {
                                  const base = Math.round(e.expensePrice / (1 + e.expenseRate));
@@ -1086,9 +1298,9 @@ function Settlepage() {
                                  return (
                                    <div>
                                      {formatWon(e.expensePrice)}
-                                     <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 'normal', marginTop: '2px' }}>
-                                       {formatWon(base)} 
-                                       <span style={{ color: 'var(--danger-solid)', fontWeight: 'bold', marginLeft: '4px' }}>
+                                     <div className="expense-breakdown">
+                                       {formatWon(base)}
+                                       <span className="incentive-amount">
                                          + {formatWon(incentive)}
                                        </span>
                                      </div>
@@ -1101,10 +1313,9 @@ function Settlepage() {
                            <td>{e.expenseDate}</td>
                           <td>{e.expenseRate > 0 ? `${(e.expenseRate * 100).toFixed(0)}%` : '없음'}</td>
                           <td>
-                            <button 
-                              className="btn-action btn-action-danger"
-                              style={{ padding: '4px 10px', fontSize: '12px' }}
-                              onClick={() => handleDeleteExpense(e.expenseId)}
+                            <button
+                              className="btn-action btn-action-danger btn-xs"
+                              onClick={() => handleDeleteExpense(e)}
                             >
                               삭제
                             </button>
@@ -1120,62 +1331,101 @@ function Settlepage() {
                 </table>
               </div>
               <Pagination pager={expensePager} onPageChange={handleExpensePageChange} />
+                </div>
+                {renderExpenseSummaryRail()}
+              </div>
 
-              {/* 지출 등록 폼 (계약 연동 및 직접 등록 듀얼 레이아웃) */}
-              <div className="expense-dual-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '30px' }}>
+              {expenseDrawerOpen && (
+                <div
+                  className="expense-drawer-backdrop"
+                  role="presentation"
+                  onMouseDown={() => setExpenseDrawerOpen(false)}
+                >
+                  <aside
+                    className="expense-drawer"
+                    ref={expenseDrawerRef}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="expense-drawer-title"
+                    onMouseDown={(event) => event.stopPropagation()}
+                  >
+                    <header className="expense-drawer__header">
+                      <div>
+                        <span className="expense-drawer__eyebrow">지출 관리</span>
+                        <h2 id="expense-drawer-title">지출 확정</h2>
+                        <p>결제 대상을 선택하거나 운영 지출을 직접 입력하세요.</p>
+                      </div>
+                      <button
+                        type="button"
+                        className="expense-drawer__close"
+                        aria-label="지출 확정 패널 닫기"
+                        onClick={() => setExpenseDrawerOpen(false)}
+                      >
+                        ×
+                      </button>
+                    </header>
+                    <div className="expense-drawer__body">
+              <div className="expense-dual-layout">
                 
                 {/* 왼쪽: 지출 대기 계약서 목록 */}
-                <div className="card-premium expense-contract-list-card" style={{ padding: '24px' }}>
-                  <h3 style={{ marginBottom: '10px' }}>📋 지출 정산 대기 계약서</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
-                    서명 완료된 임금 계약서(강사) 및 제휴 수수료 계약서(플랫폼) 중 아직 지출 등록되지 않은 내역입니다. 클릭 시 우측 폼에 자동 입력됩니다.
+                <div className="settle-panel expense-contract-list-card">
+                  <h3>📋 지출 정산 대기</h3>
+                  <p className="settle-form-desc">
+                    전달 매출로 확정된 월별 커미션과 서명 완료된 임금 계약입니다. 항목을 선택하면 우측 폼에 자동 입력됩니다.
                   </p>
                   
-                  <div className="expense-contract-scroll-list" style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                  <div className="expense-contract-scroll-list">
+                    {unpaidCommissions.map(c => (
+                      <button
+                        type="button"
+                        key={`settlement-${c.settlementId}`}
+                        className={`expense-contract-item ${selectedSettlementId === c.settlementId.toString() ? 'selected' : ''}`}
+                        onClick={() => handleSelectCommission(c)}
+                      >
+                        <div className="expense-item-head">
+                          <span className="expense-item-badge is-commission">월별 커미션</span>
+                          <span className="expense-item-id">정산 #{c.settlementId}</span>
+                        </div>
+                        <div className="expense-item-target">{c.settleMonth?.slice(0, 7)} 매출 커미션</div>
+                        <div className="expense-item-foot">
+                          <span>금액: <strong>{formatWon(c.commission)}</strong></span>
+                          <span>비율: {(Number(c.commissionRate) * 100).toFixed(0)}%</span>
+                        </div>
+                      </button>
+                    ))}
                     {unpaidExpenses.map(c => (
-                        <div
+                        <button
+                          type="button"
                           key={c.dataId}
                           className={`expense-contract-item ${selectedExpenseContractId === c.dataId.toString() ? 'selected' : ''}`}
-                          style={{
-                            padding: '12px',
-                            border: '1px solid var(--border-color, #e2e8f0)',
-                            borderRadius: '8px',
-                            marginBottom: '10px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            backgroundColor: selectedExpenseContractId === c.dataId.toString() ? 'var(--accent-bg)' : 'transparent',
-                            borderColor: selectedExpenseContractId === c.dataId.toString() ? 'var(--primary-accent, #2563eb)' : 'var(--border-color, #e2e8f0)'
-                          }}
                           onClick={() => handleSelectExpenseContract(c)}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 'bold', color: c.contract === 2 ? 'var(--danger-solid)' : '#f59e0b', background: c.contract === 2 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                              {c.contract === 2 ? '임금 계약' : '제휴 수수료'}
-                            </span>
-                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>#{c.dataId}</span>
+                          <div className="expense-item-head">
+                            <span className="expense-item-badge is-wage">임금 계약</span>
+                            <span className="expense-item-id">#{c.dataId}</span>
                           </div>
-                          <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
-                            {c.contract === 2 ? `지출 대상: ${c.receiverName} 트레이너` : `지출 대상: 플랫폼 제휴 수수료`}
+                          <div className="expense-item-target">
+                            지출 대상: {c.receiverName} 트레이너
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                          <div className="expense-item-foot">
                             <span>
                               금액: <strong>{formatWon(c.amount)}</strong>
                               {c.contract === 2 && getIncentiveAmount(c) > 0 && (
-                                <span style={{ color: 'var(--danger-solid)', fontWeight: 'bold', marginLeft: '6px' }}>
+                                <span className="incentive-amount">
                                   + {formatWon(getIncentiveAmount(c))}
                                 </span>
                               )}
                             </span>
                             {c.contractRate !== null && c.contractRate !== undefined && (
                               <span>
-                                비율: {parseFloat(c.contractRate) > 1 ? parseFloat(c.contractRate) : (parseFloat(c.contractRate) * 100).toFixed(0)}%
+                                비율: {parseFloat(c.contractRate) >= 1 ? parseFloat(c.contractRate) : (parseFloat(c.contractRate) * 100).toFixed(0)}%
                               </span>
                             )}
                           </div>
-                        </div>
+                        </button>
                       ))}
-                    {unpaidExpenses.length === 0 && (
-                      <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                    {unpaidCommissions.length === 0 && unpaidExpenses.length === 0 && (
+                      <div className="expense-empty">
                         지출 대기 중인 계약서가 없습니다.
                       </div>
                     )}
@@ -1184,9 +1434,9 @@ function Settlepage() {
                 </div>
 
                 {/* 오른쪽: 지출 등록 폼 */}
-                <div className="card-premium expense-form-card" style={{ padding: '24px' }}>
+                <div className="settle-panel expense-form-card">
                   <h3>💸 신규 지출 항목 직접 등록</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
+                  <p className="settle-form-desc">
                     좌측의 계약서를 선택하여 자동 입력하거나, 직접 지출 항목을 입력하여 등록할 수 있습니다.
                   </p>
                   <form onSubmit={handleAddExpense}>
@@ -1200,6 +1450,7 @@ function Settlepage() {
                           required
                           value={newExpenseName}
                           onChange={(e) => setNewExpenseName(e.target.value)}
+                          readOnly={Boolean(selectedSettlementId)}
                         />
                       </div>
                       <div className="form-group">
@@ -1211,11 +1462,12 @@ function Settlepage() {
                           required
                           value={newExpensePrice}
                           onChange={(e) => setNewExpensePrice(e.target.value)}
+                          readOnly={Boolean(selectedSettlementId)}
                         />
                         {selectedExpenseContractId && unpaidExpenses.find(c => c.dataId.toString() === selectedExpenseContractId)?.contract === 2 && (
-                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                          <div className="expense-base-note">
                             기본급: {formatWon(unpaidExpenses.find(c => c.dataId.toString() === selectedExpenseContractId).amount)}
-                            <span style={{ color: 'var(--danger-solid)', fontWeight: 'bold', marginLeft: '6px' }}>
+                            <span className="incentive-amount">
                               + 인센티브: {formatWon(getIncentiveAmount(unpaidExpenses.find(c => c.dataId.toString() === selectedExpenseContractId)))}
                             </span>
                           </div>
@@ -1237,7 +1489,11 @@ function Settlepage() {
                           className="form-input"
                           value={newExpenseRate}
                           onChange={(e) => setNewExpenseRate(e.target.value)}
+                          disabled={Boolean(selectedSettlementId)}
                         >
+                          {selectedSettlementId && !['0', '0.05', '0.10', '0.15', '0.20'].includes(newExpenseRate) && (
+                            <option value={newExpenseRate}>{(Number(newExpenseRate) * 100).toFixed(2)}%</option>
+                          )}
                           <option value="0">비율 없음 (0%)</option>
                           <option value="0.05">5%</option>
                           <option value="0.10">10%</option>
@@ -1248,12 +1504,11 @@ function Settlepage() {
                     </div>
 
                     {selectedExpenseContractId && (
-                      <div style={{ marginTop: '15px', padding: '10px', background: 'var(--accent-bg)', borderRadius: '6px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div className="expense-linked-banner">
                         <span>연동 계약서 ID: <strong>#{selectedExpenseContractId}</strong></span>
-                        <button 
-                          type="button" 
-                          className="tester-btn" 
-                          style={{ padding: '2px 6px', fontSize: '11px', background: 'transparent', border: '1px solid var(--border-color, #e2e8f0)', cursor: 'pointer' }}
+                        <button
+                          type="button"
+                          className="btn-unlink"
                           onClick={() => {
                             setSelectedExpenseContractId('');
                             setNewExpenseName('');
@@ -1266,65 +1521,38 @@ function Settlepage() {
                       </div>
                     )}
 
+                    {selectedSettlementId && (
+                      <div className="expense-linked-banner">
+                        <span>연동 커미션 정산 ID: <strong>#{selectedSettlementId}</strong></span>
+                        <button
+                          type="button"
+                          className="btn-unlink"
+                          onClick={() => {
+                            setSelectedSettlementId('');
+                            setNewExpenseName('');
+                            setNewExpensePrice('');
+                            setNewExpenseRate('0');
+                          }}
+                        >
+                          선택 해제
+                        </button>
+                      </div>
+                    )}
+
                     <div className="btn-submit-container">
-                      <button type="submit" className="btn-premium btn-submit-premium">
-                        지출 등록하기
+                      <button type="submit" className="btn-premium btn-submit-premium" disabled={expenseSubmitting}>
+                        {expenseSubmitting ? '등록 중...' : '지출 등록하기'}
                       </button>
                     </div>
                   </form>
                 </div>
               </div>
-            </div>
-          )}
-
-            </div>
-
-            {/* 우측 요약 레일 — 순이익 히어로(블랙) + 매출·지출 현황 (현재 필터 기준) */}
-            <aside className="settle-rail" aria-label="이번 조회 기준 요약">
-              <p className="settle-rail__label">조회 기준 요약</p>
-
-              <div className="settle-rail__hero">
-                <span className="settle-rail__hero-label">순이익</span>
-                <strong className="settle-rail__hero-value">{formatWon(payTotalAmount - expenseTotalAmount)}</strong>
-                <div className="settle-rail__hero-split">
-                  <div>
-                    <span>매출</span>
-                    <b className="is-revenue">{formatWon(payTotalAmount)}</b>
-                  </div>
-                  <div>
-                    <span>지출</span>
-                    <b className="is-expense">{formatWon(expenseTotalAmount)}</b>
-                  </div>
+                    </div>
+                  </aside>
                 </div>
-              </div>
-
-              <button
-                type="button"
-                className={`settle-rail__card${ownerTab === 'sales' ? ' is-active' : ''}`}
-                onClick={() => setOwnerTab('sales')}
-              >
-                <span className="settle-rail__card-head">
-                  매출
-                  <span className="status-badge paid">{payTotalCount}건</span>
-                </span>
-                <b className="settle-rail__card-value">{formatWon(payTotalAmount)}</b>
-              </button>
-
-              <button
-                type="button"
-                className={`settle-rail__card${ownerTab === 'expenses' ? ' is-active' : ''}`}
-                onClick={() => setOwnerTab('expenses')}
-              >
-                <span className="settle-rail__card-head">
-                  지출
-                  <span className="status-badge pending">{expenseTotalCount}건</span>
-                </span>
-                <b className="settle-rail__card-value">{formatWon(expenseTotalAmount)}</b>
-              </button>
-
-              <p className="settle-rail__caption">현재 기간·검색 필터가 적용된 합계예요</p>
-            </aside>
-          </div>
+              )}
+            </>
+          )}
 
         </div>
       )}

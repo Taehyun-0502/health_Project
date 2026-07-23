@@ -12,12 +12,12 @@ public interface CheckInoutMapper {
 
     public List<CheckInoutDTO> list(Long username) throws Exception;
 
-    // 회원의 유효(ACTIVE·기간 내) 계약 1건 조회 - 헬스장 출석은 이용권(3), PT 출석은 PT(4)
+    // 회원의 유효(ACTIVE·기간 내) 계약 1건 조회 - 유형별 단건 조회 (3=이용권, 4=PT, 5=PT 체험)
     public ContractDTO findActiveContract(@Param("username") Long username,
             @Param("contractType") Long contractType) throws Exception;
 
-    // 현재 소진 대상 PT 계약 조회 - 유효 PT형 계약(일반 PT·체험권) 중 잔여가 남은 가장 오래된 계약 1건
-    // 팀 정책: 먼저 계약한 건을 다 사용해야 다음 계약(체험권 등)을 이용 가능
+    // 현재 소진 대상 PT 계약 조회 - 유효 PT형 계약(PT=4, PT 체험=5) 중 잔여가 남은 가장 오래된 계약 1건
+    // 팀 정책: 먼저 계약한 건을 다 사용해야 다음 계약(PT 체험 등)을 이용 가능
     public ContractDTO findConsumablePtContract(Long username) throws Exception;
 
     // 당일 동일 유형 출석 존재 여부 (하루 1회 제한용)
@@ -50,13 +50,13 @@ public interface CheckInoutMapper {
 
     // ===== PT 수업 일정(h_pt_schedule) - 트레이너 주도 등록 =====
 
-    // 트레이너 본인 담당 회원 목록 (유효 PT 계약 기준 - 일정 등록 시 회원 선택용)
+    // 트레이너 본인 담당 회원 목록 (유효 PT형 계약(4·5) 기준 - 일정 등록 시 회원 선택용)
     public List<com.health.app.member.MemberDTO> myMembers(Long trainerId) throws Exception;
 
-    // 트레이너 담당 회원 현황 - 유효 PT 계약별 총횟수/사용/잔여 (잔여 적은 순)
+    // 트레이너 담당 회원 현황 - 유효 PT형 계약(4·5)별 총횟수/사용/잔여 (잔여 적은 순)
     public List<PtMemberStatusDTO> memberStatusList(Long trainerId) throws Exception;
 
-    // 회원+트레이너 조합의 유효 PT 계약 조회 (일정 등록 검증용 - 회원의 최신 계약 하나만 보는 findActiveContract와 달리 담당 조합으로 직접 매칭)
+    // 회원+트레이너 조합의 유효 PT형 계약(4·5) 조회 (일정 등록 검증용 - 회원의 최신 계약 하나만 보는 findActiveContract와 달리 담당 조합으로 직접 매칭)
     public com.health.app.contract.ContractDTO findActivePtByTrainer(@Param("username") Long username,
             @Param("trainerId") Long trainerId) throws Exception;
 
@@ -83,7 +83,7 @@ public interface CheckInoutMapper {
     // 지점 트레이너별 성과 지표 (담당 회원/이번 달 수업·미수행/재등록 임박)
     public List<TrainerPerfDTO> ownerTrainerPerf(Long gymId) throws Exception;
 
-    // 지점 재등록 임박 리스트 - PT(잔여 3회 이하) + 이용권(종료 7일 이내) 통합
+    // 지점 재등록 임박 리스트 - PT형(4·5, 잔여 3회 이하) + 이용권(3, 종료 7일 이내) 통합, category로 유형 구분
     public List<RebookDTO> ownerRebookList(Long gymId) throws Exception;
 
     // 지점 전체 PT 일정 (읽기 전용 캘린더용)
