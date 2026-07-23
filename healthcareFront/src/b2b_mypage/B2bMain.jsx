@@ -30,7 +30,7 @@ function B2bMain() {
           <span>내 계정 정보와 기본 설정을 관리합니다.</span>
         </Link>
         {showGymMenus && (
-          <Link to="b2blist" className="b2b-profile-page__card">
+          <Link to="/fitb/report" className="b2b-profile-page__card">
             <strong>회원·이탈 분석</strong>
             <span>회원 현황과 이탈 위험 분석 결과를 확인합니다.</span>
           </Link>
