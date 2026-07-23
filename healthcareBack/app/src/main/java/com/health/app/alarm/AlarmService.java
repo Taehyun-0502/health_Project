@@ -42,8 +42,11 @@ public class AlarmService {
 
         // 네트워크 시간 만료되거나 완료 시 저장소에서 "이 연결만" 지워주는 자원 반환 콜백 심기
         // (같은 회원의 다른 탭 연결은 살아있어야 하므로 emitter 인스턴스를 함께 넘긴다)
+        // onError까지 거는 이유: 오류로 끝난 연결은 onCompletion/onTimeout을 타지 않을 수 있어
+        // 죽은 emitter가 맵에 남고, 이후 전송 때마다 예외를 유발한다.
         emitter.onCompletion(() -> alarmRepository.remove(username, emitter));
         emitter.onTimeout(() -> alarmRepository.remove(username, emitter));
+        emitter.onError(e -> alarmRepository.remove(username, emitter));
 
         // [중요] 최초 구독 즉시 더미 데이터를 한 번 쏘지 않으면 503 Gateway Timeout 에러가 유발됩니다.
         try {
@@ -79,8 +82,13 @@ public class AlarmService {
             try {
                 // ◀ 변경: message 텍스트 대신 이동 경로가 포함된 alarmDTO 객체 자체를 JSON 직렬화 전송
                 emitter.send(SseEmitter.event().name("alarm").data(alarmDTO));
-            } catch (IOException e) {
-                // 통신이 깨졌거나 클라이언트가 탭을 닫아 전송 실패한 경우 해당 연결만 저장소에서 삭제
+            } catch (Exception e) {
+                // IOException(통신 단선·탭 닫힘)만 잡으면 안 된다.
+                // 이미 만료된 emitter에 보내면 IllegalStateException, 직렬화가 실패하면
+                // HttpMessageNotWritableException처럼 IOException이 아닌 예외가 나오는데,
+                // 이게 루프 밖으로 나가면 뒤에 남은 정상 연결이 전송을 못 받을 뿐 아니라
+                // 호출부(@Transactional인 건의글 등록 등)까지 전파돼 본래 업무가 롤백된다.
+                // 알림 이력은 위에서 이미 저장했으므로 실시간 전송 실패는 해당 연결만 정리하고 넘어간다.
                 alarmRepository.remove(username, emitter);
             }
         }

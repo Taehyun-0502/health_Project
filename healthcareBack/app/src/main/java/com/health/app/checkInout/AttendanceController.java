@@ -60,15 +60,14 @@ public class AttendanceController {
     }
 
     // 인증 시도 제한의 출발지 키로 쓸 클라이언트 IP 추출
-    // 리버스 프록시 뒤에 있으면 getRemoteAddr()가 프록시 IP로 고정되므로 X-Forwarded-For의 첫 값을 우선한다.
-    // (이 헤더는 클라이언트가 위조할 수 있어 인증·권한 판단에는 쓰지 않고, 시도 제한 버킷 구분에만 사용한다)
+    // X-Forwarded-For는 프록시가 붙이는 값이지만 클라이언트가 직접 써넣어도 서버가 구분할 수 없다.
+    // 이 값이 시도 제한의 버킷 키라 신뢰하면 요청마다 다른 IP를 보내 제한을 그냥 빠져나갈 수 있으므로 읽지 않는다.
+    // 현재 구성은 프록시 없이 브라우저가 직접 붙으므로 getRemoteAddr()가 곧 실제 접속자 IP다.
+    // 프록시 뒤로 배포하게 되면 여기서 헤더를 파싱하지 말고
+    // application.yml에 server.forward-headers-strategy: framework 를 설정한다(신뢰 프록시 판단은 프레임워크가 처리).
     private String clientIp(HttpServletRequest request) {
         if (request == null) {
             return null;
-        }
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
         }
         return request.getRemoteAddr();
     }
