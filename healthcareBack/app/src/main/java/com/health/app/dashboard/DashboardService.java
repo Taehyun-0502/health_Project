@@ -180,8 +180,8 @@ public class DashboardService {
             case "expiringMemberCount":
                 return countOf(contractService.expiringMemberCount(gymId)) > 0;
             case "todayAttendance":
-                // TODO(논의 필요): CheckInoutService에 지점 당일 출석 집계 메서드가 없어 잠금 유지
-                return false;
+                // 오늘 0명이어도 위젯은 노출되도록, 지점에 체크인 기록이 하나라도 있으면 활성
+                return countOf(checkInoutService.ownerAttendanceHasData(gymId)) > 0;
             case "couponUsage":
                 return couponUsageSummary(username).get("total") > 0;
             case "gymChurn":
@@ -220,8 +220,7 @@ public class DashboardService {
             case "expiringMemberCount":
                 return contractService.expiringMemberCount(gymId);
             case "todayAttendance":
-                // TODO(논의 필요): CheckInoutService에 지점 당일 출석 집계 메서드 미구현 - 제공 방식 확정 후 연결
-                return null;
+                return checkInoutService.ownerTodayAttendanceCount(gymId);
             case "couponUsage":
                 return couponUsageSummary(username);
             case "gymChurn":

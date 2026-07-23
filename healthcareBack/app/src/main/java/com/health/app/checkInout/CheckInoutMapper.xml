@@ -353,4 +353,19 @@ select c.id, c.username, c.check_in, c.gym_id, c.inout_type, c.trainer_id, c.tra
  order by c.check_in desc
 </select>
 
+<!-- (OWNER 대시보드) 오늘 지점 출석(체크인) distinct 회원 수 -->
+<select id="ownerTodayAttendanceCount" parameterType="Long" resultType="map">
+select count(distinct username) as "total"
+from "h_check_inout"
+where gym_id = #{gymId}
+  and check_in::date = current_date
+</select>
+
+<!-- (OWNER 대시보드) 지점 체크인 기록 존재 여부 (hasData 판정 - 오늘 0명이어도 위젯 노출) -->
+<select id="ownerAttendanceHasData" parameterType="Long" resultType="map">
+select count(*) as "total"
+from "h_check_inout"
+where gym_id = #{gymId}
+</select>
+
 </mapper>
