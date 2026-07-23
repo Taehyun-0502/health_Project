@@ -59,8 +59,8 @@ const CHART_SERIES = {
 
 // 회원/직원 관리 기존 라우트 (팀원 개편 중 - 현재 401 발생 상태 그대로 유지, merge 후 실제 라우트로 교체)
 const MANAGEMENT_ROUTE = '/fitb/management';
-// 이탈 리포트 페이지 (팀원 작업 중 - 라우트 미확정, merge 후 확정 라우트로 교체)
-const REPORT_ROUTE = '/fitb/report';
+// 이탈 리포트 페이지 (헬스장 이탈 통계 리포트)
+const REPORT_ROUTE = '/fitb/b2bmypage/b2blist';
 
 // 위젯 카드 클릭 시 이동 라우트 (OWNER 위젯 세트 개편 2026-07-22 확정)
 const WIDGET_LINK = {

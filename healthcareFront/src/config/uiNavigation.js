@@ -14,7 +14,7 @@ export const isGymRole = (role) => ['owner', 'trainer'].includes(normalizeRole(r
 export const B2B_PRIMARY_NAV = [
   { id: 'home', label: '홈', to: '/fitb', icon: 'H', end: true },
   { id: 'dashboard', label: '대시보드', to: '/fitb/dashboard', icon: 'D' },
-  { id: 'churnlist', label: '리스트', to: '/fitb/b2bmypage/b2blist', icon: 'L' },
+  { id: 'churnlist', label: '리포트', to: '/fitb/b2bmypage/b2blist', icon: 'L' },
   { id: 'management', label: '회원 관리', to: '/fitb/management', icon: 'M' },
   { id: 'contract', label: '계약', to: '/fitb/contractpage', icon: 'C' },
   { id: 'settle', label: '정산 매출', to: '/fitb/Settlepage', icon: 'S' },
