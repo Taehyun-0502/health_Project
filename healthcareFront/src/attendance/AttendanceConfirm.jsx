@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 
+// PT형 계약 유형 라벨 (백엔드 h_contract_data.contract 코드 기준: 4=PT, 5=PT 체험)
+// 체험 회원은 유료 PT 전환 제안 대상이라 트레이너 화면에서 구분해 표시한다.
+const PT_TYPE_LABEL = { 4: 'PT', 5: 'PT 체험' };
+
 // 트레이너 전용 PT 출석/일정 관리 컴포넌트 (AdminMain 회원/직원 관리 탭에 내장)
 // 1) 당일 미확인 PT 출석 확인(확인 시 잔여횟수 1회 차감)
 // 2) PT 캘린더: 일정 칸에 진행 결과가 채워지는 구조
@@ -323,6 +327,11 @@ function AttendanceConfirm() {
                       style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', color: '#2563eb', textDecoration: 'underline', padding: 0 }}>
                       {row.memberName || '-'}
                     </button>
+                    {row.contract === 5 && (
+                      <span style={{ display: 'block', marginTop: '3px', fontSize: '10px', color: '#d97706', fontWeight: 'bold' }}>
+                        {PT_TYPE_LABEL[5]}
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{row.username}</td>
                   <td style={{ padding: '10px', border: '1px solid #e5e7eb' }}>
@@ -390,7 +399,7 @@ function AttendanceConfirm() {
               const used = contract.usedCount || 0;
               return (
                 <p key={contract.dataId} style={{ margin: '2px 0', fontSize: '13px', color: '#444' }}>
-                  계약 #{contract.dataId} — {used} / {total}회 사용, <b>잔여 {contract.remainingCount}회</b>
+                  계약 #{contract.dataId} [{PT_TYPE_LABEL[contract.contract] ?? '-'}] — {used} / {total}회 사용, <b>잔여 {contract.remainingCount}회</b>
                   <span style={{ color: '#888', fontSize: '12px' }}> ({contract.startDate || '-'} ~ {contract.endDate || '무기한'})</span>
                 </p>
               );
