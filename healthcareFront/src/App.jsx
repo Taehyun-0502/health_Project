@@ -26,7 +26,7 @@ import B2bMain from './b2b_mypage/B2bMain.jsx';
 import B2bComplaint from './b2b_mypage/B2bComplaint.jsx';
 import B2bNotification from './b2b_mypage/B2bNotification.jsx';
 import Dashboard from './dashboard/Dashboard.jsx';
-import B2bList from './b2b_mypage/B2bList.jsx';
+import Report from './report/Report.jsx';
 import B2bCoupon from './b2b_mypage/B2bCoupon.jsx';
 import B2cSurvey from './b2c_mypage/B2cSurvey.jsx';
 import FitcLayout from './components/FitcLayout.jsx'; // ◀ 일반회원 레이아웃 임포트
@@ -79,7 +79,7 @@ function App() {
         <Route path="b2bmypage/account" element={<B2bAccount />} />
         <Route path="b2bmypage/b2bcomplaint" element={<B2bComplaint />} />
         <Route path="b2bmypage/notification" element={<B2bNotification />} />
-        <Route path="b2bmypage/b2blist" element={<B2bList />} />
+        <Route path="report" element={<Report />} />
         <Route path="b2bmypage/b2bcoupon" element={<B2bCoupon />} />
         <Route path="contract/new" element={<ContractNew />} />
         <Route path="contract/:dataId" element={<ContractDetail />} />

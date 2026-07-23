@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './B2bList.css';
+import './Report.css';
 
 // 이탈 요인 표시 고정 순서 (이 순서대로 위→아래로 노출, 목록에 없는 요인은 뒤로)
 const FACTOR_ORDER = [
@@ -793,7 +793,7 @@ function StatsSkeleton() {
   );
 }
 
-function B2bList() {
+function Report() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const gymId = user.gymId;
 
@@ -987,4 +987,4 @@ function B2bList() {
   );
 }
 
-export default B2bList;
+export default Report;
