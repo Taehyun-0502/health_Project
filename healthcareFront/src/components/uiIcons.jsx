@@ -18,8 +18,9 @@ const ICON_PATHS = {
   ),
   churnlist: (
     <>
-      <path d="M9 6h11M9 12h11M9 18h11" />
-      <path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M6 3h9l4 4v14H6z" />
+      <path d="M15 3v4h4" />
+      <path d="M9 17v-3M12 17v-5M15 17v-2" strokeLinecap="round" />
     </>
   ),
   contract: (
