@@ -93,7 +93,9 @@ where gym_id=#{gymId}
 order by item_name
 </select>
 
-<!-- CSV 내보내기용: itemList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환 -->
+<!-- CSV 내보내기용: itemList와 동일한 검색조건(검색어 + 카테고리 칩)을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환
+     카테고리 조건이 빠지면 화면에서 특정 분류를 필터링해 둔 상태로 내보내도 전 분류가 파일에 담겨
+     사용자가 보고 있는 목록과 다른 결과를 받게 된다. 조건은 itemList와 반드시 같은 규칙을 유지할 것. -->
 <select id="itemListAll" resultType="ItemDTO">
 select
     gym_id as gymId,
@@ -105,14 +107,27 @@ where gym_id=#{gymId}
 <if test="keyword != null and keyword != ''">
     and (item_name like concat('%', #{keyword}, '%') or item_category like concat('%', #{keyword}, '%'))
 </if>
+<!-- 카테고리 칩 필터: '기타'는 고정 3종(기구/소모품/용품) 외 나머지, 그 외는 정확히 일치 (itemList와 동일) -->
+<if test="category != null and category != ''">
+    <choose>
+        <when test="'기타'.equals(category)">and item_category not in ('기구','소모품','용품')</when>
+        <otherwise>and item_category = #{category}</otherwise>
+    </choose>
+</if>
 group by gym_id, item_category, item_name
 having sum(item_count) > 0
 order by item_name
 </select>
 
+<!-- 물품 상세(구매/폐기 이력) 조회
+     itemList가 (gym_id, item_category, item_name)으로 그룹핑하므로 상세도 같은 3개 키로 좁혀야 한다.
+     item_name만으로 조회하면 이름이 같고 분류가 다른 물품(예: 소모품 '타월' / 용품 '타월')의
+     이력이 한 목록에 섞여 나온다. -->
 <select id="itemDetail" parameterType="ItemDTO" resultType="ItemDTO">
 select * from "h_item"
-where gym_id = #{gymId} and item_name = #{itemName}
+where gym_id = #{gymId}
+  and item_name = #{itemName}
+  and item_category = #{itemCategory}
 order by item_date desc
 </select>
 

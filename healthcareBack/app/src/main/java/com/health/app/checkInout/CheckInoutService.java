@@ -31,6 +31,10 @@ public class CheckInoutService {
     @Autowired
     private AlarmService alarmService;
 
+    // 무로그인 키오스크의 비밀번호 대입 시도 제한용
+    @Autowired
+    private AttendanceRateLimiter attendanceRateLimiter;
+
     public List<CheckInoutDTO> list(Long username)throws Exception{
         return checkInoutMapper.list(username);
     }
@@ -39,8 +43,8 @@ public class CheckInoutService {
     // 1. 계정 검증 -> 2. 유효한 이용권(3) 또는 기간 내 PT형 계약(4·5) 확인 -> 3. 하루 1회 제한 -> 4. 출석 기록
     // PT 회원(PT 체험 포함)은 계약 기간 동안 이용권처럼 헬스장 이용 가능 (기간 기준 - 잔여 횟수와 무관)
     // 이용권을 먼저 조회하는 이유: 병행 보유 시 헬스장 이용의 근거가 되는 계약이 이용권이므로 gym_id를 그쪽에서 취한다
-    public CheckInoutDTO gymCheckIn(MemberDTO credential) throws Exception {
-        MemberDTO member = verifyMember(credential);
+    public CheckInoutDTO gymCheckIn(MemberDTO credential, String clientIp) throws Exception {
+        MemberDTO member = verifyMember(credential, clientIp);
 
         ContractDTO contract = null;
         for (Long contractType : GYM_ACCESS_CONTRACT_TYPES) {
@@ -70,8 +74,8 @@ public class CheckInoutService {
     // 1. 계정 검증 -> 2. 소진 대상 PT 계약(잔여가 남은 가장 오래된 계약) + 담당 트레이너 확인 -> 3. 하루 1회 제한
     // -> 4. 미확인 상태로 출석 기록 (잔여횟수 차감은 트레이너 확인 시점에 수행)
     // 팀 정책: PT(4)·PT 체험(5)이 함께 있으면 먼저 계약한 건부터 소진 (data_id 오름차순)
-    public CheckInoutDTO ptCheckIn(MemberDTO credential) throws Exception {
-        MemberDTO member = verifyMember(credential);
+    public CheckInoutDTO ptCheckIn(MemberDTO credential, String clientIp) throws Exception {
+        MemberDTO member = verifyMember(credential, clientIp);
 
         ContractDTO contract = checkInoutMapper.findConsumablePtContract(member.getUsername());
         if (contract == null) {
@@ -274,11 +278,21 @@ public class CheckInoutService {
     }
 
     // 키오스크 입력 계정(전화번호+비밀번호) 본인 확인 공통 메서드
-    private MemberDTO verifyMember(MemberDTO credential) throws Exception {
+    // 무로그인 엔드포인트라 시도 횟수 제한이 없으면 비밀번호를 무제한 대입해 볼 수 있는 통로가 된다.
+    // 계정·출발지 잠금은 여기서만 판단하고, 계약 없음 같은 이후 검증 실패는 카운트하지 않는다
+    // (정상 회원이 계약 문제로 반복 시도하다 계정이 잠기는 것을 막기 위함).
+    private MemberDTO verifyMember(MemberDTO credential, String clientIp) throws Exception {
+        Long username = credential == null ? null : credential.getUsername();
+
+        attendanceRateLimiter.assertNotLocked(username, clientIp);
+
         MemberDTO member = memberService.login(credential);
         if (member == null) {
+            attendanceRateLimiter.recordFailure(username, clientIp);
             throw new IllegalStateException("전화번호 또는 비밀번호가 올바르지 않습니다.");
         }
+
+        attendanceRateLimiter.recordSuccess(username, clientIp);
         return member;
     }
 

@@ -29,14 +29,20 @@ function Header({ variant = 'portal' }) {
       .catch((error) => console.warn('헤더 알림 이력 조회 실패:', error.message));
   }, []);
 
+  // 실시간 알림 구독
+  // EventSource는 Authorization 헤더를 못 보내므로 ① Bearer로 1회용 티켓을 받고 ② 그 티켓으로 연결한다.
+  // 티켓이 1회용이라 브라우저 자동 재연결(같은 URL 재시도)은 반드시 실패한다. 따라서 끊기면
+  // 직접 새 티켓을 받아 다시 연결한다. 서버 emitter가 30분마다 만료되므로 이 경로는 정상 동작의 일부다.
   useEffect(() => {
-    if (!user.username) return undefined;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return undefined;
 
-    const eventSource = new EventSource(
-      `${import.meta.env.VITE_BACKEND_URL}/alarm/subscribe?username=${user.username}`,
-    );
+    let eventSource = null;
+    let retryTimer = null;
+    let retryCount = 0;
+    let cancelled = false; // 언마운트 후 재연결이 계속되지 않도록 하는 가드
 
-    eventSource.addEventListener('alarm', (event) => {
+    const handleAlarm = (event) => {
       try {
         setAlarms((previous) => [JSON.parse(event.data), ...previous]);
       } catch {
@@ -47,10 +53,60 @@ function Header({ variant = 'portal' }) {
         }, ...previous]);
       }
       setUnreadCount((previous) => previous + 1);
-    });
+    };
 
-    return () => eventSource.close();
-  }, [user.username]);
+    // 서버가 계속 죽어 있을 때 재연결 요청이 폭주하지 않도록 지수 백오프 (3초 → 최대 30초)
+    const scheduleRetry = () => {
+      if (cancelled || retryTimer) return;
+      const delay = Math.min(3000 * 2 ** retryCount, 30000);
+      retryCount += 1;
+      retryTimer = setTimeout(() => {
+        retryTimer = null;
+        connect();
+      }, delay);
+    };
+
+    const connect = async () => {
+      if (cancelled) return;
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/alarm/ticket`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error(`티켓 발급 실패(${response.status})`);
+
+        const { ticket } = await response.json();
+        if (cancelled || !ticket) return;
+
+        // 핸들러 안에서는 바깥 변수가 아니라 이 인스턴스를 참조한다.
+        // 재연결로 바깥 변수가 새 연결로 바뀐 뒤 옛 연결의 onerror가 늦게 도착하면 새 연결을 닫아버린다.
+        const source = new EventSource(
+          `${import.meta.env.VITE_BACKEND_URL}/alarm/subscribe?ticket=${encodeURIComponent(ticket)}`,
+        );
+        eventSource = source;
+
+        source.addEventListener('connect', () => { retryCount = 0; });
+        source.addEventListener('alarm', handleAlarm);
+        source.onerror = () => {
+          // 자동 재연결에 맡기면 소비된 티켓으로 무한 재시도하므로 직접 닫고 새 티켓으로 재연결
+          source.close();
+          if (eventSource === source) eventSource = null;
+          scheduleRetry();
+        };
+      } catch (error) {
+        console.warn('실시간 알림 구독 실패:', error.message);
+        scheduleRetry();
+      }
+    };
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      if (eventSource) eventSource.close();
+    };
+  }, []);
 
   const markAllAsRead = async () => {
     const token = localStorage.getItem('accessToken');
