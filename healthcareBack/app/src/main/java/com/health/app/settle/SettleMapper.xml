@@ -4,20 +4,31 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.health.app.settle.SettleMapper">
 
-    <!-- 관리자용: 가맹점별 전체 커미션 정산 내역 페이징 조회 -->
-    <select id="commissionList" resultType="com.health.app.settle.CommissionDTO">
-        SELECT
-            s.settlement_id as settlementId,
-            s.gym_id as gymId,
-            g.gym_name as gymName,
-            s.commission,
-            s.settled_at as settledAt,
-            s.commission_rate as commissionRate,
-            s.settle_month as settleMonth,
-            s.status,
-            s.expense_id as expenseId
+    <!-- ===== 공통 SQL 조각 =====
+         목록/건수/합계/CSV 쿼리가 같은 컬럼·조인·필터를 반복하던 부분을 조각으로 모았다.
+         <include>는 컴파일 타임 문자열 치환이라 생성 SQL·실행계획은 기존과 동일하다.
+         조각을 고치면 이를 참조하는 모든 쿼리가 함께 바뀌므로, 목록과 건수의 조건이 어긋나는 것을 구조적으로 막는다. -->
+
+    <!-- 커미션 목록 공통 컬럼 (gym_name을 쓰므로 commissionFrom의 h_gym 조인이 함께 필요) -->
+    <sql id="commissionColumns">
+        s.settlement_id as settlementId,
+        s.gym_id as gymId,
+        g.gym_name as gymName,
+        s.commission,
+        s.settled_at as settledAt,
+        s.commission_rate as commissionRate,
+        s.settle_month as settleMonth,
+        s.status,
+        s.expense_id as expenseId
+    </sql>
+
+    <sql id="commissionFrom">
         FROM "h_settlement" s
         LEFT JOIN "h_gym" g ON s.gym_id = g.gym_id
+    </sql>
+
+    <!-- 커미션 목록 검색 조건 (목록/건수/CSV 공용) -->
+    <sql id="commissionFilter">
         <where>
             <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
                 AND s.status = #{pager.searchKeyword}
@@ -26,6 +37,80 @@
                 AND TO_CHAR(s.settle_month, 'YYYY-MM') = #{pager.month}
             </if>
         </where>
+    </sql>
+
+    <!-- OWNER 본인 미지급 커미션 조회 공용 컬럼/소스 (목록 · 단건 공용) -->
+    <sql id="ownerCommissionColumns">
+        s.settlement_id AS settlementId,
+        s.gym_id AS gymId,
+        s.commission,
+        s.commission_rate AS commissionRate,
+        s.settle_month AS settleMonth,
+        s.status
+    </sql>
+
+    <sql id="ownerUnpaidCommissionSource">
+        FROM "h_settlement" s
+        JOIN "h_member" m ON m.gym_id = s.gym_id
+        WHERE m.username = #{username}
+          AND UPPER(m.role) = 'OWNER'
+          AND s.status = '미지급'
+          AND s.expense_id IS NULL
+    </sql>
+
+    <!-- 지출 금액/요율 결정 규칙: 직접 입력 지출이면 그 값, 커미션 지급 지출이면 settlement 값을 쓴다 -->
+    <sql id="expensePriceExpr">COALESCE(NULLIF(e.expense_price, 0), s.commission, 0)</sql>
+
+    <sql id="expenseColumns">
+        e.expense_id as expenseId,
+        e.gym_id as gymId,
+        e.data_id as dataId,
+        s.settlement_id as settlementId,
+        e.expense_name as expenseName,
+        e.expense_date as expenseDate,
+        <include refid="expensePriceExpr"/> as expensePrice,
+        COALESCE(NULLIF(e.expense_rate, 0), s.commission_rate, 0) as expenseRate
+    </sql>
+
+    <!-- role=TRAINER면 본인이 수신자인 임금 계약(contract=2)에 연결된 지출로만 좁혀 본인 급여만 노출 -->
+    <sql id="expenseTrainerJoin">
+        <if test="role == 'TRAINER'">
+        INNER JOIN "h_contract_data" cd ON cd.data_id = e.data_id AND cd.contract = 2 AND cd.receiver_id = #{username}
+        </if>
+    </sql>
+
+    <!-- 지출 목록 검색 조건 (목록/건수/합계/CSV 공용) -->
+    <sql id="expenseFilter">
+        WHERE e.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+        <if test="pager.month != null and pager.month != ''">
+            AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{pager.month}
+        </if>
+        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+            AND e.expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
+        </if>
+    </sql>
+
+    <!-- 아직 지출 등록되지 않은 계약 판정 (지출 대기 목록/건수/알림 배치 공용) -->
+    <sql id="noExpenseYet">
+        d.data_id NOT IN (
+            SELECT data_id FROM "h_expense" WHERE data_id IS NOT NULL
+        )
+    </sql>
+
+    <!-- 사장님 본인이 발행한 유효 임금 계약 중 지출 미등록 건 (목록/건수/요약 레일 공용) -->
+    <sql id="unpaidWageContractWhere">
+        WHERE d.sender_id = #{username}
+          AND d.contract = 2
+          AND d.status IN ('SIGNED', 'ACTIVE')
+          AND <include refid="noExpenseYet"/>
+    </sql>
+
+    <!-- 관리자용: 가맹점별 전체 커미션 정산 내역 페이징 조회 -->
+    <select id="commissionList" resultType="com.health.app.settle.CommissionDTO">
+        SELECT
+        <include refid="commissionColumns"/>
+        <include refid="commissionFrom"/>
+        <include refid="commissionFilter"/>
         <choose>
             <when test="sort == 'amount_desc'">ORDER BY s.commission DESC</when>
             <when test="sort == 'amount_asc'">ORDER BY s.commission ASC</when>
@@ -39,38 +124,15 @@
     <select id="commissionListCount" resultType="long">
         SELECT COUNT(*)
         FROM "h_settlement" s
-        <where>
-            <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-                AND s.status = #{pager.searchKeyword}
-            </if>
-            <if test="pager.month != null and pager.month != ''">
-                AND TO_CHAR(s.settle_month, 'YYYY-MM') = #{pager.month}
-            </if>
-        </where>
+        <include refid="commissionFilter"/>
     </select>
 
     <!-- CSV 내보내기용: commissionList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환 -->
     <select id="commissionListAll" resultType="com.health.app.settle.CommissionDTO">
         SELECT
-            s.settlement_id as settlementId,
-            s.gym_id as gymId,
-            g.gym_name as gymName,
-            s.commission,
-            s.settled_at as settledAt,
-            s.commission_rate as commissionRate,
-            s.settle_month as settleMonth,
-            s.status,
-            s.expense_id as expenseId
-        FROM "h_settlement" s
-        LEFT JOIN "h_gym" g ON s.gym_id = g.gym_id
-        <where>
-            <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-                AND s.status = #{pager.searchKeyword}
-            </if>
-            <if test="pager.month != null and pager.month != ''">
-                AND TO_CHAR(s.settle_month, 'YYYY-MM') = #{pager.month}
-            </if>
-        </where>
+        <include refid="commissionColumns"/>
+        <include refid="commissionFrom"/>
+        <include refid="commissionFilter"/>
         ORDER BY s.settle_month DESC, s.settlement_id DESC
     </select>
 
@@ -111,9 +173,7 @@
                       <if test="month != null and month != ''">AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{month}</if>
                      ), 0) AS wagePaid,
             COALESCE((SELECT COUNT(*) FROM "h_contract_data" d
-                      WHERE d.sender_id = #{username} AND d.contract = 2
-                        AND d.status IN ('SIGNED', 'ACTIVE')
-                        AND d.data_id NOT IN (SELECT data_id FROM "h_expense" WHERE data_id IS NOT NULL)
+                      <include refid="unpaidWageContractWhere"/>
                      ), 0) AS wagePending
         FROM "h_member" g
         WHERE g.username = #{username}
@@ -122,36 +182,17 @@
     <!-- OWNER 본인 gym의 월별 미지급 커미션. 클라이언트 gym_id를 받지 않고 username으로 제한한다. -->
     <select id="ownerUnpaidCommissionList" resultType="com.health.app.settle.CommissionDTO">
         SELECT
-            s.settlement_id AS settlementId,
-            s.gym_id AS gymId,
-            s.commission,
-            s.commission_rate AS commissionRate,
-            s.settle_month AS settleMonth,
-            s.status
-        FROM "h_settlement" s
-        JOIN "h_member" m ON m.gym_id = s.gym_id
-        WHERE m.username = #{username}
-          AND UPPER(m.role) = 'OWNER'
-          AND s.status = '미지급'
-          AND s.expense_id IS NULL
+        <include refid="ownerCommissionColumns"/>
+        <include refid="ownerUnpaidCommissionSource"/>
         ORDER BY s.settle_month DESC, s.settlement_id DESC
     </select>
 
+    <!-- 위 목록과 동일한 판정에 settlement_id 단건 조건만 추가 (조건 순서만 다를 뿐 의미 동일) -->
     <select id="getOwnerUnpaidCommission" resultType="com.health.app.settle.CommissionDTO">
         SELECT
-            s.settlement_id AS settlementId,
-            s.gym_id AS gymId,
-            s.commission,
-            s.commission_rate AS commissionRate,
-            s.settle_month AS settleMonth,
-            s.status
-        FROM "h_settlement" s
-        JOIN "h_member" m ON m.gym_id = s.gym_id
-        WHERE m.username = #{username}
-          AND UPPER(m.role) = 'OWNER'
+        <include refid="ownerCommissionColumns"/>
+        <include refid="ownerUnpaidCommissionSource"/>
           AND s.settlement_id = #{settlementId}
-          AND s.status = '미지급'
-          AND s.expense_id IS NULL
     </select>
 
     <select id="getOwnerGymId" resultType="long">
@@ -163,17 +204,8 @@
     <!-- 가맹점+정산월 기준 커미션 단건 조회 (매출 삭제 후 재계산 대상 확인용) -->
     <select id="getCommissionByGymAndMonth" resultType="com.health.app.settle.CommissionDTO">
         SELECT
-            s.settlement_id as settlementId,
-            s.gym_id as gymId,
-            g.gym_name as gymName,
-            s.commission,
-            s.settled_at as settledAt,
-            s.commission_rate as commissionRate,
-            s.settle_month as settleMonth,
-            s.status,
-            s.expense_id as expenseId
-        FROM "h_settlement" s
-        LEFT JOIN "h_gym" g ON s.gym_id = g.gym_id
+        <include refid="commissionColumns"/>
+        <include refid="commissionFrom"/>
         WHERE s.gym_id = #{gymId} AND s.settle_month = #{month}
     </select>
 
@@ -193,29 +225,14 @@
          role=TRAINER면 본인이 수신자인 임금 계약(contract=2)에 연결된 지출로만 좁혀 본인 급여만 노출 -->
     <select id="expenseList" resultType="com.health.app.settle.ExpenseDTO">
         SELECT
-            e.expense_id as expenseId,
-            e.gym_id as gymId,
-            e.data_id as dataId,
-            s.settlement_id as settlementId,
-            e.expense_name as expenseName,
-            e.expense_date as expenseDate,
-            COALESCE(NULLIF(e.expense_price, 0), s.commission, 0) as expensePrice,
-            COALESCE(NULLIF(e.expense_rate, 0), s.commission_rate, 0) as expenseRate
+        <include refid="expenseColumns"/>
         FROM "h_expense" e
         LEFT JOIN "h_settlement" s ON s.expense_id = e.expense_id
-        <if test="role == 'TRAINER'">
-        INNER JOIN "h_contract_data" cd ON cd.data_id = e.data_id AND cd.contract = 2 AND cd.receiver_id = #{username}
-        </if>
-        WHERE e.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
-        <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{pager.month}
-        </if>
-        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND e.expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
-        </if>
+        <include refid="expenseTrainerJoin"/>
+        <include refid="expenseFilter"/>
         <choose>
-            <when test="sort == 'price_desc'">ORDER BY COALESCE(NULLIF(e.expense_price, 0), s.commission, 0) DESC</when>
-            <when test="sort == 'price_asc'">ORDER BY COALESCE(NULLIF(e.expense_price, 0), s.commission, 0) ASC</when>
+            <when test="sort == 'price_desc'">ORDER BY <include refid="expensePriceExpr"/> DESC</when>
+            <when test="sort == 'price_asc'">ORDER BY <include refid="expensePriceExpr"/> ASC</when>
             <when test="sort == 'date_asc'">ORDER BY e.expense_date ASC, e.expense_id ASC</when>
             <otherwise>ORDER BY e.expense_date DESC, e.expense_id DESC</otherwise>
         </choose>
@@ -225,58 +242,27 @@
     <!-- 사장님/트레이너용: 지출 내역 전체 건수 조회 (Pager 총 페이지 계산용) -->
     <select id="expenseListCount" resultType="long">
         SELECT COUNT(*) FROM "h_expense" e
-        <if test="role == 'TRAINER'">
-        INNER JOIN "h_contract_data" cd ON cd.data_id = e.data_id AND cd.contract = 2 AND cd.receiver_id = #{username}
-        </if>
-        WHERE e.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
-        <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{pager.month}
-        </if>
-        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND e.expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
-        </if>
+        <include refid="expenseTrainerJoin"/>
+        <include refid="expenseFilter"/>
     </select>
 
     <!-- 사장님/트레이너용: 지출 내역 전체 합계 금액 조회 (필터 조건 적용, 페이지 무관) -->
     <select id="expenseListSum" resultType="long">
-        SELECT COALESCE(SUM(COALESCE(NULLIF(e.expense_price, 0), s.commission, 0)), 0)
+        SELECT COALESCE(SUM(<include refid="expensePriceExpr"/>), 0)
         FROM "h_expense" e
         LEFT JOIN "h_settlement" s ON s.expense_id = e.expense_id
-        <if test="role == 'TRAINER'">
-        INNER JOIN "h_contract_data" cd ON cd.data_id = e.data_id AND cd.contract = 2 AND cd.receiver_id = #{username}
-        </if>
-        WHERE e.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
-        <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{pager.month}
-        </if>
-        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND e.expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
-        </if>
+        <include refid="expenseTrainerJoin"/>
+        <include refid="expenseFilter"/>
     </select>
 
     <!-- CSV 내보내기용: expenseList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환 -->
     <select id="expenseListAll" resultType="com.health.app.settle.ExpenseDTO">
         SELECT
-            e.expense_id as expenseId,
-            e.gym_id as gymId,
-            e.data_id as dataId,
-            s.settlement_id as settlementId,
-            e.expense_name as expenseName,
-            e.expense_date as expenseDate,
-            COALESCE(NULLIF(e.expense_price, 0), s.commission, 0) as expensePrice,
-            COALESCE(NULLIF(e.expense_rate, 0), s.commission_rate, 0) as expenseRate
+        <include refid="expenseColumns"/>
         FROM "h_expense" e
         LEFT JOIN "h_settlement" s ON s.expense_id = e.expense_id
-        <if test="role == 'TRAINER'">
-        INNER JOIN "h_contract_data" cd ON cd.data_id = e.data_id AND cd.contract = 2 AND cd.receiver_id = #{username}
-        </if>
-        WHERE e.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
-        <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(e.expense_date, 'YYYY-MM') = #{pager.month}
-        </if>
-        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND e.expense_name LIKE CONCAT('%', #{pager.searchKeyword}, '%')
-        </if>
+        <include refid="expenseTrainerJoin"/>
+        <include refid="expenseFilter"/>
         ORDER BY e.expense_date DESC, e.expense_id DESC
     </select>
 
@@ -403,12 +389,7 @@
             d.signed_at as signedAt,
             d.manager_id as managerId
         FROM "h_contract_data" d
-        WHERE d.sender_id = #{username}
-          AND d.contract = 2
-          AND d.status IN ('SIGNED', 'ACTIVE')
-          AND d.data_id NOT IN (
-              SELECT data_id FROM "h_expense" WHERE data_id IS NOT NULL
-          )
+        <include refid="unpaidWageContractWhere"/>
         ORDER BY d.issue_date DESC, d.data_id DESC
         LIMIT #{pager.pageSize} OFFSET #{pager.offset}
     </select>
@@ -417,12 +398,7 @@
     <select id="unpaidExpenseContractListCount" resultType="long">
         SELECT COUNT(*)
         FROM "h_contract_data" d
-        WHERE d.sender_id = #{username}
-          AND d.contract = 2
-          AND d.status IN ('SIGNED', 'ACTIVE')
-          AND d.data_id NOT IN (
-              SELECT data_id FROM "h_expense" WHERE data_id IS NOT NULL
-          )
+        <include refid="unpaidWageContractWhere"/>
     </select>
 
     <!-- 알림 배치용: 최근 24시간 내 서명 완료되었고 아직 지출 미등록인 임금/제휴 계약(contract=2) 목록 조회
@@ -438,9 +414,7 @@
         WHERE d.contract = 2
           AND d.status = 'SIGNED'
           AND d.signed_at &gt;= now() - interval '1 day'
-          AND d.data_id NOT IN (
-              SELECT data_id FROM "h_expense" WHERE data_id IS NOT NULL
-          )
+          AND <include refid="noExpenseYet"/>
         ORDER BY d.data_id DESC
     </select>
 
