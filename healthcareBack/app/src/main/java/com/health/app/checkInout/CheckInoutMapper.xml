@@ -37,18 +37,22 @@ s.schedule_id, s.trainer_id, s.username, s.gym_id, s.schedule_at, s.memo
 select * from "h_check_inout" where username=#{username} order by check_in desc
 </select>
 
-<!-- 회원의 유효 계약 1건 조회 - status=ACTIVE + 기간 내 계약 중 최신 1건 (3=이용권, 4=PT)
+<!-- 헬스장 출석의 근거가 되는 유효 계약 1건 조회 - status=ACTIVE + 기간 내 계약 중 우선순위 1건
+     우선순위: 이용권(3) > PT(4) > PT 체험(5), 같은 유형이면 최신 계약(data_id desc)
+     이용권을 먼저 보는 이유: 병행 보유 시 헬스장 이용의 근거가 되는 계약이 이용권이므로 gym_id를 그쪽에서 취한다.
+     ※ order by의 case는 3·4·5를 모두 명시해야 한다. `when 3 then 0 else 1 end`로 줄이면
+        4와 5가 data_id 순으로 섞여 우선순위가 깨진다.
      h_contract_data는 조회 전용 - 차감/갱신은 출석 도메인 소유의 h_pt_manage에서만 수행 -->
-<select id="findActiveContract" resultType="com.health.app.contract.ContractDTO">
+<select id="findGymAccessContract" parameterType="Long" resultType="com.health.app.contract.ContractDTO">
 select d.data_id, d.contract, d.gym_id, d.receiver_id, d.manager_id,
        d.quantity, d.start_date, d.end_date
   from "h_contract_data" d
  where d.receiver_id = #{username}
-   and d.contract = #{contractType}
+   and d.contract in (3, 4, 5)
    and d.status = 'ACTIVE'
    and d.start_date &lt;= current_date
    and (d.end_date is null or d.end_date &gt;= current_date)
- order by d.data_id desc
+ order by case d.contract when 3 then 0 when 4 then 1 else 2 end, d.data_id desc
  limit 1
 </select>
 
