@@ -1,0 +1,675 @@
+/* 트레이너(TRAINER) 전용 PT 출석/일정 관리 — 시각 표현 전용 파일.
+   이 파일을 제거해도 탭 전환·출석 확인·일정 등록/삭제·캘린더·드릴다운 기능은 그대로 동작한다.
+   규격 원천: design_system_final.html(확정 디자인 시스템) + healthcareFront/CLAUDE.md. */
+
+/* 래퍼 여백은 상위 .b2b-management-page(padding 20 24 64)가 담당한다.
+   내부 컴포넌트에는 패딩·max-width를 두지 않아 페이지 헤더와 좌측선을 맞춘다. */
+
+/* ===== 칩형 필터 탭 (계약 .roster-filter-btn와 동일 규격) ===== */
+.att-confirm__tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.att-confirm__tab {
+  padding: 8px 16px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--gray-600);
+  background: var(--gray-100);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.att-confirm__tab:hover {
+  background: var(--gray-200);
+}
+
+.att-confirm__tab--active,
+.att-confirm__tab--active:hover {
+  color: var(--white);
+  background: var(--black);
+}
+
+/* 새로고침 액션은 usePageHeaderAction으로 페이지 헤더에 등록된다 (B2bManagementPage.css 참조). */
+
+/* ===== 섹션 헤더·문구 (탭 내 두 번째 하위 섹션 "내 PT 캘린더"에서 사용) ===== */
+.att-confirm__title {
+  margin: 0 0 8px;
+}
+
+.att-confirm__desc {
+  margin: 0 0 16px;
+  font-size: var(--text-sm);
+  color: var(--gray-600);
+  line-height: 1.5;
+}
+
+.att-confirm__accent {
+  color: var(--pt-text);
+  font-weight: 700;
+}
+
+.att-confirm__danger {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* ===== 버튼 ===== */
+.att-confirm__confirm-btn {
+  padding: 6px 14px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--white);
+  background: var(--pt);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.att-confirm__confirm-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* ===== 빈 상태 ===== */
+.att-confirm__empty {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--gray-500);
+  background: var(--white);
+  border: 1px dashed var(--gray-300);
+  border-radius: 12px;
+}
+
+/* ===== 카드형 테이블 (계약 .contract-table-card/.contract-table와 동일 규격) =====
+   border·radius는 카드 래퍼(.table-wrap)에 두고, 테이블 본체는 배경 없이 채운다. */
+.att-confirm__table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--white);
+}
+
+.att-confirm__table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  font-size: var(--text-body);
+}
+
+.att-confirm__table th {
+  padding: 11px 14px;
+  text-align: center;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--gray-400);
+  background: var(--gray-50);
+}
+
+.att-confirm__table td {
+  padding: 14px 16px;
+  text-align: center;
+  border-top: 1px solid var(--gray-200);
+  color: var(--gray-900);
+  vertical-align: middle;
+}
+
+.att-confirm__table tbody tr:hover {
+  background: var(--gray-50);
+}
+
+.att-confirm__num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 회원명 드릴다운 버튼 */
+.att-confirm__name-btn {
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--info-solid);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.att-confirm__name-btn:hover {
+  color: var(--info);
+}
+
+.att-confirm__trial-tag {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  color: var(--warning-solid);
+}
+
+/* 진행 바 (사용/총) */
+.att-confirm__progress-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.att-confirm__progress {
+  flex: 1;
+  height: 8px;
+  background: var(--gray-200);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.att-confirm__progress-fill {
+  height: 100%;
+  transition: width 0.3s;
+  background: var(--pt);
+}
+
+.att-confirm__progress-fill--low {
+  background: var(--tier-serious);
+}
+
+.att-confirm__progress-fill--done {
+  background: var(--gray-500);
+}
+
+.att-confirm__progress-label {
+  font-size: var(--text-xs);
+  color: var(--gray-500);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 잔여 횟수 색상 등급 */
+.att-confirm__remaining {
+  font-weight: 700;
+  color: var(--pt-text);
+}
+
+.att-confirm__remaining--low {
+  color: var(--warning-solid);
+}
+
+.att-confirm__remaining--done {
+  color: var(--gray-500);
+}
+
+/* 최근 수업 셀 */
+.att-confirm__last {
+  font-size: var(--text-xs);
+  color: var(--gray-500);
+}
+
+.att-confirm__last--care {
+  color: var(--danger);
+}
+
+.att-confirm__care-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  color: var(--white);
+  background: var(--danger-solid);
+  border-radius: 999px;
+}
+
+.att-confirm__muted {
+  color: var(--gray-400);
+}
+
+.att-confirm__period {
+  font-size: var(--text-xs);
+  color: var(--gray-500);
+}
+
+/* 상태 배지 (계약 .contract-badge와 동일 규격) */
+.att-confirm__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.5;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.att-confirm__badge--done {
+  color: var(--white);
+  background: var(--gray-500);
+}
+
+.att-confirm__badge--low {
+  color: var(--white);
+  background: var(--tier-serious);
+}
+
+.att-confirm__badge--progress {
+  color: var(--gray-700);
+  background: var(--gray-200);
+}
+
+/* ===== 회원 상세 드릴다운 패널 ===== */
+.att-confirm__drill {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--info-soft);
+  border-radius: 12px;
+  background: var(--info-bg);
+}
+
+.att-confirm__drill-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.att-confirm__drill-title {
+  margin: 0;
+  color: var(--info);
+}
+
+.att-confirm__drill-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  font-size: var(--text-xs);
+  color: var(--gray-700);
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.att-confirm__drill-section {
+  margin-bottom: 12px;
+}
+
+.att-confirm__drill-section:last-child {
+  margin-bottom: 0;
+}
+
+.att-confirm__drill-h {
+  margin: 0 0 8px;
+  font-size: var(--text-sm);
+}
+
+.att-confirm__drill-h--contract { color: var(--gray-700); }
+.att-confirm__drill-h--upcoming { color: var(--success); }
+.att-confirm__drill-h--missed { color: var(--danger); }
+.att-confirm__drill-h--history { color: var(--pt-text); }
+
+.att-confirm__drill-line {
+  margin: 2px 0;
+  font-size: var(--text-sm);
+  color: var(--gray-700);
+}
+
+.att-confirm__drill-line--missed {
+  color: var(--danger);
+}
+
+.att-confirm__drill-line--empty {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--gray-400);
+}
+
+.att-confirm__drill-sub {
+  color: var(--gray-500);
+  font-size: var(--text-xs);
+}
+
+/* ===== 구분선 ===== */
+.att-confirm__divider {
+  margin: 24px 0;
+  border: none;
+  border-top: 1px solid var(--gray-200);
+}
+
+/* ===== 월간 실적 요약 카드 ===== */
+.att-confirm__stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.att-confirm__stat {
+  flex: 1;
+  min-width: 140px;
+  padding: 12px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.att-confirm__stat--pt {
+  border: 1px solid var(--pt-soft);
+  background: var(--pt-bg);
+}
+
+.att-confirm__stat--success {
+  border: 1px solid var(--success-soft);
+  background: var(--success-bg);
+}
+
+.att-confirm__stat--info {
+  border: 1px solid var(--info-soft);
+  background: var(--info-bg);
+}
+
+.att-confirm__stat-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.att-confirm__stat--pt .att-confirm__stat-label { color: var(--pt-text); }
+.att-confirm__stat--success .att-confirm__stat-label { color: var(--success); }
+.att-confirm__stat--info .att-confirm__stat-label { color: var(--info); }
+
+.att-confirm__stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.att-confirm__stat--pt .att-confirm__stat-value { color: var(--pt-text); }
+.att-confirm__stat--success .att-confirm__stat-value { color: var(--success); }
+.att-confirm__stat--info .att-confirm__stat-value { color: var(--info); }
+
+.att-confirm__stat-sub {
+  font-size: var(--text-xs);
+  color: var(--gray-500);
+}
+
+.att-confirm__stat-sub--up { color: var(--success); }
+.att-confirm__stat-sub--down { color: var(--danger); }
+
+/* ===== 캘린더 컨트롤 ===== */
+.att-confirm__cal-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.att-confirm__cal-btn {
+  padding: 6px 12px;
+  font-size: var(--text-sm);
+  color: var(--gray-700);
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.att-confirm__cal-btn:hover {
+  background: var(--gray-100);
+}
+
+.att-confirm__cal-title {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 요일 헤더 */
+.att-confirm__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  text-align: center;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  margin-bottom: 8px;
+}
+
+.att-confirm__weekdays--sun { color: var(--danger-solid); }
+.att-confirm__weekdays--sat { color: var(--info-solid); }
+
+/* 캘린더 날짜 그리드 */
+.att-confirm__cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.att-confirm__cal-blank {
+  min-height: 64px;
+}
+
+.att-confirm__cal-cell {
+  min-height: 64px;
+  padding: 4px;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: var(--gray-50);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.att-confirm__cal-cell--done { background: var(--pt-bg); }
+.att-confirm__cal-cell--planned { background: var(--success-bg); }
+.att-confirm__cal-cell--missed { background: var(--danger-bg); }
+
+.att-confirm__cal-cell--selected {
+  border: 2px solid var(--pt);
+}
+
+.att-confirm__cal-day {
+  font-size: var(--text-xs);
+  font-weight: 400;
+  color: var(--gray-700);
+  font-variant-numeric: tabular-nums;
+}
+
+.att-confirm__cal-day--active {
+  font-weight: 700;
+}
+
+.att-confirm__cal-badge {
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  color: var(--white);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.att-confirm__cal-badge--done { background: var(--pt); }
+.att-confirm__cal-badge--planned { background: var(--success-solid); }
+.att-confirm__cal-badge--missed { background: var(--danger-solid); }
+
+/* ===== 선택 날짜 상세 패널 ===== */
+.att-confirm__day-panel {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--gray-50);
+}
+
+.att-confirm__day-title {
+  margin: 0 0 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.att-confirm__day-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.att-confirm__day-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+}
+
+.att-confirm__day-item--done {
+  border-color: var(--pt-soft);
+  background: var(--pt-bg);
+}
+
+.att-confirm__day-item--planned {
+  border-color: var(--success-soft);
+  background: var(--success-bg);
+}
+
+.att-confirm__day-item--missed {
+  border-color: var(--danger-soft);
+  background: var(--danger-bg);
+}
+
+.att-confirm__day-status {
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.att-confirm__day-status--done { color: var(--pt-text); }
+.att-confirm__day-status--planned { color: var(--success); }
+.att-confirm__day-status--missed { color: var(--danger); }
+
+.att-confirm__session-note {
+  color: var(--pt-text);
+  font-size: var(--text-xs);
+  margin-left: 8px;
+}
+
+.att-confirm__day-del {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  font-size: var(--text-xs);
+  color: var(--danger-solid);
+  background: var(--white);
+  border: 1px solid var(--danger-soft);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.att-confirm__day-del:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* 일정 외 진행 수업 (워크인) */
+.att-confirm__walkins {
+  margin-bottom: 16px;
+}
+
+.att-confirm__walkins-h {
+  margin: 0 0 8px;
+  color: var(--pt-text);
+}
+
+.att-confirm__walkin-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.att-confirm__walkin-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--pt-bg);
+  font-size: var(--text-sm);
+}
+
+.att-confirm__walkin-name {
+  font-weight: 700;
+}
+
+.att-confirm__walkin-time {
+  color: var(--gray-500);
+}
+
+.att-confirm__day-empty {
+  font-size: var(--text-sm);
+  color: var(--gray-400);
+  margin: 0 0 16px;
+}
+
+/* 일정 등록 폼 */
+.att-confirm__form-box {
+  padding: 12px;
+  border: 1px solid var(--success-soft);
+  border-radius: 12px;
+  background: var(--success-bg);
+}
+
+.att-confirm__form-h {
+  margin: 0 0 8px;
+  color: var(--success);
+}
+
+.att-confirm__form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.att-confirm__input {
+  padding: 8px 12px;
+  font-size: var(--text-sm);
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  font-family: inherit;
+  background: var(--white);
+}
+
+.att-confirm__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.att-confirm__input--memo {
+  flex: 1;
+  min-width: 120px;
+}
+
+.att-confirm__form-submit {
+  padding: 8px 16px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--white);
+  background: var(--success-solid);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.att-confirm__form-submit:disabled {
+  cursor: default;
+  opacity: 0.6;
+}

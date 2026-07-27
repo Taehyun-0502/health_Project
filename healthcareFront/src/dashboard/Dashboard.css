@@ -1,8 +1,9 @@
 /* 대시보드 — 디자인 시스템 v1.0 (본문 max 1080 중앙, 카드 radius 12, 차트 메인 = 액션 오렌지) */
+/* 물품 페이지 기준 좌측 정렬선(297px): 래퍼 최대폭 = 본문 1080 + 좌우 패딩 24*2 = 1128 */
 .dash-page {
-  max-width: 1080px;
+  max-width: 1128px;
   margin: 0 auto;
-  padding: 20px 24px 64px;
+  padding: 20px 24px var(--ai-fab-clearance);
 }
 
 /* 상단 줄 — 선택 위젯 칩(좌) + 위젯 편집 버튼(우) */
@@ -44,7 +45,7 @@
   border: 0;
   background: transparent;
   color: var(--gray-400);
-  font-size: 11px;
+  font-size: var(--text-xs);
   line-height: 1;
   cursor: pointer;
 }
@@ -101,7 +102,7 @@
   border-radius: 16px;
   background: var(--white);
   color: var(--gray-900);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .dash-modal__head {
@@ -121,7 +122,7 @@
   border: 0;
   background: none;
   padding: 4px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font: inherit;
   font-size: var(--text-sm);
   line-height: 1;
@@ -134,7 +135,7 @@
 
 .dash-modal__desc {
   margin: 6px 0 12px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
 }
 
@@ -153,7 +154,7 @@
   gap: 12px;
   padding: 9px 0;
   border-bottom: 1px solid var(--gray-100);
-  font-size: 14px;
+  font-size: var(--text-body);
 }
 
 .dash-modal__list li.locked {
@@ -181,10 +182,10 @@
   width: 26px;
   height: 26px;
   border: 1px solid var(--gray-300);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--white);
   color: var(--gray-700);
-  font-size: 11px;
+  font-size: var(--text-xs);
   line-height: 1;
   cursor: pointer;
 }
@@ -195,7 +196,7 @@
 
 .dash-modal__hint {
   margin: 12px 0 0;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
 }
 
@@ -275,20 +276,20 @@
 
 /* KPI 카드는 제목을 작은 라벨로 낮추고 수치를 주역으로 (목업 규격) */
 .dash-card--kpi h2 {
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 400;
-  color: var(--gray-500);
+  color: var(--gray-600);
 }
 
 .dash-legend {
   flex: none;
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 600;
 }
 
 .dash-legend--accent { color: var(--accent); }
-.dash-legend--gray { color: var(--gray-500); }
-.dash-legend--blue { color: #5B8DB8; }
+.dash-legend--gray { color: var(--gray-600); }
+.dash-legend--blue { color: var(--accent-strong); }
 
 /* 쿠폰 사용 위젯 진행 바 */
 .dash-progress {
@@ -313,15 +314,15 @@
 }
 
 .dash-kpi span {
-  font-size: 13px;
-  color: var(--gray-500);
+  font-size: var(--text-sm);
+  color: var(--gray-600);
   font-weight: normal;
 }
 
 .dash-sub {
   margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--gray-500);
+  font-size: var(--text-xs);
+  color: var(--gray-600);
 }
 
 /* 전월 대비 증감 — 오름 빨강 / 내림 파랑 */
@@ -333,8 +334,8 @@
 .dash-delta.down { color: var(--info); }
 
 .dash-empty {
-  color: var(--gray-500);
-  font-size: 13px;
+  color: var(--gray-600);
+  font-size: var(--text-sm);
 }
 
 /* 만료/세션 목록 */
@@ -350,7 +351,7 @@
   display: flex;
   justify-content: space-between;
   padding: 5px 0;
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .dash-list li + li {
@@ -358,10 +359,10 @@
 }
 
 .dash-badge {
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 600;
   background: var(--gray-100);
-  color: var(--gray-500);
+  color: var(--gray-600);
   border-radius: 999px;
   padding: 2px 9px;
 }
@@ -398,17 +399,17 @@
 
 .dash-bar {
   width: 16px;
-  border-radius: 3px 3px 0 0;
+  border-radius: 4px 4px 0 0;
   background: var(--accent);
 }
 
 .dash-bar--accent { background: var(--accent); }
-.dash-bar--gray { background: var(--gray-500); }
-.dash-bar--blue { background: #5B8DB8; }
+.dash-bar--gray { background: var(--gray-600); }
+.dash-bar--blue { background: var(--accent-strong); }
 
 .dash-bar-month {
   flex: none;
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--gray-400);
   font-variant-numeric: tabular-nums;
 }
@@ -472,11 +473,11 @@
 .dash-ai-question {
   text-align: left;
   border: 1px solid var(--gray-200);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--white);
   padding: 12px 13px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 500;
   line-height: 1.45;
   cursor: pointer;
@@ -490,7 +491,7 @@
 
 .dash-ai-tag {
   display: block;
-  font-size: 10.5px;
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--accent-text);
   margin-bottom: 3px;
@@ -511,11 +512,11 @@
   width: 100%;
   text-align: left;
   border: 1px solid var(--gray-200);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--white);
   padding: 12px 13px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 500;
   cursor: pointer;
   transition: border-color 0.16s ease, background-color 0.16s ease;
@@ -538,13 +539,13 @@
 
 .dash-ai-task-go {
   color: var(--gray-400);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 /* 영역 하단 동작 캡션 (질문=드로어 답변 / 브리핑=페이지 이동 혼동 방지) */
 .dash-ai-caption {
   margin: 12px 0 0;
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--gray-400);
 }
 

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import NavIcon from '../components/uiIcons.jsx';
+import usePageHeaderAction from '../hooks/usePageHeaderAction.js';
 import './AdminManagement.css';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -196,6 +198,15 @@ function AdminManagement() {
     setMembersError('');
   };
 
+  // 탭·드릴다운 상태에 맞는 새로고침 액션을 페이지 헤더(B2bManagementPage)에 등록한다.
+  usePageHeaderAction(
+    activeTab === 'contracts'
+      ? (selectedGym
+          ? { label: membersLoading ? '불러오는 중...' : '새로고침', onClick: () => fetchMembers(selectedGym.gymId), disabled: membersLoading }
+          : { label: loading ? '불러오는 중...' : '새로고침', onClick: fetchContracts, disabled: loading })
+      : { label: jobLoading ? '불러오는 중...' : '새로고침', onClick: fetchJobSeekers, disabled: jobLoading }
+  );
+
   const summary = useMemo(() => contracts.reduce((counts, contract) => {
     const daysLeft = calcDaysLeft(contract.endDate);
     const isExpired = contract.status === 'EXPIRED' || contract.status === 'TERMINATED' || (daysLeft !== null && daysLeft < 0);
@@ -209,22 +220,11 @@ function AdminManagement() {
   const renderMemberView = () => (
     <>
       <div className="admin-management__header">
-        <div>
-          <button type="button" className="admin-management__back" onClick={handleBackToGyms}>
-            ← 운동시설 목록으로
-          </button>
-          <h3 className="admin-management__title">{selectedGym.gymName} 회원 명단</h3>
-          <p className="admin-management__desc">해당 운동시설에 등록된 회원을 확인합니다.</p>
-        </div>
-        <button
-          type="button"
-          className="admin-management__refresh"
-          onClick={() => fetchMembers(selectedGym.gymId)}
-          disabled={membersLoading}
-        >
-          {membersLoading ? '불러오는 중...' : '새로고침'}
+        <button type="button" className="admin-management__back" onClick={handleBackToGyms}>
+          <NavIcon id="arrow" size={16} className="ui-icon ui-icon--left" /> 운동시설 목록으로
         </button>
       </div>
+      <h3 className="admin-management__title">{selectedGym.gymName} 회원 명단</h3>
 
       {membersError && <p className="admin-management__error">{membersError}</p>}
 
@@ -277,24 +277,6 @@ function AdminManagement() {
   // ── 운동시설 제휴 계약 현황 뷰 (시설 리스트) ─────────────────────
   const renderGymList = () => (
     <>
-      <div className="admin-management__header">
-        <div>
-          <h3 className="admin-management__title">운동시설 제휴 계약 현황</h3>
-          <p className="admin-management__desc">
-            각 운동시설과의 계약 기간을 확인하고, 만료 30일 전부터 갱신을 준비할 수 있습니다.
-            운동시설명을 누르면 해당 시설의 회원 명단을 볼 수 있습니다.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="admin-management__refresh"
-          onClick={fetchContracts}
-          disabled={loading}
-        >
-          {loading ? '불러오는 중...' : '새로고침'}
-        </button>
-      </div>
-
       <div className="admin-management__summary">
         <div className="admin-management__summary-card admin-management__summary-card--normal">
           <div className="admin-management__summary-label">정상</div>
@@ -368,24 +350,6 @@ function AdminManagement() {
   // ── 구인구직 뷰 (구직 트레이너 풀) ──────────────────────────────
   const renderJobSeekers = () => (
     <>
-      <div className="admin-management__header">
-        <div>
-          <h3 className="admin-management__title">구직 트레이너</h3>
-          <p className="admin-management__desc">
-            유효한 임금 계약이 없는(이탈) 트레이너 명단입니다. 사장님에게는 아래 연락처만
-            소개(제공)하며, 이후 접촉·채용은 사장님이 직접 진행합니다.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="admin-management__refresh"
-          onClick={fetchJobSeekers}
-          disabled={jobLoading}
-        >
-          {jobLoading ? '불러오는 중...' : '새로고침'}
-        </button>
-      </div>
-
       {jobError && <p className="admin-management__error">{jobError}</p>}
 
       {!jobLoading && !jobError && jobSeekers.length === 0 ? (

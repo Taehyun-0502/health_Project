@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './B2bPromotion.css';
 
 // B2B 사장님용 쿠폰 종류 등록 및 회원 발송 관리 컴포넌트
 function B2bPromotion() {
@@ -234,58 +235,67 @@ function B2bPromotion() {
   const expiredCount = sentCoupons.filter(c => c.status === '기간만료').length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', textAlign: 'left' }}>
-      
+    <section className="promotion-page">
       {/* 0. 쿠폰 발송 및 사용 상태 집계 카드 현황판 */}
-      <div style={{ padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-        <h4 style={{ margin: '0 0 15px 0', color: '#111827' }}>📊 쿠폰 발행 및 사용 통계 현황</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
-          
+      <section className="promotion-card" aria-labelledby="promotion-summary-title">
+        <div className="promotion-section-head">
+          <div>
+            <h2 id="promotion-summary-title" className="promotion-section-title">쿠폰 발행 및 사용 통계</h2>
+            <p className="promotion-section-desc">발송한 쿠폰의 현재 사용 상태를 확인합니다.</p>
+          </div>
+        </div>
+        <div className="promotion-stats">
           {/* 총 발행 수 */}
-          <div style={{ padding: '12px', border: '1px solid #f3f4f6', borderRadius: '6px', backgroundColor: '#f9fafb', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '3px' }}>총 발행 수</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>{totalCount}건</div>
+          <div className="promotion-stat">
+            <span className="promotion-stat__label">총 발행 수</span>
+            <strong className="promotion-stat__value">{totalCount}건</strong>
           </div>
 
           {/* 미사용 수 */}
-          <div style={{ padding: '12px', border: '1px solid #dbeafe', borderRadius: '6px', backgroundColor: '#eff6ff', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#2563eb', marginBottom: '3px' }}>미사용 (사용대기)</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e40af' }}>{unuseCount}건</div>
+          <div className="promotion-stat promotion-stat--waiting">
+            <span className="promotion-stat__label">미사용 (사용대기)</span>
+            <strong className="promotion-stat__value">{unuseCount}건</strong>
           </div>
 
           {/* 사용 완료 수 */}
-          <div style={{ padding: '12px', border: '1px solid #d1fae5', borderRadius: '6px', backgroundColor: '#ecfdf5', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#10b981', marginBottom: '3px' }}>사용 완료</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#065f46' }}>{usedCount}건</div>
+          <div className="promotion-stat promotion-stat--complete">
+            <span className="promotion-stat__label">사용 완료</span>
+            <strong className="promotion-stat__value">{usedCount}건</strong>
           </div>
 
           {/* 유효기간 만료 수 */}
-          <div style={{ padding: '12px', border: '1px solid #fee2e2', borderRadius: '6px', backgroundColor: '#fef2f2', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#ef4444', marginBottom: '3px' }}>기간 만료</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#991b1b' }}>{expiredCount}건</div>
+          <div className="promotion-stat promotion-stat--expired">
+            <span className="promotion-stat__label">기간 만료</span>
+            <strong className="promotion-stat__value">{expiredCount}건</strong>
           </div>
-
         </div>
-      </div>
+      </section>
 
       {/* 1. 쿠폰 종류 생성 폼 */}
-      <div style={{ padding: '20px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fafafa' }}>
-        <h4 style={{ margin: '0 0 15px 0', color: '#333' }}>🎟️ 새 할인 쿠폰 종류 만들기 (커스터마이징)</h4>
-        <form onSubmit={handleCreateType} style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignItems: 'flex-end' }}>
+      <section className="promotion-card" aria-labelledby="promotion-create-title">
+        <div className="promotion-section-head">
           <div>
-            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>쿠폰 이름</label>
+            <h2 id="promotion-create-title" className="promotion-section-title">새 쿠폰 만들기</h2>
+            <p className="promotion-section-desc">쿠폰 이름과 혜택 조건을 설정해 새 유형을 등록합니다.</p>
+          </div>
+        </div>
+        <form onSubmit={handleCreateType} className="promotion-create-form">
+          <div className="promotion-field promotion-field--name">
+            <label className="promotion-label" htmlFor="promotion-coupon-name">쿠폰 이름</label>
             <input 
+              id="promotion-coupon-name"
               type="text" 
               value={couponName} 
               onChange={(e) => setCouponName(e.target.value)} 
               required 
               placeholder="예: 헬린이 응원 할인권" 
-              style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} 
+              className="promotion-input"
             />
           </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>카테고리</label>
+          <div className="promotion-field">
+            <label className="promotion-label" htmlFor="promotion-category">카테고리</label>
             <select 
+              id="promotion-category"
               value={category} 
               onChange={(e) => { 
                 const val = e.target.value;
@@ -298,16 +308,17 @@ function B2bPromotion() {
                   setPercent('');    // ◀ 타 카테고리로 복귀 시 초기화
                 }
               }}
-              style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', height: '35px', color: '#333', backgroundColor: '#fff' }}
+              className="promotion-input promotion-select"
             >
               <option value="헬스">헬스</option>
               <option value="PT">PT</option>
               <option value="체험권">PT체험권</option>
             </select>
           </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>할인율 (%)</label>
+          <div className="promotion-field">
+            <label className="promotion-label" htmlFor="promotion-percent">할인율 (%)</label>
             <input 
+              id="promotion-percent"
               type="number" 
               value={percent} 
               onChange={(e) => setPercent(e.target.value)} 
@@ -316,178 +327,196 @@ function B2bPromotion() {
               max="100" 
               placeholder="10" 
               readOnly={category === '체험권'} // ◀ 체험권일 시 읽기전용(수정불가) 적용
-              style={{ 
-                padding: '8px', 
-                border: '1px solid #ccc', 
-                borderRadius: '4px', 
-                width: '80px',
-                backgroundColor: category === '체험권' ? '#f3f4f6' : '#fff', // ◀ 체험권일 시 회색 배경
-                color: category === '체험권' ? '#9ca3af' : '#333'
-              }} 
+              className="promotion-input"
             />
           </div>
 
           {/* 헬스, PT인 경우에만 최대 할인 한도금액(maxAmount)을 기입하도록 노출 */}
           {category !== '체험권' && (
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>최대 할인 금액 (원)</label>
+            <div className="promotion-field">
+              <label className="promotion-label" htmlFor="promotion-max-amount">최대 할인 금액 (원)</label>
               <input 
+                id="promotion-max-amount"
                 type="number" 
                 value={maxAmount} 
                 onChange={(e) => setMaxAmount(e.target.value)} 
                 required 
                 placeholder="10000" 
-                style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', width: '120px' }} 
+                className="promotion-input"
               />
             </div>
           )}
 
           {/* 오직 PT체험권 계열인 경우에만 할인 횟수를 입력하도록 노출 */}
           {category === '체험권' && (
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>할인 적용 횟수 (PT)</label>
+            <div className="promotion-field">
+              <label className="promotion-label" htmlFor="promotion-coupon-count">할인 적용 횟수 (PT)</label>
               <input 
+                id="promotion-coupon-count"
                 type="number" 
                 value={couponCount} 
                 onChange={(e) => setCouponCount(e.target.value)} 
                 required 
                 placeholder="10" 
-                style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', width: '80px' }} 
+                className="promotion-input"
               />
             </div>
           )}
 
-          <button type="submit" style={{ padding: '9px 16px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+          <button type="submit" className="promotion-button promotion-button--primary">
             등록하기
           </button>
         </form>
-      </div>
+      </section>
 
       {/* 2. 등록된 쿠폰 종류 목록 및 발송 */}
-      <div>
-        <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>📋 등록된 쿠폰 목록 및 발송 현황</h4>
+      <section className="promotion-card" aria-labelledby="promotion-list-title">
+        <div className="promotion-section-head promotion-section-head--list">
+          <div>
+            <h2 id="promotion-list-title" className="promotion-section-title">등록된 쿠폰</h2>
+            <p className="promotion-section-desc">쿠폰별 혜택과 누적 발송 수를 확인하고 회원에게 전송합니다.</p>
+          </div>
+          <span className="promotion-count">총 {couponTypes.length}개</span>
+        </div>
         {couponTypes.length === 0 ? (
-          <p style={{ color: '#999', fontSize: '14px' }}>등록된 쿠폰 종류가 없습니다.</p>
+          <p className="promotion-empty">등록된 쿠폰 종류가 없습니다.</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', color: '#333' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
-                <th style={{ padding: '10px', textAlign: 'left', color: '#333' }}>쿠폰명</th>
-                <th style={{ padding: '10px', textAlign: 'left', color: '#333' }}>종류</th>
-                <th style={{ padding: '10px', textAlign: 'left', color: '#333' }}>할인율</th>
-                <th style={{ padding: '10px', textAlign: 'left', color: '#333' }}>상세 혜택</th>
-                <th style={{ padding: '10px', textAlign: 'center', color: '#333' }}>누적 발송 수</th>
-                <th style={{ padding: '10px', textAlign: 'center', color: '#333' }}>발송 작업</th>
-              </tr>
-            </thead>
-            <tbody>
-              {couponTypes.map((type) => (
-                <tr key={type.couponNum} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td style={{ padding: '10px', fontWeight: 'bold', color: '#333' }}>{type.couponName}</td>
-                  <td style={{ padding: '10px', color: '#333' }}>{type.category}</td>
-                  <td style={{ padding: '10px', color: '#2563eb', fontWeight: 'bold' }}>{type.percent}%</td>
-                  <td style={{ padding: '10px', color: '#333' }}>
-                    {type.category === '헬스' && `헬스권 ${type.percent}% 할인 (최대 ${type.maxAmount}원)`}
-                    {type.category === 'PT' && `PT ${type.percent}% 할인 (최대 ${type.maxAmount}원)`}
-                    {type.category === '체험권' && `${type.couponCount}회 PT 무료체험`}
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center', color: '#e11d48', fontWeight: 'bold' }}>
-                    {type.sendCount}회
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center' }}>
-                    <button 
-                      onClick={() => setSelectedType(type)}
-                      style={{ padding: '4px 10px', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
-                    >
-                      회원에게 전송
-                    </button>
-                  </td>
+          <div className="promotion-table-wrap">
+            <table className="promotion-table">
+              <thead>
+                <tr>
+                  <th>쿠폰명</th>
+                  <th>종류</th>
+                  <th>할인율</th>
+                  <th>상세 혜택</th>
+                  <th className="promotion-table__center">누적 발송 수</th>
+                  <th className="promotion-table__center">발송 작업</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {couponTypes.map((type) => (
+                  <tr key={type.couponNum}>
+                    <td className="promotion-table__name">{type.couponName}</td>
+                    <td>
+                      <span className={`promotion-badge ${
+                        type.category === 'PT'
+                          ? 'promotion-badge--pt'
+                          : type.category === '체험권'
+                            ? 'promotion-badge--trial'
+                            : 'promotion-badge--gym'
+                      }`}>
+                        {type.category}
+                      </span>
+                    </td>
+                    <td className="promotion-table__percent">{type.percent}%</td>
+                    <td>
+                      {type.category === '헬스' && `헬스권 ${type.percent}% 할인 (최대 ${type.maxAmount}원)`}
+                      {type.category === 'PT' && `PT ${type.percent}% 할인 (최대 ${type.maxAmount}원)`}
+                      {type.category === '체험권' && `${type.couponCount}회 PT 무료체험`}
+                    </td>
+                    <td className="promotion-table__center promotion-table__number">
+                      {type.sendCount}회
+                    </td>
+                    <td className="promotion-table__center">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedType(type)}
+                        className="promotion-button promotion-button--table"
+                      >
+                        회원에게 전송
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </div>
+      </section>
 
       {/* 3. 회원 발송 레이어 모달 */}
       {selectedType && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
-        }}>
-          <div style={{ backgroundColor: '#fff', padding: '25px', borderRadius: '8px', width: '350px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
-            <h4 style={{ margin: '0 0 15px 0', color: '#333' }}>✉️ 쿠폰 발송 설정</h4>
-            <p style={{ fontSize: '12px', color: '#666', marginBottom: '15px' }}>
-              선택한 쿠폰: <strong style={{ color: '#333' }}>{selectedType.couponName} ({selectedType.percent}%)</strong>
+        <div className="promotion-modal-back">
+          <div
+            className="promotion-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="promotion-send-title"
+          >
+            <div className="promotion-modal__head">
+              <h2 id="promotion-send-title" className="promotion-modal__title">쿠폰 발송 설정</h2>
+              <p className="promotion-modal__desc">발송할 회원과 쿠폰 만료일을 선택합니다.</p>
+            </div>
+            <p className="promotion-selected-coupon">
+              <span>선택한 쿠폰</span>
+              <strong>{selectedType.couponName} ({selectedType.percent}%)</strong>
             </p>
-            <form onSubmit={handleSendCoupon} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <form onSubmit={handleSendCoupon} className="promotion-send-form">
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>
+                <p className="promotion-send-label">
                   수신 회원 선택 ({selectedMembers.length}명 선택됨)
-                </label>
+                </p>
                 
                 {/* 전체 선택 체크박스 + 이탈위험(가격불만) 회원 선택 */}
-                <div style={{ marginBottom: '10px', paddingBottom: '8px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <input
-                    type="checkbox"
-                    id="checkAll"
-                    checked={selectedMembers.length === members.length && members.length > 0}
-                    onChange={(e) => handleCheckAll(e.target.checked)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <label htmlFor="checkAll" style={{ marginLeft: '6px', fontSize: '12px', fontWeight: 'bold', color: '#111827', cursor: 'pointer' }}>
-                    전체 회원 선택
+                <div className="promotion-member-tools">
+                  <label className="promotion-check">
+                    <input
+                      type="checkbox"
+                      id="checkAll"
+                      checked={selectedMembers.length === members.length && members.length > 0}
+                      onChange={(e) => handleCheckAll(e.target.checked)}
+                    />
+                    <span>전체 회원 선택</span>
                   </label>
                   <button
                     type="button"
                     onClick={handleSelectChurnRisk}
-                    style={{ marginLeft: 'auto', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer',
-                             border: '1px solid #ef6c00', borderRadius: '4px', backgroundColor: '#fff', color: '#ef6c00' }}
+                    className="promotion-button promotion-button--risk"
                   >
                     이탈위험 회원 선택 (가격불만)
                   </button>
                 </div>
 
                 {/* 회원 목록 개별 체크박스 스크롤 리스트 */}
-                <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid #ccc', borderRadius: '4px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: '#fff' }}>
+                <div className="promotion-member-list">
                   {members.map((member) => (
-                    <div key={member.username} style={{ display: 'flex', alignItems: 'center' }}>
+                    <label key={member.username} className="promotion-member">
                       <input 
                         type="checkbox" 
                         id={`member-${member.username}`}
                         checked={selectedMembers.includes(member.username)}
                         onChange={() => handleCheckMember(member.username)}
-                        style={{ cursor: 'pointer' }}
                       />
-                      <label htmlFor={`member-${member.username}`} style={{ marginLeft: '8px', fontSize: '12px', color: '#333', cursor: 'pointer' }}>
+                      <span>
                         {member.name} ({member.username})
-                      </label>
-                    </div>
+                      </span>
+                    </label>
                   ))}
                 </div>
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>사용 만료 기한</label>
+              <div className="promotion-field">
+                <label className="promotion-label" htmlFor="promotion-expiry-date">사용 만료 기한</label>
                 <input 
+                  id="promotion-expiry-date"
                   type="date" 
                   value={expiryDate} 
                   onChange={(e) => setExpiryDate(e.target.value)} 
                   required 
-                  style={{ width: '90%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', color: '#333' }}
+                  className="promotion-input"
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '10px', justifyContent: 'flex-end' }}>
+              <div className="promotion-modal__actions">
                 <button 
                   type="button" 
                   onClick={() => { setSelectedType(null); setSelectedMembers([]); setExpiryDate(''); }}
-                  style={{ padding: '6px 12px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}
+                  className="promotion-button promotion-button--secondary"
                 >
                   취소
                 </button>
                 <button 
                   type="submit" 
-                  style={{ padding: '6px 15px', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                  className="promotion-button promotion-button--primary"
                 >
                   보내기
                 </button>
@@ -496,8 +525,7 @@ function B2bPromotion() {
           </div>
         </div>
       )}
-
-    </div>
+    </section>
   );
 }
 

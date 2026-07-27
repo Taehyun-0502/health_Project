@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import './B2bSubpages.css';
 
 // B2B 사장님 마이페이지용 알림 내역 컴포넌트
 function B2bNotification() {
@@ -51,37 +52,51 @@ function B2bNotification() {
   };
 
   return (
-    <div>
-      <h3>알림 내역</h3>
+    <section className="b2b-subpage" aria-labelledby="b2b-notification-title">
+      <header className="b2b-subpage__header">
+        <h2 id="b2b-notification-title">알림 내역</h2>
+      </header>
       {alarms.length === 0 ? (
-        <p style={{ color: '#666', marginTop: '10px' }}>새로운 알림 소식이 없습니다.</p>
+        <p className="b2b-subpage__empty">새로운 알림 소식이 없습니다.</p>
       ) : (
-        <table border="1" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-          <thead>
-            <tr>
-              <th>구분</th>
-              <th>내용</th>
-              <th>수신일</th>
-              <th>읽음</th>
-            </tr>
-          </thead>
-          <tbody>
-            {alarms.map((alarm) => (
-              <tr
-                key={alarm.alarmId}
-                onClick={() => handleAlarmClick(alarm)}
-                style={{ cursor: 'pointer', fontWeight: alarm.read === 'Y' ? 'normal' : 'bold' }}
-              >
-                <td>{alarm.category}</td>
-                <td>{alarm.message}</td>
-                <td>{alarm.createAt}</td>
-                <td>{alarm.read === 'Y' ? '읽음' : '안읽음'}</td>
+        <div className="b2b-table-wrap">
+          <table className="b2b-data-table b2b-data-table--notification">
+            <thead>
+              <tr>
+                <th>구분</th>
+                <th>내용</th>
+                <th>수신일</th>
+                <th className="b2b-data-table__center">읽음</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {alarms.map((alarm) => (
+                <tr
+                  key={alarm.alarmId}
+                  onClick={() => handleAlarmClick(alarm)}
+                  className={alarm.read === 'Y' ? '' : 'b2b-data-table__row--unread'}
+                >
+                  <td>
+                    <span className="b2b-category-badge">{alarm.category}</span>
+                  </td>
+                  <td className="b2b-data-table__content">{alarm.message}</td>
+                  <td className="b2b-data-table__date">{alarm.createAt}</td>
+                  <td className="b2b-data-table__center">
+                    <span className={`b2b-status-badge ${
+                      alarm.read === 'Y'
+                        ? 'b2b-status-badge--read'
+                        : 'b2b-status-badge--unread'
+                    }`}>
+                      {alarm.read === 'Y' ? '읽음' : '안읽음'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-    </div>
+    </section>
   );
 }
 

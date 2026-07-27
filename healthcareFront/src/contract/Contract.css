@@ -1,10 +1,50 @@
 /* 계약 패키지 — 디자인 시스템 v1.0 (프로토타입 기준)
    본문 max 1080 중앙 · 언더라인 2Depth 탭 · 칩 필터 · 카드형 테이블 · 상태 배지 */
 
+/* 물품 페이지 기준 좌측 정렬선(297px): 래퍼 최대폭 = 본문 1080 + 좌우 패딩 24*2 = 1128,
+   패딩 안쪽 실사용 폭이 1080이 되어 콘텐츠가 24px 더 왼쪽에서 시작한다. */
 .contract-layout {
-  width: min(100%, 1080px);
+  width: min(100%, 1128px);
   margin: 0 auto;
-  padding: 20px 24px 64px;
+  /* 상단 여백(20px)은 sticky 페이지 헤더의 padding-top(12)과 합쳐 안착 시 20px를 유지하도록
+     래퍼에서 8px만 남기고 헤더로 옮겼다. */
+  padding: 8px 24px var(--ai-fab-clearance);
+}
+
+/* 페이지 헤더 (제목 + 안내 문구) — 스크롤 시 상단 고정(sticky).
+   배경으로 아래 콘텐츠 비침을 막고, 하단 경계선으로 테이블과 구분한다.
+   z-index는 드로어(900)·AI 입력바(890)보다 낮고 본문보다 높다. */
+.contract-list-head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+  padding: 12px 0;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+}
+.contract-list-head__title {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: 700;
+  color: var(--gray-900);
+}
+.contract-list-head__desc {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  color: var(--gray-600);
+}
+
+.contract-list-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* 2Depth 탭 — 언더라인 탭 (활성: 진한 글자 + 액션 오렌지 언더라인) */
@@ -18,8 +58,8 @@
 .contract-tab {
   padding: 9px 14px;
   text-decoration: none;
-  color: var(--gray-500);
-  font-size: 14px;
+  color: var(--gray-600);
+  font-size: var(--text-body);
   font-weight: 500;
   border: 0;
   background: transparent;
@@ -44,11 +84,11 @@
 }
 
 .roster-filter-btn {
-  padding: 7px 14px;
+  padding: 8px 16px;
   border: 0;
   border-radius: 999px;
   background: var(--gray-100);
-  color: var(--gray-500);
+  color: var(--gray-600);
   font: inherit;
   font-size: var(--text-sm);
   font-weight: 600;
@@ -65,9 +105,15 @@
   color: var(--white);
 }
 
-/* 급여(Salary) 탭 — 지출 리스트 읽기 전용 화면 */
+/* 급여(Salary) 탭 — 지출 리스트 읽기 전용 화면. 페이지 헤더는 스크롤 시 상단 고정(sticky). */
 .salary-page__head {
-  margin-bottom: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: 0 0 16px;
+  padding: 12px 0;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
 }
 
 .salary-page__title {
@@ -78,7 +124,7 @@
 
 .salary-page__desc {
   margin-top: 4px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
 }
 
@@ -125,7 +171,7 @@
 
 .contract-placeholder__desc {
   margin-top: 8px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
   line-height: 1.6;
 }
@@ -182,6 +228,10 @@
 
 /* 보조 버튼 — 흰 배경+gray-300 보더+gray-700 글자 (예: 트레이너 구하기) */
 .contract-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   height: 38px;
   padding: 0 16px;
   border: 1px solid var(--gray-300);
@@ -217,7 +267,7 @@
   border-radius: 16px;
   background: var(--white);
   color: var(--gray-900);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .contract-modal__title {
@@ -228,7 +278,7 @@
 
 .contract-modal__desc {
   margin: 0;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
   line-height: 1.6;
 }
@@ -306,8 +356,8 @@
   border: 0;
   border-radius: 50%;
   background: var(--gray-200);
-  color: var(--gray-500);
-  font-size: 10px;
+  color: var(--gray-600);
+  font-size: var(--text-2xs);
   cursor: pointer;
 }
 
@@ -339,14 +389,14 @@
 .contract-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--text-body);
 }
 
 .contract-table th {
   padding: 11px 14px;
   background: var(--gray-50);
   color: var(--gray-400);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 600;
   text-align: left;
   white-space: nowrap;
@@ -394,7 +444,7 @@
 }
 
 .contract-table__muted {
-  color: var(--gray-500);
+  color: var(--gray-600);
 }
 
 /* 상태 배지 — 디자인 시스템 시맨틱 */
@@ -402,16 +452,16 @@
   display: inline-block;
   padding: 3px 9px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 600;
   line-height: 1.5;
 }
 
 .contract-badge--active { background: var(--success-bg); color: var(--success); }
 .contract-badge--signed { background: var(--warning-bg); color: var(--warning); }
-.contract-badge--issued { background: var(--gray-100); color: var(--gray-500); }
+.contract-badge--issued { background: var(--gray-100); color: var(--gray-600); }
 .contract-badge--terminated { background: var(--danger-bg); color: var(--danger); }
-.contract-badge--draft { background: var(--gray-100); color: var(--gray-500); }
+.contract-badge--draft { background: var(--gray-100); color: var(--gray-600); }
 
 /* 갱신·연계 이동 링크 버튼 */
 .contract-renew-link {
@@ -421,7 +471,7 @@
   background: var(--accent-bg);
   color: var(--accent-text);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 600;
   cursor: pointer;
 }
@@ -434,9 +484,390 @@
   margin-left: 4px;
 }
 
+/* 소형 버튼 변형 (테이블 셀 내 액션 등) — primary/secondary와 함께 사용 */
+.contract-btn-sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: var(--text-xs);
+}
+
+.contract-btn-primary:disabled {
+  background: var(--gray-300);
+  color: var(--white);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ===== 발행 폼(ContractNew)·상세(ContractDetail) 공통 컨테이너 =====
+   두 화면은 ContractLayout 밖 라우트라 자체 컨테이너를 갖는다 */
+.contract-form-page,
+.contract-detail-page {
+  width: min(100%, 1128px);
+  margin: 0 auto;
+  padding: 20px 24px var(--ai-fab-clearance);
+}
+
+.contract-page-title {
+  margin: 0 0 4px;
+  color: var(--gray-900);
+  font-size: var(--text-h1);
+  font-weight: 700;
+}
+
+.contract-page-desc {
+  margin: 0 0 20px;
+  color: var(--gray-600);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+/* 안내/빈 상태 카드 */
+.contract-empty {
+  padding: 40px 24px;
+  border: 1px dashed var(--gray-300);
+  border-radius: 12px;
+  background: var(--white);
+  text-align: center;
+}
+
+.contract-empty p {
+  margin: 0 0 16px;
+  color: var(--gray-600);
+  font-size: var(--text-sm);
+}
+
+/* ===== 카드형 발행 폼 ===== */
+.contract-form-card {
+  padding: 24px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--white);
+  box-shadow: var(--shadow-card);
+}
+
+.contract-form-section + .contract-form-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--gray-200);
+}
+
+.contract-form-section__title {
+  margin: 0 0 16px;
+  color: var(--gray-900);
+  font-size: var(--text-h3);
+  font-weight: 600;
+}
+
+.contract-field {
+  margin-bottom: 16px;
+}
+
+.contract-field:last-child {
+  margin-bottom: 0;
+}
+
+.contract-field__label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--gray-700);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.contract-input,
+.contract-select {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--gray-900);
+  font: inherit;
+  font-size: var(--text-body);
+}
+
+.contract-input:focus,
+.contract-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14);
+}
+
+.contract-input:read-only {
+  background: var(--gray-100);
+  color: var(--gray-600);
+  cursor: default;
+}
+
+.contract-field__hint {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--accent-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* 인라인 배치 (하루평균 운동시간 시/분 select 등) */
+.contract-inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.contract-inline .contract-select {
+  width: auto;
+  min-width: 96px;
+}
+
+.contract-inline__unit {
+  color: var(--gray-700);
+  font-size: var(--text-sm);
+}
+
+/* 폼 하단 액션 줄 */
+.contract-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+/* ===== 상세·서명 (ContractDetail) ===== */
+.contract-detail-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.contract-history {
+  margin-top: 24px;
+}
+
+.contract-history__title {
+  margin: 0 0 10px;
+  color: var(--gray-900);
+  font-size: var(--text-h3);
+  font-weight: 600;
+}
+
+/* 계약서 본문 (인쇄 출력 대상) */
+.contract-doc {
+  padding: 32px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--white);
+  box-shadow: var(--shadow-card);
+}
+
+.contract-doc__title {
+  margin: 0 0 12px;
+  color: var(--gray-900);
+  font-size: var(--text-h2);
+  font-weight: 700;
+}
+
+.contract-doc__intro {
+  margin: 0 0 20px;
+  color: var(--gray-700);
+  font-size: var(--text-body);
+  line-height: 1.7;
+}
+
+.contract-doc h3 {
+  margin: 20px 0 6px;
+  color: var(--gray-900);
+  font-size: var(--text-h3);
+  font-weight: 600;
+}
+
+.contract-doc p {
+  margin: 0 0 8px;
+  color: var(--gray-700);
+  font-size: var(--text-body);
+  line-height: 1.7;
+}
+
+.contract-doc__issue {
+  margin-top: 20px;
+  color: var(--gray-600);
+  font-size: var(--text-sm);
+}
+
+/* 서명란 (발행자/수신자 2열) */
+.contract-sign-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 24px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.contract-sign-table th {
+  padding: 11px 16px;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+  color: var(--gray-600);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-align: left;
+  width: 50%;
+}
+
+.contract-sign-table th + th,
+.contract-sign-table td + td {
+  border-left: 1px solid var(--gray-200);
+}
+
+.contract-sign-table td {
+  padding: 16px;
+  color: var(--gray-900);
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  vertical-align: top;
+}
+
+/* 서명 입력 패널 */
+.contract-sign-panel {
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--white);
+  box-shadow: var(--shadow-card);
+}
+
+.contract-sign-panel__title {
+  margin: 0 0 6px;
+  color: var(--gray-900);
+  font-size: var(--text-h3);
+  font-weight: 600;
+}
+
+.contract-sign-panel__desc {
+  margin: 0 0 16px;
+  color: var(--gray-600);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.contract-consent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.contract-consent label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--gray-700);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.contract-consent input {
+  margin-top: 2px;
+  flex: none;
+  accent-color: var(--accent);
+}
+
+.contract-signpad-wrap {
+  margin: 16px 0;
+}
+
+.contract-signpad-wrap__label {
+  margin: 0 0 8px;
+  color: var(--gray-600);
+  font-size: var(--text-sm);
+}
+
+.contract-signpad {
+  display: block;
+  max-width: 100%;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+.contract-signpad-actions {
+  margin-top: 8px;
+}
+
+/* 체결 완료 카드 */
+.contract-done {
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid var(--success-soft);
+  border-radius: 12px;
+  background: var(--success-bg);
+}
+
+.contract-done__title {
+  margin: 0 0 8px;
+  color: var(--gray-900);
+  font-size: var(--text-h3);
+  font-weight: 600;
+}
+
+.contract-done__meta {
+  margin: 0 0 12px;
+  color: var(--gray-700);
+  font-size: var(--text-sm);
+}
+
+.contract-done__pay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+  color: var(--gray-700);
+  font-size: var(--text-sm);
+}
+
+.contract-activation {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contract-activation li {
+  color: var(--gray-700);
+  font-size: var(--text-sm);
+}
+
+/* 안내 노트 (DRAFT/TERMINATED 등) */
+.contract-note {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  font-size: var(--text-sm);
+}
+
 @media (max-width: 768px) {
   .contract-layout {
     padding: 16px 14px 48px;
+  }
+
+  .contract-form-page,
+  .contract-detail-page {
+    padding: 16px 14px 48px;
+  }
+
+  .contract-form-card,
+  .contract-doc,
+  .contract-sign-panel {
+    padding: 18px 16px;
   }
 
   .contract-pagehead {

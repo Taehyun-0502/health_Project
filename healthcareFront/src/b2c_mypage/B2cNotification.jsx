@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import './B2cPages.css';
 
 // B2C 일반 회원 마이페이지용 알림 내역 컴포넌트
 function B2cNotification() {
@@ -51,18 +52,20 @@ function B2cNotification() {
   };
 
   return (
-    <div style={{ padding: '16px 16px 32px' }}>
-      <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>알림 내역</h3>
+    <div className="b2c-page">
+      <header className="b2c-page__header">
+        <h2 className="b2c-page__title">알림 내역</h2>
+      </header>
       {alarms.length === 0 ? (
-        <p style={{ color: 'var(--gray-500)', marginTop: '10px' }}>새로운 알림 소식이 없습니다.</p>
+        <p className="b2c-empty">새로운 알림 소식이 없습니다.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '13px' }}>
+        <table className="b2c-data-table">
           <thead>
-            <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-500)', borderBottom: '2px solid var(--gray-200)' }}>
-              <th style={{ padding: '10px', fontWeight: '600' }}>구분</th>
-              <th style={{ padding: '10px', fontWeight: '600' }}>내용</th>
-              <th style={{ padding: '10px', fontWeight: '600' }}>수신일</th>
-              <th style={{ padding: '10px', fontWeight: '600' }}>읽음</th>
+            <tr>
+              <th>구분</th>
+              <th>내용</th>
+              <th>수신일</th>
+              <th>읽음</th>
             </tr>
           </thead>
           <tbody>
@@ -70,17 +73,16 @@ function B2cNotification() {
               <tr
                 key={alarm.alarmId}
                 onClick={() => handleAlarmClick(alarm)}
-                style={{
-                  cursor: 'pointer',
-                  fontWeight: alarm.read === 'Y' ? 'normal' : 'bold',
-                  backgroundColor: alarm.read === 'Y' ? 'transparent' : 'var(--b2c-lime-bg)',
-                  borderBottom: alarm.read === 'Y' ? '1px solid var(--gray-200)' : '1px solid var(--b2c-lime-line)'
-                }}
+                className={`b2c-data-table__row--interactive${alarm.read === 'Y' ? '' : ' b2c-data-table__row--unread'}`}
               >
-                <td style={{ padding: '10px' }}>{alarm.category}</td>
-                <td style={{ padding: '10px' }}>{alarm.message}</td>
-                <td style={{ padding: '10px', color: 'var(--gray-500)' }}>{alarm.createAt}</td>
-                <td style={{ padding: '10px', color: alarm.read === 'Y' ? 'var(--gray-400)' : 'var(--b2c-accent)' }}>{alarm.read === 'Y' ? '읽음' : '안읽음'}</td>
+                <td data-label="구분">{alarm.category}</td>
+                <td data-label="내용" className="b2c-data-table__primary">{alarm.message}</td>
+                <td data-label="수신일" className="b2c-data-table__muted">{alarm.createAt}</td>
+                <td data-label="읽음">
+                  <span className={`b2c-status${alarm.read === 'Y' ? '' : ' b2c-status--accent'}`}>
+                    {alarm.read === 'Y' ? '읽음' : '안읽음'}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import NavIcon from '../components/uiIcons.jsx';
 import './Payment.css';
 
 // 계약 유형 라벨 (백엔드 h_contract_data.contract 코드 기준)
@@ -143,7 +144,9 @@ function Payment() {
     <div className="pay-page">
       <div className="pay-head">
         <h1 className="pay-title">결제</h1>
-        <Link to={`/fitb/contract/${dataId}`} className="pay-back">← 계약 상세로</Link>
+        <Link to={`/fitb/contract/${dataId}`} className="pay-back">
+          <NavIcon id="arrow" size={16} className="ui-icon ui-icon--left" /> 계약 상세로
+        </Link>
       </div>
 
       <div className="pay-layout">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import './B2cPages.css';
 
 // B2C 일반 회원 마이페이지용 쿠폰함 컴포넌트
 function B2cCoupon() {
@@ -56,49 +57,44 @@ function B2cCoupon() {
   };
 
   return (
-    <div style={{ padding: '0 0 16px' }}>
-      <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--gray-900)' }}>내 쿠폰함</h3>
-      <p style={{ fontSize: '12px', color: 'var(--gray-500)', marginBottom: '15px' }}>회원님이 보유하고 계신 가맹점 할인 혜택 쿠폰 목록입니다.</p>
+    <div className="b2c-page">
+      <header className="b2c-page__header">
+        <h2 className="b2c-page__title">내 쿠폰함</h2>
+        <p className="b2c-page__description">회원님이 보유하고 계신 가맹점 할인 혜택 쿠폰 목록입니다.</p>
+      </header>
 
       {coupons.length === 0 ? (
-        <p style={{ color: 'var(--gray-400)', marginTop: '20px', textAlign: 'center', fontSize: '13px' }}>보유 중인 혜택 쿠폰이 없습니다.</p>
+        <p className="b2c-empty">보유 중인 혜택 쿠폰이 없습니다.</p>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+        <>
+          <table className="b2c-data-table">
             <thead>
-              <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-500)', borderBottom: '2px solid var(--gray-200)', whiteSpace: 'nowrap' }}>
-                <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>보낸사람</th>
-                <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>쿠폰 이름</th>
-                <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>종류</th>
-                <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>할인률</th>
-                <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>혜택 상세</th>
-                <th style={{ padding: '8px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>만료일</th>
-                <th style={{ padding: '8px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>상태</th>
+              <tr>
+                <th>보낸사람</th>
+                <th>쿠폰 이름</th>
+                <th>종류</th>
+                <th>할인률</th>
+                <th>혜택 상세</th>
+                <th>만료일</th>
+                <th>상태</th>
               </tr>
             </thead>
             <tbody>
               {currentItems.map((coupon) => (
-                <tr key={coupon.couponId} style={{ borderBottom: '1px solid var(--gray-200)', whiteSpace: 'nowrap' }}>
-                  <td style={{ padding: '8px 4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{coupon.fromName}</td>
-                  <td style={{ padding: '8px 4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{coupon.couponName}</td>
-                  <td style={{ padding: '8px 4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{coupon.category}</td>
-                  <td style={{ padding: '8px 4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{coupon.percent}%</td>
-                  <td style={{ padding: '8px 4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                <tr key={coupon.couponId}>
+                  <td data-label="보낸사람">{coupon.fromName}</td>
+                  <td data-label="쿠폰 이름" className="b2c-data-table__primary">{coupon.couponName}</td>
+                  <td data-label="종류">{coupon.category}</td>
+                  <td data-label="할인률" className="b2c-data-table__accent">{coupon.percent}%</td>
+                  <td data-label="혜택 상세">
                     {/* 카테고리별 혜택 종류 조건 분기 화면 표시 */}
                     {coupon.category === '헬스' && coupon.maxAmount && `최대 ${coupon.maxAmount}원 할인`}
                     {coupon.category === 'PT' && coupon.maxAmount && `최대 ${coupon.maxAmount}원 할인`}
                     {coupon.category === '체험권' && coupon.couponCount && `${coupon.couponCount}회`}
                   </td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', color: 'var(--gray-500)', whiteSpace: 'nowrap' }}>{coupon.date}</td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                    <span style={{
-                      padding: '2px 8px',
-                      borderRadius: '999px',
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      backgroundColor: coupon.status === '미사용' ? 'var(--success-bg)' : 'var(--gray-100)',
-                      color: coupon.status === '미사용' ? 'var(--success)' : 'var(--gray-400)'
-                    }}>
+                  <td data-label="만료일" className="b2c-data-table__muted">{coupon.date}</td>
+                  <td data-label="상태">
+                    <span className={`b2c-status${coupon.status === '미사용' ? ' b2c-status--success' : ''}`}>
                       {coupon.status}
                     </span>
                   </td>
@@ -109,11 +105,11 @@ function B2cCoupon() {
 
           {/* 페이징 내비게이션 바 (총 페이지가 1개 이하일 때는 2번 룰에 의해 자동 숨김 처리) */}
           {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
+            <nav className="b2c-pagination" aria-label="쿠폰 목록 페이지">
               <button
                 disabled={currentPage === 1}
                 onClick={() => handlePageChange(currentPage - 1)}
-                style={{ padding: '8px 12px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: '#fff', color: 'var(--gray-700)' }}
+                className="b2c-pagination__button"
               >
                 이전
               </button>
@@ -121,15 +117,8 @@ function B2cCoupon() {
                 <button
                   key={page}
                   onClick={() => handlePageChange(page)}
-                  style={{
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    border: currentPage === page ? '1px solid var(--black)' : '1px solid var(--gray-300)',
-                    borderRadius: '10px',
-                    backgroundColor: currentPage === page ? 'var(--black)' : '#fff',
-                    color: currentPage === page ? '#fff' : 'var(--gray-700)',
-                    fontWeight: currentPage === page ? 'bold' : 'normal'
-                  }}
+                  className={`b2c-pagination__button${currentPage === page ? ' is-active' : ''}`}
+                  aria-current={currentPage === page ? 'page' : undefined}
                 >
                   {page}
                 </button>
@@ -137,13 +126,13 @@ function B2cCoupon() {
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => handlePageChange(currentPage + 1)}
-                style={{ padding: '8px 12px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: '#fff', color: 'var(--gray-700)' }}
+                className="b2c-pagination__button"
               >
                 다음
               </button>
-            </div>
+            </nav>
           )}
-        </div>
+        </>
       )}
     </div>
   );

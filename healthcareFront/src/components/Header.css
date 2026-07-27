@@ -16,6 +16,12 @@
   padding: 0 28px;
 }
 
+.portal-header__identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .portal-header__identity h1 {
   margin: 0;
   color: var(--gray-900);
@@ -23,9 +29,32 @@
   font-weight: 700;
 }
 
+/* 드릴인 페이지(계약 작성·상세·결제) 전용 백버튼 — chevron 아이콘을 좌측 방향으로 반전 */
+.portal-header__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--gray-700);
+  background: transparent;
+  cursor: pointer;
+}
+
+.portal-header__back svg {
+  transform: rotate(180deg);
+}
+
+.portal-header__back:hover {
+  border-color: var(--gray-200);
+  background: var(--gray-100);
+}
+
 .portal-header__identity p {
   margin-top: 2px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
 }
 
@@ -68,7 +97,7 @@
   border-radius: 999px;
   color: var(--white);
   background: var(--danger-solid);
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 700;
   line-height: 1.4;
 }
@@ -128,14 +157,41 @@
 
 .portal-notification__menu li button > span:first-child {
   color: var(--accent);
-  font-size: 8px;
+  font-size: var(--text-2xs);
 }
 
 .portal-notification__empty {
   padding: 20px 8px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   text-align: center;
   font-size: var(--text-xs);
+}
+
+/* 페이지별 액션 버튼(CSV 내보내기 등) - 알림 종 왼쪽에 주입, useHeaderAction 훅으로 등록 */
+.portal-header__export {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  color: var(--gray-700);
+  background: var(--white);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.portal-header__export:hover:not(:disabled) {
+  background: var(--gray-100);
+}
+
+.portal-header__export:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .portal-header__logout {

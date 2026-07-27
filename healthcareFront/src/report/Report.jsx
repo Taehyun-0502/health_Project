@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import NavIcon from '../components/uiIcons.jsx';
 import './Report.css';
 
 // 이탈 요인 표시 고정 순서 (이 순서대로 위→아래로 노출, 목록에 없는 요인은 뒤로)
@@ -193,9 +194,11 @@ function PeriodPicker({ mode, periods, value, onPick }) {
     <div className="cs-periodpick" ref={ref}>
       <button type="button" className="cs-period-ctl" aria-expanded={open} title={mode === 'daily' ? '날짜 선택' : '월 선택'}
               onClick={() => setOpen((o) => !o)}>
-        <span className="cs-period-cal" aria-hidden="true">📅</span>
+        <span className="cs-period-cal" aria-hidden="true"><NavIcon id="calendar" size={16} /></span>
         <span className="cs-period-val cs-num">{value || (mode === 'daily' ? '날짜' : '월')}</span>
-        <span className="cs-period-chev" aria-hidden="true">▾</span>
+        <span className="cs-period-chev" aria-hidden="true">
+          <NavIcon id="chevron" size={14} className="ui-icon ui-icon--down" />
+        </span>
       </button>
       {open && (
         <div className="cs-period-pop">
@@ -231,14 +234,14 @@ function VisitTimePanel({ gymId, mode, period, statKey }) {
 
   return (
     <div className="cs-side cs-side-vt">
-      <h5>🕒 이 회원들이 주로 오는 시간대</h5>
+      <h5><NavIcon id="clock" size={16} className="ui-icon" /> 이 회원들이 주로 오는 시간대</h5>
       {loading ? (
         <p className="cs-loading">불러오는 중…</p>
       ) : total === 0 ? (
         <p className="cs-empty">방문 기록이 없습니다.</p>
       ) : (
         <>
-          <p className="cs-hint" style={{ marginBottom: '8px' }}>
+          <p className="cs-hint cs-hint--spaced">
             총 <b>{total}</b>회 방문 · 피크 <b className="cs-accent">{peak?.slot}</b>
           </p>
           <div className="cs-side-body">
@@ -249,7 +252,7 @@ function VisitTimePanel({ gymId, mode, period, statKey }) {
                   return (
                     <tr key={x.slot}>
                       <td className="cs-slot-name">{x.slot}</td>
-                      <td style={{ width: '100%' }}>
+                      <td className="cs-slot-cell">
                         <div className="cs-slotbar"><i style={{ width: `${(cnt / max) * 100}%` }} /></div>
                       </td>
                       <td className="r cs-num">{cnt}회</td>
@@ -287,7 +290,7 @@ function EquipmentPanel({ gymId }) {
 
   return (
     <div className="cs-side cs-side-eq">
-      <h5>🏋️ 이 헬스장 기구 목록</h5>
+      <h5><NavIcon id="dumbbell" size={16} className="ui-icon" /> 이 헬스장 기구 목록</h5>
       {loading ? (
         <p className="cs-loading">불러오는 중…</p>
       ) : sorted.length === 0 ? (
@@ -341,14 +344,14 @@ function ManagerPanel({ gymId, mode, period, statKey }) {
 
   return (
     <div className="cs-side cs-side-mgr">
-      <h5>🧑‍🏫 이 회원들의 담당자</h5>
+      <h5><NavIcon id="person" size={16} className="ui-icon" /> 이 회원들의 담당자</h5>
       {loading ? (
         <p className="cs-loading">불러오는 중…</p>
       ) : managers.length === 0 ? (
         <p className="cs-empty">배정된 담당자가 없습니다.</p>
       ) : (
         <>
-          <p className="cs-hint" style={{ marginBottom: '8px' }}>
+          <p className="cs-hint cs-hint--spaced">
             총 <b>{total}</b>명 · 최다 <b className="cs-accent">{top?.managerName}</b>
           </p>
           <div className="cs-side-body">
@@ -357,7 +360,7 @@ function ManagerPanel({ gymId, mode, period, statKey }) {
                 {managers.map((x) => (
                   <tr key={x.managerId}>
                     <td className="cs-slot-name">{x.managerName}</td>
-                    <td style={{ width: '100%' }}>
+                    <td className="cs-slot-cell">
                       <div className="cs-slotbar"><i style={{ width: `${(x.cnt / max) * 100}%` }} /></div>
                     </td>
                     <td className="r cs-num">{x.cnt}명</td>
@@ -388,7 +391,7 @@ function ServiceCenterPanel() {
 
   return (
     <div className="cs-side cs-side-sc">
-      <h5>🛠️ 서비스센터 목록</h5>
+      <h5><NavIcon id="tool" size={16} className="ui-icon" /> 서비스센터 목록</h5>
       {loading ? (
         <p className="cs-loading">불러오는 중…</p>
       ) : centers.length === 0 ? (
@@ -403,11 +406,16 @@ function ServiceCenterPanel() {
                   <span className="cs-muted cs-center-brand"> ({c.brandName})</span>
                 )}
                 <span className={`cs-center-repair ${c.onsiteRepair ? 'cs-good' : 'cs-crit'}`}>
-                  {c.onsiteRepair ? '✔ 출장 수리 가능' : '✕ 출장 수리 불가'}
+                  <NavIcon id={c.onsiteRepair ? 'check' : 'close'} size={14} className="ui-icon" />
+                  {' '}{c.onsiteRepair ? '출장 수리 가능' : '출장 수리 불가'}
                 </span>
               </div>
-              <div className="cs-ink-2">📞 {c.centerPhone || '-'}</div>
-              {c.operatingHours && <div className="cs-muted cs-center-hours">🕒 {c.operatingHours}</div>}
+              <div className="cs-ink-2"><NavIcon id="phone" size={14} className="ui-icon" /> {c.centerPhone || '-'}</div>
+              {c.operatingHours && (
+                <div className="cs-muted cs-center-hours">
+                  <NavIcon id="clock" size={14} className="ui-icon" /> {c.operatingHours}
+                </div>
+              )}
               {c.url && (<a href={c.url} target="_blank" rel="noreferrer">홈페이지 바로가기 ↗</a>)}
             </div>
           ))}
@@ -575,7 +583,8 @@ function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
         <div className="cs-fd-action">
           <span className="cs-fd-action-copy">{actionCopy}</span>
           <button type="button" className="cs-action-solid" onClick={onAction}>
-            {!isHelper && !isTraining && !isCoupon && members.length > 0 ? `이 ${members.length}명에게 ` : ''}{action} →
+            {!isHelper && !isTraining && !isCoupon && members.length > 0 ? `이 ${members.length}명에게 ` : ''}
+            {action} <NavIcon id="arrow" size={15} className="ui-icon" />
           </button>
         </div>
       )}
@@ -584,7 +593,7 @@ function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
       {helperOpen && (
         <div className="cs-modal-back" onClick={() => !helperSending && setHelperOpen(false)}>
           <div className="cs-modal sm" onClick={(e) => e.stopPropagation()}>
-            <h4>🛎️ 헬퍼 요청</h4>
+            <h4><NavIcon id="bell" size={17} className="ui-icon" /> 헬퍼 요청</h4>
             <p className="cs-modal-desc">요청자: <b>{user.name || user.username}</b> · 상태: 처리대기로 접수됩니다.</p>
             <label className="cs-field-label" htmlFor="helper-text">추가로 적을 내용</label>
             <textarea id="helper-text" className="cs-textarea" value={helperText} onChange={(e) => setHelperText(e.target.value)} rows={4}
@@ -603,7 +612,7 @@ function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
       {ptOpen && (
         <div className="cs-modal-back" onClick={() => !ptSending && setPtOpen(false)}>
           <div className="cs-modal" onClick={(e) => e.stopPropagation()}>
-            <h4>🎟️ 쿠폰 발송 설정</h4>
+            <h4><NavIcon id="coupon" size={17} className="ui-icon" /> 쿠폰 발송 설정</h4>
             <p className="cs-modal-desc">아래 <b>{members.length}명</b>에게 선택한 쿠폰을 발송합니다. (이미 발송된 회원은 자동 제외)</p>
 
             <label className="cs-field-label" htmlFor="pt-coupon">발송할 쿠폰</label>
@@ -786,7 +795,7 @@ export function RiskMembersPanel({ data }) {
   return (
     <div className="cs-wrap cs-riskdrawer">
       <RiskMembers riskList={riskList} loading={false} />
-      <p className="cs-trust">🔒 우리 지점 데이터만 보여줍니다</p>
+      <p className="cs-trust"><NavIcon id="lock" size={14} className="ui-icon" /> 우리 지점 데이터만 보여줍니다</p>
     </div>
   );
 }
@@ -798,36 +807,36 @@ function StatsSkeleton() {
       <div className="cs-summary">
         {[0, 1, 2].map((i) => (
           <div key={i} className="cs-skpi">
-            <span className="cs-skel" style={{ width: '52%', height: 12 }} />
-            <span className="cs-skel" style={{ width: '70%', height: 24, marginTop: 8 }} />
-            <span className="cs-skel" style={{ width: '40%', height: 11, marginTop: 10 }} />
+            <span className="cs-skel cs-skel--summary-label" />
+            <span className="cs-skel cs-skel--summary-value" />
+            <span className="cs-skel cs-skel--summary-sub" />
           </div>
         ))}
         <div className="cs-distcard">
-          <span className="cs-skel" style={{ width: '45%', height: 12 }} />
-          <span className="cs-skel" style={{ width: '100%', height: 12, marginTop: 12, borderRadius: 999 }} />
+          <span className="cs-skel cs-skel--dist-title" />
+          <span className="cs-skel cs-skel--dist-bar" />
           <div className="cs-skel-legend">
-            {[0, 1, 2, 3].map((i) => <span key={i} className="cs-skel" style={{ height: 11 }} />)}
+            {[0, 1, 2, 3].map((i) => <span key={i} className="cs-skel cs-skel--dist-legend" />)}
           </div>
         </div>
         <div className="cs-skpi">
-          <span className="cs-skel" style={{ width: '60%', height: 12 }} />
-          <span className="cs-skel" style={{ width: '55%', height: 24, marginTop: 8 }} />
-          <span className="cs-skel" style={{ width: '45%', height: 11, marginTop: 10 }} />
+          <span className="cs-skel cs-skel--risk-label" />
+          <span className="cs-skel cs-skel--risk-value" />
+          <span className="cs-skel cs-skel--risk-sub" />
         </div>
       </div>
       <div className="cs-main">
         <section className="cs-panel-card">
           <div className="cs-cardhead">
-            <span className="cs-skel" style={{ width: 180, height: 16 }} />
-            <span className="cs-skel" style={{ width: '70%', height: 11, marginTop: 8 }} />
+            <span className="cs-skel cs-skel--panel-title" />
+            <span className="cs-skel cs-skel--panel-sub" />
           </div>
           <div className="cs-skel-rows">
             {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
               <div key={i} className="cs-skel-row">
-                <span className="cs-skel" style={{ width: 120, height: 13 }} />
-                <span className="cs-skel" style={{ flex: 1, height: 9, borderRadius: 999 }} />
-                <span className="cs-skel" style={{ width: 40, height: 13 }} />
+                <span className="cs-skel cs-skel--row-name" />
+                <span className="cs-skel cs-skel--row-bar" />
+                <span className="cs-skel cs-skel--row-value" />
               </div>
             ))}
           </div>
@@ -932,10 +941,7 @@ function Report() {
       <div className="cs-inner">
 
         {/* ── 통제: 제목 → 안내 문구 → 일별/월별 탭 + 기간 선택 ── */}
-        <h2 className="b2blist-title">
-          📊 헬스장 이탈 통계
-          <span className="b2blist-title-sub">{user.name} 사장님</span>
-        </h2>
+        <h2 className="b2blist-title">헬스장 이탈 통계</h2>
         <p className="b2blist-desc">
           선택한 {unit}의 위험군과 이탈 요인, 조치를 한 화면에서 확인합니다.
         </p>
@@ -994,7 +1000,7 @@ function Report() {
                   onClick={() => window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
                     detail: { kind: 'riskmembers', id: 'new-risk', title: '신규 위험군', data: { riskList } },
                   }))}
-                >🔍</button>
+                ><NavIcon id="search" size={17} /></button>
               </div>
             </div>
 
@@ -1002,7 +1008,10 @@ function Report() {
             <div className="cs-main" aria-busy={loading}>
               <section className="cs-panel-card">
                 <div className="cs-cardhead">
-                  <h3>🎯 이탈 요인별 조치 <span className="cs-crit cs-cardhead-count">위험군 {risk}명</span></h3>
+                  <h3>
+                    <NavIcon id="target" size={18} className="ui-icon" /> 이탈 요인별 조치
+                    {' '}<span className="cs-crit cs-cardhead-count">위험군 {risk}명</span>
+                  </h3>
                   <p className="cs-cardhead-sub">
                     요인을 펼치면 회원 명단과 조치가 함께 나옵니다.
                     <span className="cs-info" tabIndex={0} data-tip={"위험군(개입·긴급) 회원 대상.\n막대 = 요인 비율 (위험군 대비).\n한 회원이 이탈이유 Top3에 각각 집계되어\n최대 3개 요인에 중복될 수 있습니다."}>ⓘ</span>

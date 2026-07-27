@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import NavIcon from '../components/uiIcons.jsx';
 import './Dashboard.css';
 
 // 위젯 키별 표시 이름 (백엔드 h_dashboard_widget.widget_key와 매핑)
@@ -103,7 +104,9 @@ function WidgetEditModal({ widgets, onToggle, onMove, onClose }) {
       <div className="dash-modal" ref={boxRef} role="dialog" aria-modal="true" aria-label="위젯 편집">
         <div className="dash-modal__head">
           <h4 className="dash-modal__title">위젯 편집</h4>
-          <button type="button" className="dash-modal__close" onClick={onClose} aria-label="닫기">✕</button>
+          <button type="button" className="dash-modal__close" onClick={onClose} aria-label="닫기">
+            <NavIcon id="close" size={18} />
+          </button>
         </div>
         <p className="dash-modal__desc">대시보드에 표시할 위젯을 켜고 끌 수 있어요</p>
 
@@ -121,8 +124,12 @@ function WidgetEditModal({ widgets, onToggle, onMove, onClose }) {
               </label>
               {widget.hasData ? (
                 <span className="dash-modal__order">
-                  <button type="button" onClick={() => onMove(widget.widgetKey, -1)} aria-label="위로">▲</button>
-                  <button type="button" onClick={() => onMove(widget.widgetKey, 1)} aria-label="아래로">▼</button>
+                  <button type="button" onClick={() => onMove(widget.widgetKey, -1)} aria-label="위로">
+                    <NavIcon id="chevron" size={16} className="ui-icon ui-icon--up" />
+                  </button>
+                  <button type="button" onClick={() => onMove(widget.widgetKey, 1)} aria-label="아래로">
+                    <NavIcon id="chevron" size={16} className="ui-icon ui-icon--down" />
+                  </button>
                 </span>
               ) : (
                 <span className="dash-badge">데이터 없음</span>
@@ -409,16 +416,13 @@ function Dashboard() {
                 title={`${WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey} 숨기기`}
                 onClick={() => handleToggle(widget)}
               >
-                ✕
+                <NavIcon id="close" size={14} />
               </button>
             </span>
           ))}
         </div>
         <button type="button" className="dash-edit-btn" onClick={() => setEditOpen(!editOpen)}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" />
-          </svg>
+          <NavIcon id="edit" size={15} />
           위젯 편집
         </button>
       </div>
@@ -495,7 +499,13 @@ function Dashboard() {
                       <button type="button" className="dash-ai-task" onClick={() => setBundleOpen(!bundleOpen)}>
                         <span className="dash-ai-task-label">{item.label}</span>
                         <span className="dash-badge warning">{item.count}건</span>
-                        <span className="dash-ai-task-go">{bundleOpen ? '▴' : '▾'}</span>
+                        <span className="dash-ai-task-go">
+                          <NavIcon
+                            id="chevron"
+                            size={16}
+                            className={`ui-icon ${bundleOpen ? 'ui-icon--up' : 'ui-icon--down'}`}
+                          />
+                        </span>
                       </button>
                       {bundleOpen && item.bundle.map((sub) => (
                         <button
@@ -506,7 +516,7 @@ function Dashboard() {
                         >
                           <span className="dash-ai-task-label">{sub.label}</span>
                           <span className="dash-badge warning">{sub.count}건</span>
-                          <span className="dash-ai-task-go">→</span>
+                          <span className="dash-ai-task-go"><NavIcon id="arrow" size={16} className="ui-icon" /></span>
                         </button>
                       ))}
                     </div>
@@ -521,7 +531,7 @@ function Dashboard() {
                       <span className={`dash-badge ${item.tone === 'danger' ? 'danger' : 'warning'}`}>
                         {item.count}건
                       </span>
-                      <span className="dash-ai-task-go">→</span>
+                      <span className="dash-ai-task-go"><NavIcon id="arrow" size={16} className="ui-icon" /></span>
                     </button>
                   )
                 ))}

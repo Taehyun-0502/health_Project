@@ -1,14 +1,88 @@
+/* 계약 페이지(.contract-layout)와 동일한 여백 리듬:
+   래퍼 한 곳에서만 패딩을 주고 내부 컴포넌트(.owner-mgmt/.att-confirm/.admin-management)는
+   패딩·max-width를 제거해 헤더와 내부 콘텐츠의 좌측 정렬선을 일치시킨다. */
+/* 물품 페이지 기준 좌측 정렬선(297px): 래퍼 최대폭 = 본문 1080 + 좌우 패딩 24*2 = 1128 */
 .b2b-management-page {
-  width: min(100%, 1200px);
+  width: min(100%, 1128px);
   margin: 0 auto;
-  padding: 32px 24px 64px;
+  /* 상단 여백(20px)은 sticky 페이지 헤더의 padding-top(12)과 합쳐 안착 시 20px를 유지하도록
+     래퍼에서 8px만 남기고 헤더로 옮겼다. */
+  padding: 8px 24px var(--ai-fab-clearance);
+}
+
+/* 페이지 헤더 (제목 + 안내 문구 + 주요 액션) — 스크롤 시 상단 고정(sticky). */
+.b2b-management-page__head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+  padding: 12px 0;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+}
+.b2b-management-page__title {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: 700;
+  color: var(--gray-900);
+}
+.b2b-management-page__desc {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  color: var(--gray-600);
+}
+
+/* 하위 탭 컴포넌트(회원 관리 각 탭)가 usePageHeaderAction으로 등록하는 주요 액션 버튼
+   (새로고침·프로모션 발행 등) — 보조 버튼 규격(흰 배경+보더) */
+.b2b-management-page__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  color: var(--gray-700);
+  background: var(--white);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.b2b-management-page__action:hover:not(:disabled) {
+  background: var(--gray-100);
+}
+
+.b2b-management-page__action:disabled {
+  color: var(--gray-400);
+  cursor: default;
+}
+
+/* 핵심 CTA(예: 프로모션 발행하러 가기) - 계약 페이지 주요 버튼 위계와 동일한 accent-strong */
+.b2b-management-page__action--primary {
+  border-color: transparent;
+  color: var(--white);
+  background: var(--accent-strong);
+}
+
+.b2b-management-page__action--primary:hover:not(:disabled) {
+  background: var(--accent-strong);
+  box-shadow: 0 2px 8px rgba(200, 79, 0, 0.28);
 }
 
 .b2b-management-page__empty {
   padding: 32px;
   border: 1px solid var(--gray-200);
   border-radius: 12px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   background: var(--white);
   text-align: center;
 }

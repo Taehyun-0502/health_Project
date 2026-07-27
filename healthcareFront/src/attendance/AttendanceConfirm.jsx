@@ -1,8 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
+import NavIcon from '../components/uiIcons.jsx';
+import usePageHeaderAction from '../hooks/usePageHeaderAction.js';
+import './AttendanceConfirm.css';
 
 // PT형 계약 유형 라벨 (백엔드 h_contract_data.contract 코드 기준: 4=PT, 5=PT 체험)
 // 체험 회원은 유료 PT 전환 제안 대상이라 트레이너 화면에서 구분해 표시한다.
 const PT_TYPE_LABEL = { 4: 'PT', 5: 'PT 체험' };
+
+// 일정 상태별 표기 라벨 (색상은 CSS .att-confirm__day-item--*/__day-status--*가 담당)
+const STATUS_LABEL = { done: '완료', planned: '예정', missed: '미수행' };
 
 // 트레이너 전용 PT 출석/일정 관리 컴포넌트 (AdminMain 회원/직원 관리 탭에 내장)
 // 1) 당일 미확인 PT 출석 확인(확인 시 잔여횟수 1회 차감)
@@ -242,35 +248,27 @@ function AttendanceConfirm() {
     ? (drill.contracts[0]?.memberName || drill.sessions[0]?.memberName || selectedMember)
     : null;
 
-  // 일정 상태별 표기 상수
-  const statusMeta = {
-    done: { label: '✅ 완료', color: '#6d28d9', bg: '#f3e8ff', border: '#e9d5ff' },
-    planned: { label: '🕒 예정', color: '#15803d', bg: '#f0fdf4', border: '#dcfce7' },
-    missed: { label: '❌ 미수행', color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
-  };
-
   const tabs = [
     { key: 'members', label: '담당 회원' },
     { key: 'schedule', label: '일정 관리' },
   ];
 
+  // 일정 관리 탭에서만 노출되는 새로고침 액션을 페이지 헤더(B2bManagementPage)에 등록한다.
+  usePageHeaderAction(activeTab === 'schedule' ? { label: '새로고침', onClick: fetchAll } : null);
+
   return (
-    <div style={{ maxWidth: '700px', margin: '0 auto', padding: '20px' }}>
+    <div className="att-confirm">
 
       {/* ===== 탭바 ===== */}
-      <div role="tablist" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>
+      <div className="att-confirm__tabs" role="tablist" aria-label="PT 출석·일정 관리">
         {tabs.map((tab) => (
           <button
             key={tab.key}
+            type="button"
             role="tab"
             aria-selected={activeTab === tab.key}
+            className={`att-confirm__tab${activeTab === tab.key ? ' att-confirm__tab--active' : ''}`}
             onClick={() => setActiveTab(tab.key)}
-            style={{
-              padding: '7px 16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer',
-              borderRadius: '999px', border: '1px solid ' + (activeTab === tab.key ? '#171717' : '#d4d4d4'),
-              backgroundColor: activeTab === tab.key ? '#171717' : '#fff',
-              color: activeTab === tab.key ? '#fff' : '#525252',
-            }}
           >
             {tab.label}
           </button>
@@ -281,141 +279,133 @@ function AttendanceConfirm() {
       {activeTab === 'members' && (
       <div role="tabpanel">
 
-      {/* ===== 담당 회원 현황 섹션 - 유효 PT 계약별 총/사용/잔여, 잔여 적은 순 ===== */}
-      <h3>👥 담당 회원 현황</h3>
-      <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
-        담당 중인 유효 PT 계약별 잔여 횟수입니다. 잔여가 적은 회원이 위로 정렬되며, 3회 이하는 재등록 제안 대상으로 표시됩니다.
-      </p>
-
+      {/* 담당 회원 현황 - 유효 PT 계약별 총/사용/잔여, 잔여 적은 순 (섹션 제목은 칩 라벨과 중복이라 제거) */}
       {memberStatus.length === 0 ? (
-        <p style={{ padding: '30px', textAlign: 'center', color: '#999', border: '1px dashed #ddd', borderRadius: '8px' }}>
-          담당 중인 유효 PT 계약이 없습니다.
-        </p>
+        <p className="att-confirm__empty">담당 중인 유효 PT 계약이 없습니다.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f3f4f6' }}>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>회원명</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>전화번호</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>진행 현황</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>잔여</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>최근 수업</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>계약 기간</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>상태</th>
-            </tr>
-          </thead>
-          <tbody>
-            {memberStatus.map((row) => {
-              const total = row.totalCount || 0;
-              const used = row.usedCount || 0;
-              const remaining = row.remainingCount != null ? row.remainingCount : total - used;
-              const percent = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
-              const isLow = remaining > 0 && remaining <= 3; // 재등록 제안 대상
-              const isDone = remaining <= 0; // 전부 소진 (계약 중지 대기)
+        <div className="att-confirm__table-wrap">
+          <table className="att-confirm__table">
+            <thead>
+              <tr>
+                <th>회원명</th>
+                <th>전화번호</th>
+                <th>진행 현황</th>
+                <th>잔여</th>
+                <th>최근 수업</th>
+                <th>계약 기간</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              {memberStatus.map((row) => {
+                const total = row.totalCount || 0;
+                const used = row.usedCount || 0;
+                const remaining = row.remainingCount != null ? row.remainingCount : total - used;
+                const percent = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+                const isLow = remaining > 0 && remaining <= 3; // 재등록 제안 대상
+                const isDone = remaining <= 0; // 전부 소진 (계약 중지 대기)
 
-              // 최근 수업일 및 경과일 - 14일 이상이면 관리 필요 회원으로 강조
-              const lastSession = lastSessionByMember[String(row.username)];
-              const elapsed = lastSession ? daysSince(lastSession) : null;
-              const needCare = !isDone && (elapsed == null ? false : elapsed >= 14);
+                // 최근 수업일 및 경과일 - 14일 이상이면 관리 필요 회원으로 강조
+                const lastSession = lastSessionByMember[String(row.username)];
+                const elapsed = lastSession ? daysSince(lastSession) : null;
+                const needCare = !isDone && (elapsed == null ? false : elapsed >= 14);
+                const fillMod = isDone ? ' att-confirm__progress-fill--done' : isLow ? ' att-confirm__progress-fill--low' : '';
+                const remainMod = isDone ? ' att-confirm__remaining--done' : isLow ? ' att-confirm__remaining--low' : '';
 
-              return (
-                <tr key={row.dataId}>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                    {/* 회원명 클릭 시 하단에 상세 드릴다운 패널 표시 */}
-                    <button
-                      onClick={() => setSelectedMember(selectedMember === String(row.username) ? null : String(row.username))}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', color: '#2563eb', textDecoration: 'underline', padding: 0 }}>
-                      {row.memberName || '-'}
-                    </button>
-                    {row.contract === 5 && (
-                      <span style={{ display: 'block', marginTop: '3px', fontSize: '10px', color: '#d97706', fontWeight: 'bold' }}>
-                        {PT_TYPE_LABEL[5]}
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{row.username}</td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb' }}>
-                    {/* 사용/총 진행 바 */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ flex: 1, height: '8px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ width: `${percent}%`, height: '100%', backgroundColor: isDone ? '#9ca3af' : isLow ? '#f59e0b' : '#7c3aed', transition: 'width 0.3s' }} />
+                return (
+                  <tr key={row.dataId}>
+                    <td>
+                      {/* 회원명 클릭 시 하단에 상세 드릴다운 패널 표시 */}
+                      <button
+                        type="button"
+                        className="att-confirm__name-btn"
+                        onClick={() => setSelectedMember(selectedMember === String(row.username) ? null : String(row.username))}
+                      >
+                        {row.memberName || '-'}
+                      </button>
+                      {row.contract === 5 && (
+                        <span className="att-confirm__trial-tag">{PT_TYPE_LABEL[5]}</span>
+                      )}
+                    </td>
+                    <td className="att-confirm__num">{row.username}</td>
+                    <td>
+                      {/* 사용/총 진행 바 */}
+                      <div className="att-confirm__progress-cell">
+                        <div className="att-confirm__progress">
+                          <div className={`att-confirm__progress-fill${fillMod}`} style={{ width: `${percent}%` }} />
+                        </div>
+                        <span className="att-confirm__progress-label">{used} / {total}회</span>
                       </div>
-                      <span style={{ fontSize: '12px', color: '#666', whiteSpace: 'nowrap' }}>{used} / {total}회</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontWeight: 'bold', color: isDone ? '#9ca3af' : isLow ? '#d97706' : '#6d28d9' }}>
-                    {remaining}회
-                  </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontSize: '12px', color: needCare ? '#b91c1c' : '#666' }}>
-                    {lastSession ? (
-                      <>
-                        {lastSession.substring(0, 10)}<br />
-                        <b>({elapsed === 0 ? '오늘' : `${elapsed}일 전`})</b>
-                        {needCare && (
-                          <span style={{ display: 'inline-block', marginLeft: '4px', fontSize: '10px', backgroundColor: '#dc2626', color: '#fff', padding: '1px 6px', borderRadius: '8px', fontWeight: 'bold' }}>
-                            관리 필요
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <span style={{ color: '#999' }}>수업 이력 없음</span>
-                    )}
-                  </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontSize: '12px', color: '#666' }}>
-                    {row.startDate || '-'} ~ {row.endDate || '무기한'}
-                  </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                    {isDone ? (
-                      <span style={{ fontSize: '11px', backgroundColor: '#6b7280', color: '#fff', padding: '3px 8px', borderRadius: '10px', fontWeight: 'bold' }}>소진 완료</span>
-                    ) : isLow ? (
-                      <span style={{ fontSize: '11px', backgroundColor: '#f59e0b', color: '#fff', padding: '3px 8px', borderRadius: '10px', fontWeight: 'bold' }}>재등록 제안</span>
-                    ) : (
-                      <span style={{ fontSize: '11px', backgroundColor: '#e5e7eb', color: '#374151', padding: '3px 8px', borderRadius: '10px' }}>진행 중</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td className={`att-confirm__num att-confirm__remaining${remainMod}`}>
+                      {remaining}회
+                    </td>
+                    <td className={`att-confirm__last${needCare ? ' att-confirm__last--care' : ''}`}>
+                      {lastSession ? (
+                        <>
+                          {lastSession.substring(0, 10)}<br />
+                          <b>({elapsed === 0 ? '오늘' : `${elapsed}일 전`})</b>
+                          {needCare && <span className="att-confirm__care-badge">관리 필요</span>}
+                        </>
+                      ) : (
+                        <span className="att-confirm__muted">수업 이력 없음</span>
+                      )}
+                    </td>
+                    <td className="att-confirm__period">
+                      {row.startDate || '-'} ~ {row.endDate || '무기한'}
+                    </td>
+                    <td>
+                      {isDone ? (
+                        <span className="att-confirm__badge att-confirm__badge--done">소진 완료</span>
+                      ) : isLow ? (
+                        <span className="att-confirm__badge att-confirm__badge--low">재등록 제안</span>
+                      ) : (
+                        <span className="att-confirm__badge att-confirm__badge--progress">진행 중</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* 회원 상세 드릴다운 패널 - 현황에서 회원명 클릭 시 표시 */}
       {drill && (
-        <div style={{ marginTop: '15px', padding: '15px', border: '2px solid #bfdbfe', borderRadius: '8px', backgroundColor: '#eff6ff' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h4 style={{ margin: 0, color: '#1d4ed8' }}>🔍 {drillName}님 상세</h4>
-            <button onClick={() => setSelectedMember(null)}
-              style={{ padding: '3px 10px', fontSize: '12px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>
-              닫기 ✕
+        <div className="att-confirm__drill">
+          <div className="att-confirm__drill-head">
+            <h4 className="att-confirm__drill-title">{drillName}님 상세</h4>
+            <button type="button" className="att-confirm__drill-close" onClick={() => setSelectedMember(null)}>
+              닫기 <NavIcon id="close" size={15} />
             </button>
           </div>
 
           {/* 계약별 진행 현황 */}
-          <div style={{ marginBottom: '12px' }}>
-            <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#374151' }}>📋 계약 진행</h5>
+          <div className="att-confirm__drill-section">
+            <h5 className="att-confirm__drill-h att-confirm__drill-h--contract">계약 진행</h5>
             {drill.contracts.map((contract) => {
               const total = contract.totalCount || 0;
               const used = contract.usedCount || 0;
               return (
-                <p key={contract.dataId} style={{ margin: '2px 0', fontSize: '13px', color: '#444' }}>
+                <p key={contract.dataId} className="att-confirm__drill-line">
                   계약 #{contract.dataId} [{PT_TYPE_LABEL[contract.contract] ?? '-'}] — {used} / {total}회 사용, <b>잔여 {contract.remainingCount}회</b>
-                  <span style={{ color: '#888', fontSize: '12px' }}> ({contract.startDate || '-'} ~ {contract.endDate || '무기한'})</span>
+                  <span className="att-confirm__drill-sub"> ({contract.startDate || '-'} ~ {contract.endDate || '무기한'})</span>
                 </p>
               );
             })}
           </div>
 
           {/* 예정 일정 */}
-          <div style={{ marginBottom: '12px' }}>
-            <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#15803d' }}>🕒 예정 일정 ({drill.upcoming.length}건)</h5>
+          <div className="att-confirm__drill-section">
+            <h5 className="att-confirm__drill-h att-confirm__drill-h--upcoming">예정 일정 ({drill.upcoming.length}건)</h5>
             {drill.upcoming.length === 0 ? (
-              <p style={{ margin: 0, fontSize: '13px', color: '#999' }}>예정된 일정이 없습니다. 캘린더에서 다음 수업을 잡아주세요.</p>
+              <p className="att-confirm__drill-line--empty">예정된 일정이 없습니다. 캘린더에서 다음 수업을 잡아주세요.</p>
             ) : (
               drill.upcoming.map((schedule) => (
-                <p key={schedule.scheduleId} style={{ margin: '2px 0', fontSize: '13px', color: '#444' }}>
+                <p key={schedule.scheduleId} className="att-confirm__drill-line">
                   {schedule.scheduleAt.substring(0, 10).replaceAll('-', '.')} {schedule.scheduleAt.substring(11, 16)}
-                  {schedule.memo && <span style={{ color: '#888', fontSize: '12px' }}> — {schedule.memo}</span>}
+                  {schedule.memo && <span className="att-confirm__drill-sub"> — {schedule.memo}</span>}
                 </p>
               ))
             )}
@@ -423,25 +413,25 @@ function AttendanceConfirm() {
 
           {/* 노쇼(미수행) 이력 */}
           {drill.missed.length > 0 && (
-            <div style={{ marginBottom: '12px' }}>
-              <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#b91c1c' }}>❌ 미수행 일정 ({drill.missed.length}건)</h5>
+            <div className="att-confirm__drill-section">
+              <h5 className="att-confirm__drill-h att-confirm__drill-h--missed">미수행 일정 ({drill.missed.length}건)</h5>
               {drill.missed.map((schedule) => (
-                <p key={schedule.scheduleId} style={{ margin: '2px 0', fontSize: '13px', color: '#b91c1c' }}>
+                <p key={schedule.scheduleId} className="att-confirm__drill-line att-confirm__drill-line--missed">
                   {schedule.scheduleAt.substring(0, 10).replaceAll('-', '.')} {schedule.scheduleAt.substring(11, 16)}
-                  {schedule.memo && <span style={{ fontSize: '12px' }}> — {schedule.memo}</span>}
+                  {schedule.memo && <span className="att-confirm__drill-sub"> — {schedule.memo}</span>}
                 </p>
               ))}
             </div>
           )}
 
           {/* 수업 이력 타임라인 (최근 10건) */}
-          <div>
-            <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#6d28d9' }}>✅ 수업 이력 (최근 {Math.min(drill.sessions.length, 10)}건 / 총 {drill.sessions.length}건)</h5>
+          <div className="att-confirm__drill-section">
+            <h5 className="att-confirm__drill-h att-confirm__drill-h--history">수업 이력 (최근 {Math.min(drill.sessions.length, 10)}건 / 총 {drill.sessions.length}건)</h5>
             {drill.sessions.length === 0 ? (
-              <p style={{ margin: 0, fontSize: '13px', color: '#999' }}>아직 진행한 수업이 없습니다.</p>
+              <p className="att-confirm__drill-line--empty">아직 진행한 수업이 없습니다.</p>
             ) : (
               drill.sessions.slice(0, 10).map((session) => (
-                <p key={session.id} style={{ margin: '2px 0', fontSize: '13px', color: '#444' }}>
+                <p key={session.id} className="att-confirm__drill-line">
                   {session.checkIn.substring(0, 10).replaceAll('-', '.')} — 출석 {session.checkIn.substring(11, 16)}
                   {session.trainerConfirm ? ` / 확인 ${session.trainerConfirm.substring(11, 16)}` : ''}
                 </p>
@@ -458,107 +448,96 @@ function AttendanceConfirm() {
       {activeTab === 'schedule' && (
       <div role="tabpanel">
 
-      {/* ===== 당일 PT 출석 확인 섹션 ===== */}
-      <h3>🤝 PT 출석 확인</h3>
-      <p style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>
-        오늘 접수된 담당 회원의 PT 출석 목록입니다. 확인 버튼을 누르면 해당 회원의 잔여 PT 횟수가 1회 차감되고, 그날 일정이 있으면 완료로 채워집니다.
-      </p>
-
-      <button onClick={fetchAll} style={{ marginBottom: '15px', padding: '6px 14px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>
-        🔄 새로고침
-      </button>
-
       {pendingList.length === 0 ? (
-        <p style={{ padding: '30px', textAlign: 'center', color: '#999', border: '1px dashed #ddd', borderRadius: '8px' }}>
-          확인 대기 중인 PT 출석이 없습니다.
-        </p>
+        <p className="att-confirm__empty">확인 대기 중인 PT 출석이 없습니다.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f3f4f6' }}>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>회원명</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>전화번호</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>출석 시간</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>잔여 횟수</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>처리</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pendingList.map((row) => (
-              <tr key={row.id}>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{row.memberName || '-'}</td>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{row.username}</td>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                  {row.checkIn ? row.checkIn.substring(11, 16) : '-'}
-                </td>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                  {row.remainingCount != null ? `${row.remainingCount}회` : '-'}
-                </td>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                  <button onClick={() => handleConfirm(row)} disabled={loading}
-                    style={{ padding: '6px 14px', cursor: 'pointer', border: 'none', borderRadius: '4px', backgroundColor: '#7c3aed', color: '#fff', fontWeight: 'bold' }}>
-                    출석 확인
-                  </button>
-                </td>
+        <div className="att-confirm__table-wrap">
+          <table className="att-confirm__table">
+            <thead>
+              <tr>
+                <th>회원명</th>
+                <th>전화번호</th>
+                <th>출석 시간</th>
+                <th>잔여 횟수</th>
+                <th>처리</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {pendingList.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.memberName || '-'}</td>
+                  <td className="att-confirm__num">{row.username}</td>
+                  <td className="att-confirm__num">
+                    {row.checkIn ? row.checkIn.substring(11, 16) : '-'}
+                  </td>
+                  <td className="att-confirm__num">
+                    {row.remainingCount != null ? `${row.remainingCount}회` : '-'}
+                  </td>
+                  <td>
+                    <button type="button" className="att-confirm__confirm-btn" onClick={() => handleConfirm(row)} disabled={loading}>
+                      출석 확인
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* ===== 내 PT 캘린더 섹션 ===== */}
-      <hr style={{ margin: '30px 0', border: 'none', borderTop: '1px solid #eee' }} />
-      <h3>📅 내 PT 캘린더</h3>
-      <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
-        등록한 일정이 수행되면 <span style={{ color: '#6d28d9', fontWeight: 'bold' }}>완료</span>로 채워집니다.
-        지나간 일정에 출석이 없으면 <span style={{ color: '#b91c1c', fontWeight: 'bold' }}>미수행</span>으로 표시됩니다.
+      <hr className="att-confirm__divider" />
+      <h3 className="att-confirm__title">내 PT 캘린더</h3>
+      <p className="att-confirm__desc">
+        등록한 일정이 수행되면 <span className="att-confirm__accent">완료</span>로 채워집니다.
+        지나간 일정에 출석이 없으면 <span className="att-confirm__danger">미수행</span>으로 표시됩니다.
         날짜를 클릭하면 상세 확인 및 일정 등록이 가능합니다.
       </p>
 
       {/* 월간 실적 요약 카드 - 캘린더 표시 월 기준 (달 이동 시 함께 갱신) */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-        <div style={{ flex: 1, padding: '12px', border: '1px solid #e9d5ff', borderRadius: '8px', backgroundColor: '#faf5ff', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 'bold' }}>이번 달 수업</div>
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#6d28d9' }}>{monthDone}건</div>
-          <div style={{ fontSize: '11px', color: diffFromPrev > 0 ? '#15803d' : diffFromPrev < 0 ? '#b91c1c' : '#888' }}>
+      <div className="att-confirm__stats">
+        <div className="att-confirm__stat att-confirm__stat--pt">
+          <div className="att-confirm__stat-label">이번 달 수업</div>
+          <div className="att-confirm__stat-value">{monthDone}건</div>
+          <div className={`att-confirm__stat-sub${diffFromPrev > 0 ? ' att-confirm__stat-sub--up' : diffFromPrev < 0 ? ' att-confirm__stat-sub--down' : ''}`}>
             지난달 대비 {diffFromPrev > 0 ? `+${diffFromPrev}` : diffFromPrev}건
           </div>
         </div>
-        <div style={{ flex: 1, padding: '12px', border: '1px solid #bbf7d0', borderRadius: '8px', backgroundColor: '#f0fdf4', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: '#15803d', fontWeight: 'bold' }}>수행률</div>
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#15803d' }}>{performRate != null ? `${performRate}%` : '-'}</div>
-          <div style={{ fontSize: '11px', color: '#888' }}>완료 {monthDone} / 미수행 {monthMissed}</div>
+        <div className="att-confirm__stat att-confirm__stat--success">
+          <div className="att-confirm__stat-label">수행률</div>
+          <div className="att-confirm__stat-value">{performRate != null ? `${performRate}%` : '-'}</div>
+          <div className="att-confirm__stat-sub">완료 {monthDone} / 미수행 {monthMissed}</div>
         </div>
-        <div style={{ flex: 1, padding: '12px', border: '1px solid #dbeafe', borderRadius: '8px', backgroundColor: '#eff6ff', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: '#1d4ed8', fontWeight: 'bold' }}>담당 회원</div>
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#1d4ed8' }}>{myMembers.length}명</div>
-          <div style={{ fontSize: '11px', color: '#888' }}>유효 계약 {memberStatus.length}건</div>
+        <div className="att-confirm__stat att-confirm__stat--info">
+          <div className="att-confirm__stat-label">담당 회원</div>
+          <div className="att-confirm__stat-value">{myMembers.length}명</div>
+          <div className="att-confirm__stat-sub">유효 계약 {memberStatus.length}건</div>
         </div>
       </div>
 
       {/* 달력 컨트롤러 헤더 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-        <button onClick={handlePrevMonth} style={{ padding: '6px 12px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>&lt; 이전달</button>
-        <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{year}년 {month + 1}월</span>
-        <button onClick={handleNextMonth} style={{ padding: '6px 12px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>다음달 &gt;</button>
+      <div className="att-confirm__cal-nav">
+        <button type="button" className="att-confirm__cal-btn" onClick={handlePrevMonth}>&lt; 이전달</button>
+        <span className="att-confirm__cal-title">{year}년 {month + 1}월</span>
+        <button type="button" className="att-confirm__cal-btn" onClick={handleNextMonth}>다음달 &gt;</button>
       </div>
 
       {/* 요일 구분 그리드 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', textAlign: 'center', fontWeight: 'bold', fontSize: '14px', marginBottom: '10px' }}>
-        <div style={{ color: 'red' }}>일</div>
+      <div className="att-confirm__weekdays">
+        <div className="att-confirm__weekdays--sun">일</div>
         <div>월</div>
         <div>화</div>
         <div>수</div>
         <div>목</div>
         <div>금</div>
-        <div style={{ color: 'blue' }}>토</div>
+        <div className="att-confirm__weekdays--sat">토</div>
       </div>
 
       {/* 캘린더 날짜 그리드 - 모든 날짜 클릭 가능 (빈 날도 일정 등록을 위해) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+      <div className="att-confirm__cal-grid">
         {calendarCells.map((day, idx) => {
           if (day === null) {
-            return <div key={`blank-${idx}`} style={{ minHeight: '62px' }} />;
+            return <div key={`blank-${idx}`} className="att-confirm__cal-blank" />;
           }
 
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -568,43 +547,29 @@ function AttendanceConfirm() {
           const missedCount = items.filter((i) => i.status === 'missed').length;
           const isSelected = selectedDate === dateStr;
           const hasAny = doneCount + plannedCount + missedCount > 0;
+          // 배경 우선순위: 완료 > 예정 > 미수행 > 없음 (색은 CSS가 담당)
+          const toneMod = doneCount > 0 ? ' att-confirm__cal-cell--done'
+            : plannedCount > 0 ? ' att-confirm__cal-cell--planned'
+            : missedCount > 0 ? ' att-confirm__cal-cell--missed' : '';
 
           return (
             <div
               key={`day-${day}`}
               onClick={() => setSelectedDate(isSelected ? null : dateStr)}
-              style={{
-                minHeight: '62px',
-                border: isSelected ? '2px solid #7c3aed' : '1px solid #eee',
-                borderRadius: '8px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '2px',
-                backgroundColor: doneCount > 0 ? '#f3e8ff' : plannedCount > 0 ? '#f0fdf4' : missedCount > 0 ? '#fef2f2' : '#fafafa',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
+              className={`att-confirm__cal-cell${toneMod}${isSelected ? ' att-confirm__cal-cell--selected' : ''}`}
             >
-              <span style={{ fontSize: '12px', fontWeight: hasAny ? 'bold' : 'normal', color: '#333' }}>
+              <span className={`att-confirm__cal-day${hasAny ? ' att-confirm__cal-day--active' : ''}`}>
                 {day}
               </span>
 
               {doneCount > 0 && (
-                <span style={{ fontSize: '9px', backgroundColor: '#7c3aed', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
-                  완료 {doneCount}
-                </span>
+                <span className="att-confirm__cal-badge att-confirm__cal-badge--done">완료 {doneCount}</span>
               )}
               {plannedCount > 0 && (
-                <span style={{ fontSize: '9px', backgroundColor: '#16a34a', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
-                  예정 {plannedCount}
-                </span>
+                <span className="att-confirm__cal-badge att-confirm__cal-badge--planned">예정 {plannedCount}</span>
               )}
               {missedCount > 0 && (
-                <span style={{ fontSize: '9px', backgroundColor: '#dc2626', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
-                  미수행 {missedCount}
-                </span>
+                <span className="att-confirm__cal-badge att-confirm__cal-badge--missed">미수행 {missedCount}</span>
               )}
             </div>
           );
@@ -613,52 +578,47 @@ function AttendanceConfirm() {
 
       {/* 선택한 날짜의 상세 패널 - 일정 칸에 수행 결과가 채워진 통합 목록 + 일정 등록 폼 */}
       {selectedDate && selected && (
-        <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fcfcfc' }}>
-          <h4 style={{ margin: '0 0 12px 0' }}>{selectedDate.replaceAll('-', '.')}</h4>
+        <div className="att-confirm__day-panel">
+          <h4 className="att-confirm__day-title">{selectedDate.replaceAll('-', '.')}</h4>
 
           {/* 일정 목록 (수행 결과 포함) */}
           {selected.items.length > 0 && (
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 15px 0' }}>
-              {selected.items.map(({ schedule, session, status }) => {
-                const meta = statusMeta[status];
-                return (
-                  <li key={`p-${schedule.scheduleId}`}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 10px', marginBottom: '6px', border: `1px solid ${meta.border}`, borderRadius: '6px', backgroundColor: meta.bg, fontSize: '14px' }}>
-                    <span>
-                      <span style={{ fontWeight: 'bold', color: meta.color, marginRight: '8px' }}>{meta.label}</span>
-                      <b>{schedule.scheduleAt ? schedule.scheduleAt.substring(11, 16) : '-'}</b>{' '}
-                      {schedule.memberName || schedule.username}
-                      {schedule.memo && <span style={{ color: '#888', fontSize: '12px' }}> — {schedule.memo}</span>}
-                      {/* 수행된 일정 칸에는 실제 출석/확인 시각이 채워진다 */}
-                      {session && (
-                        <span style={{ color: '#6d28d9', fontSize: '12px', marginLeft: '8px' }}>
-                          (출석 {session.checkIn ? session.checkIn.substring(11, 16) : '-'}
-                          {session.trainerConfirm ? ` / 확인 ${session.trainerConfirm.substring(11, 16)}` : ''})
-                        </span>
-                      )}
-                    </span>
-                    {/* 완료된 일정은 기록 보존을 위해 삭제 버튼 미노출 */}
-                    {status !== 'done' && (
-                      <button onClick={() => handleScheduleDelete(schedule)} disabled={loading}
-                        style={{ padding: '3px 10px', fontSize: '12px', cursor: 'pointer', border: '1px solid #fca5a5', borderRadius: '4px', backgroundColor: '#fff', color: '#dc2626', flexShrink: 0 }}>
-                        삭제
-                      </button>
+            <ul className="att-confirm__day-list">
+              {selected.items.map(({ schedule, session, status }) => (
+                <li key={`p-${schedule.scheduleId}`} className={`att-confirm__day-item att-confirm__day-item--${status}`}>
+                  <span>
+                    <span className={`att-confirm__day-status att-confirm__day-status--${status}`}>{STATUS_LABEL[status]}</span>
+                    <b>{schedule.scheduleAt ? schedule.scheduleAt.substring(11, 16) : '-'}</b>{' '}
+                    {schedule.memberName || schedule.username}
+                    {schedule.memo && <span className="att-confirm__drill-sub"> — {schedule.memo}</span>}
+                    {/* 수행된 일정 칸에는 실제 출석/확인 시각이 채워진다 */}
+                    {session && (
+                      <span className="att-confirm__session-note">
+                        (출석 {session.checkIn ? session.checkIn.substring(11, 16) : '-'}
+                        {session.trainerConfirm ? ` / 확인 ${session.trainerConfirm.substring(11, 16)}` : ''})
+                      </span>
                     )}
-                  </li>
-                );
-              })}
+                  </span>
+                  {/* 완료된 일정은 기록 보존을 위해 삭제 버튼 미노출 */}
+                  {status !== 'done' && (
+                    <button type="button" className="att-confirm__day-del" onClick={() => handleScheduleDelete(schedule)} disabled={loading}>
+                      삭제
+                    </button>
+                  )}
+                </li>
+              ))}
             </ul>
           )}
 
           {/* 일정 없이 진행된 수업 (키오스크 워크인) */}
           {selected.walkIns.length > 0 && (
-            <div style={{ marginBottom: '15px' }}>
-              <h5 style={{ margin: '0 0 6px 0', color: '#6d28d9' }}>📌 일정 외 진행 수업 ({selected.walkIns.length}건)</h5>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            <div className="att-confirm__walkins">
+              <h5 className="att-confirm__walkins-h">일정 외 진행 수업 ({selected.walkIns.length}건)</h5>
+              <ul className="att-confirm__walkin-list">
                 {selected.walkIns.map((session) => (
-                  <li key={`s-${session.id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 4px', borderBottom: '1px solid #f3e8ff', fontSize: '14px' }}>
-                    <span style={{ fontWeight: 'bold' }}>{session.memberName || session.username}</span>
-                    <span style={{ color: '#666' }}>
+                  <li key={`s-${session.id}`} className="att-confirm__walkin-item">
+                    <span className="att-confirm__walkin-name">{session.memberName || session.username}</span>
+                    <span className="att-confirm__walkin-time">
                       출석 {session.checkIn ? session.checkIn.substring(11, 16) : '-'}
                       {session.trainerConfirm ? ` / 확인 ${session.trainerConfirm.substring(11, 16)}` : ''}
                     </span>
@@ -669,23 +629,22 @@ function AttendanceConfirm() {
           )}
 
           {selected.items.length === 0 && selected.walkIns.length === 0 && (
-            <p style={{ fontSize: '13px', color: '#999', margin: '0 0 15px 0' }}>이 날짜에는 수업/일정이 없습니다.</p>
+            <p className="att-confirm__day-empty">이 날짜에는 수업/일정이 없습니다.</p>
           )}
 
           {/* 일정 등록 폼 */}
-          <div style={{ padding: '12px', border: '1px solid #bbf7d0', borderRadius: '8px', backgroundColor: '#f0fdf4' }}>
-            <h5 style={{ margin: '0 0 8px 0', color: '#15803d' }}>➕ 이 날짜에 일정 등록</h5>
-            <form ref={scheduleFormRef} onSubmit={handleScheduleAdd} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <select name="username" required style={{ padding: '7px', fontSize: '13px' }}>
+          <div className="att-confirm__form-box">
+            <h5 className="att-confirm__form-h">이 날짜에 일정 등록</h5>
+            <form ref={scheduleFormRef} onSubmit={handleScheduleAdd} className="att-confirm__form">
+              <select name="username" required className="att-confirm__input">
                 <option value="">담당 회원 선택</option>
                 {myMembers.map((member) => (
                   <option key={member.username} value={member.username}>{member.name} ({member.username})</option>
                 ))}
               </select>
-              <input type="time" name="time" required style={{ padding: '6px', fontSize: '13px' }} />
-              <input type="text" name="memo" placeholder="메모 (선택)" maxLength={100} style={{ padding: '7px', fontSize: '13px', flex: 1, minWidth: '120px' }} />
-              <button type="submit" disabled={loading}
-                style={{ padding: '7px 16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: '4px', backgroundColor: '#16a34a', color: '#fff' }}>
+              <input type="time" name="time" required className="att-confirm__input" />
+              <input type="text" name="memo" placeholder="메모 (선택)" maxLength={100} className="att-confirm__input att-confirm__input--memo" />
+              <button type="submit" className="att-confirm__form-submit" disabled={loading}>
                 등록
               </button>
             </form>

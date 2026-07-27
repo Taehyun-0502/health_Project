@@ -21,11 +21,6 @@ export const B2B_PRIMARY_NAV = [
   { id: 'item', label: '물품', to: '/fitb/itempage', icon: 'I' },
 ];
 
-export const ITEM_SUB_NAV = [
-  { id: 'item-list', label: '물품 목록', to: '/fitb/itempage', view: 'list' },
-  { id: 'item-form', label: '물품 등록', to: '/fitb/itempage?view=form', view: 'form' },
-];
-
 const CORE_HOME_ACTIONS = [
   {
     id: 'dashboard',
@@ -148,4 +143,15 @@ const PAGE_TITLE_RULES = [
 
 export const getB2bPageTitle = (pathname) => (
   PAGE_TITLE_RULES.find(({ test }) => test.test(pathname))?.label || '관리'
+);
+
+// 리스트(1Depth)에서 이동해 들어가는 드릴인 페이지 — 상단 유틸바 백버튼 노출 판정의 단일 원천.
+// 계약 작성(/fitb/contract/new) · 계약 상세(/fitb/contract/:dataId) · 결제(/fitb/payment/:dataId)
+const B2B_DETAIL_PAGE_RULES = [
+  /^\/fitb\/contract\//,
+  /^\/fitb\/payment\//,
+];
+
+export const isB2bDetailPage = (pathname) => (
+  B2B_DETAIL_PAGE_RULES.some((test) => test.test(pathname))
 );

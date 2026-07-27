@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Pagination from '../settle/Pagination';
+import NavIcon from '../components/uiIcons.jsx';
 import './Contract.css';
 
 // 계약 유형은 contract FK로 판별 (1=제휴, 2=임금, 3=이용권, 4=PT, 5=PT 체험)
@@ -166,7 +167,35 @@ function Contractpage() {
 
   return (
     <div>
-      {/* 상단 액션 줄: 필터 칩(좌) + 검색·발행 버튼(우) — 목업 기준 한 줄 배치 */}
+      {/* 페이지 헤더 (제목 + 안내 문구 + 주요 액션) — 리포트 페이지와 동일 시각 규격 */}
+      <header className="contract-list-head">
+        <div className="contract-list-head__main">
+          <h2 className="contract-list-head__title">계약</h2>
+          <p className="contract-list-head__desc">계약서를 조회하고 역할에 따라 신규 계약을 작성합니다.</p>
+        </div>
+        <div className="contract-list-head__actions">
+          {/* 권한별 계약서 작성 버튼 (ADMIN=제휴 / OWNER=임금·회원·PT 체험) */}
+          {createButtons.map((btn) => (
+            <button key={btn.to} className="contract-btn-primary" title={btn.title} onClick={() => navigate(btn.to)}>
+              {btn.label}
+            </button>
+          ))}
+
+          {/* 트레이너 구하기 (OWNER 전용) - 2026-07-22 확정 범위: 버튼+안내 팝업만, 데이터 저장 없음 */}
+          {isOwner && (
+            <button
+              type="button"
+              className="contract-btn-secondary"
+              title="트레이너 구하기"
+              onClick={() => setHireModalOpen(true)}
+            >
+              트레이너 구하기
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* 상단 액션 줄: 필터 칩(좌) + 검색(우) — 목업 기준 한 줄 배치 */}
       <div className="contract-toolbar">
         {/* 계약 유형 필터 탭 (전체/제휴/임금/이용권/PT/PT 체험) - 서버 페이징 전환으로 칩 건수 배지는 표시하지 않음 */}
         <div className="roster-filter">
@@ -193,10 +222,7 @@ function Contractpage() {
             <span className="contract-search__box">
               {/* 돋보기 클릭 · Enter 모두 같은 검색 동작 */}
               <button type="button" className="contract-search__icon" title="검색" onClick={runSearch}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="M20 20l-3.5-3.5" />
-                </svg>
+                <NavIcon id="search" size={16} />
               </button>
               <input
                 value={keyword}
@@ -212,30 +238,11 @@ function Contractpage() {
                   title="검색어 지우기"
                   onClick={clearSearch}
                 >
-                  ✕
+                  <NavIcon id="close" size={16} />
                 </button>
               )}
             </span>
           </div>
-
-          {/* 권한별 계약서 작성 버튼 (ADMIN=제휴 / OWNER=임금·회원·PT 체험) */}
-          {createButtons.map((btn) => (
-            <button key={btn.to} className="contract-btn-primary" title={btn.title} onClick={() => navigate(btn.to)}>
-              {btn.label}
-            </button>
-          ))}
-
-          {/* 트레이너 구하기 (OWNER 전용) - 2026-07-22 확정 범위: 버튼+안내 팝업만, 데이터 저장 없음 */}
-          {isOwner && (
-            <button
-              type="button"
-              className="contract-btn-secondary"
-              title="트레이너 구하기"
-              onClick={() => setHireModalOpen(true)}
-            >
-              트레이너 구하기
-            </button>
-          )}
         </div>
       </div>
 

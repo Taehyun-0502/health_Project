@@ -1,11 +1,21 @@
+/* 물품 페이지 기준 좌측 정렬선(297px): 래퍼 최대폭 = 본문 1080 + 좌우 패딩 24*2 = 1128 */
 .b2b-profile-page {
-  width: min(100%, 1100px);
+  width: min(100%, 1128px);
   margin: 0 auto;
-  padding: 48px 32px 64px;
+  /* 상단 여백(20px)은 sticky 페이지 헤더의 padding-top(12)과 합쳐 안착 시 20px를 유지하도록
+     래퍼에서 8px만 남기고 헤더로 옮겼다. */
+  padding: 8px 24px var(--ai-fab-clearance);
 }
 
+/* 페이지 헤더 — 스크롤 시 상단 고정(sticky). */
 .b2b-profile-page__header {
-  margin-bottom: 32px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: 0 0 24px;
+  padding: 12px 0;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
 }
 
 .b2b-profile-page__header p {
@@ -25,7 +35,7 @@
 .b2b-profile-page__header span {
   display: block;
   margin-top: 8px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-body);
 }
 
@@ -54,6 +64,17 @@
   border-color: var(--accent);
 }
 
+.b2b-profile-page__card .b2b-profile-page__card-icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--accent-text);
+  background: var(--accent-bg);
+}
+
 .b2b-profile-page__card strong {
   color: var(--gray-900);
   font-size: var(--text-h3);
@@ -61,7 +82,7 @@
 }
 
 .b2b-profile-page__card span {
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
 }
 

@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
+import './B2cPages.css';
 
 // 아바타 색상 팔레트
 const colors = {
   skinLight: '#ffd6b5',
   skinDark: '#e5a97a',
-  outline: '#3e2723',
-  pants: '#a3e635',
-  hair: '#2c3e50',
-  shoes: '#ffffff'
+  outline: '#404040', /* gray-700 토큰값 — canvas는 var() 미지원 */
+  pants: '#a3e635', /* b2c-lime 토큰값 — canvas는 var() 미지원 */
+  hair: '#171717', /* gray-900 토큰값 — canvas는 var() 미지원 */
+  shoes: '#ffffff' /* white 토큰값 — canvas는 var() 미지원 */
 };
 
 // 레벨별 메시지 데이터
@@ -277,11 +278,11 @@ function B2cAvatar() {
     ctx.lineWidth = 6;
     ctx.beginPath(); ctx.arc(cx, headY, headRadius, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = '#171717'; /* gray-900 토큰값 — canvas는 var() 미지원 */
     ctx.beginPath(); ctx.arc(cx - 12, headY - 5, 4, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(cx + 12, headY - 5, 4, 0, Math.PI*2); ctx.fill();
 
-    ctx.strokeStyle = '#000';
+    ctx.strokeStyle = '#171717'; /* gray-900 토큰값 — canvas는 var() 미지원 */
     ctx.lineWidth = 3;
     ctx.beginPath(); 
     if(factor < 0.2) {
@@ -300,63 +301,32 @@ function B2cAvatar() {
   }, [days]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0 auto' }}>
+    <div className="b2c-avatar">
       
       {/* 캔버스 (미니룸 캐릭터) 영역 */}
-      <div 
-        style={{ 
-          position: 'relative',
-          width: '300px',
-          height: '300px',
-          border: '1px solid var(--gray-200)',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          background: 'linear-gradient(to bottom, var(--b2c-lime-bg) 65%, #d2b48c 65%)',
-          boxShadow: '0 1px 3px rgba(23,23,23,.06)'
-        }}
-      >
+      <div className="b2c-avatar__room">
         {/* 배경 점선 패턴 */}
-        <div 
-          style={{ 
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: '35%',
-            backgroundImage: 'radial-gradient(var(--b2c-lime-line) 1px, transparent 1px)',
-            backgroundSize: '15px 15px' 
-          }}
-        />
-        <canvas ref={canvasRef} width="600" height="600" style={{ width: '300px', height: '300px', zIndex: 10 }} />
+        <div className="b2c-avatar__pattern" />
+        <canvas ref={canvasRef} width="600" height="600" className="b2c-avatar__canvas" />
       </div>
 
       {/* 하단 정보 영역 (수동 출석하기 버튼 배제) */}
-      <div style={{ marginTop: '15px', width: '300px', textAlign: 'center' }}>
+      <div className="b2c-avatar__info">
         {isLoading ? (
-          <div style={{ color: 'var(--gray-400)', fontSize: '14px', padding: '10px' }}>
+          <div className="b2c-avatar__loading">
             출석 데이터를 불러오는 중...
           </div>
         ) : (
-          <div style={{ padding: '10px', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid var(--gray-200)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '14px', color: 'var(--gray-500)' }}>
-                출석: <strong style={{ fontSize: '18px', color: 'var(--b2c-accent)' }}>{days}</strong>일
+          <div className="b2c-avatar__status">
+            <div className="b2c-avatar__summary">
+              <span className="b2c-avatar__days">
+                출석: <strong>{days}</strong>일
               </span>
-              <span style={{
-                fontSize: '11px',
-                backgroundColor: 'var(--b2c-accent)',
-                color: '#fff',
-                padding: '2px 8px',
-                borderRadius: '999px',
-                fontWeight: 'bold'
-              }}>
+              <span className="b2c-avatar__level">
                 {currentLevel.title}
               </span>
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--b2c-accent)', fontWeight: 'bold', minHeight: '20px', marginTop: '6px' }}>
+            <div className="b2c-avatar__message">
               {currentLevel.msg}
             </div>
           </div>
