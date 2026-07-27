@@ -51,7 +51,7 @@ function B2bNotification() {
     <div>
       <h3>알림 내역</h3>
       {alarms.length === 0 ? (
-        <p style={{ color: '#666', marginTop: '10px' }}>새로운 알림 소식이 없습니다.</p>
+        <p style={{ color: 'var(--gray-500)', marginTop: '10px' }}>새로운 알림 소식이 없습니다.</p>
       ) : (
         <table border="1" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
           <thead>

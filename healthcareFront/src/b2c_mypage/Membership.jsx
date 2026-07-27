@@ -53,7 +53,7 @@ function Membership() {
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '13px' }}>
           <thead>
-            <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-500)', borderBottom: '2px solid var(--gray-200)' }}>
+            <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-600)', borderBottom: '2px solid var(--gray-200)' }}>
               <th style={{ padding: '10px', fontWeight: '600' }}>번호</th>
               <th style={{ padding: '10px', fontWeight: '600' }}>계약종류</th>
               <th style={{ padding: '10px', fontWeight: '600' }}>시작일</th>
@@ -67,10 +67,10 @@ function Membership() {
               <tr key={item.dataId || idx} style={{ borderBottom: '1px solid var(--gray-200)', textAlign: 'center' }}>
                 <td style={{ padding: '10px' }}>{idx + 1}</td>
                 <td style={{ padding: '10px', fontWeight: '600', color: 'var(--b2c-accent)' }}>{getContractName(item.contract)}</td>
-                <td style={{ padding: '10px', color: 'var(--gray-500)' }}>{item.startDate}</td>
-                <td style={{ padding: '10px', color: 'var(--gray-500)' }}>{item.endDate}</td>
+                <td style={{ padding: '10px', color: 'var(--gray-600)' }}>{item.startDate}</td>
+                <td style={{ padding: '10px', color: 'var(--gray-600)' }}>{item.endDate}</td>
                 <td style={{ padding: '10px', fontVariantNumeric: 'tabular-nums' }}>{item.amount ? `${item.amount.toLocaleString()}만원` : '0만원'}</td>
-                <td style={{ padding: '10px', color: 'var(--gray-500)' }}>{item.managerId || '미지정'}</td>
+                <td style={{ padding: '10px', color: 'var(--gray-600)' }}>{item.managerId || '미지정'}</td>
               </tr>
             ))}
           </tbody>

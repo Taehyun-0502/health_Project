@@ -242,7 +242,7 @@
 }
 
 .item-table__muted {
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-weight: 500;
 }
 
@@ -313,7 +313,7 @@
 }
 
 .item-category-badge--etc {
-  color: var(--gray-500);
+  color: var(--gray-600);
   background: var(--gray-100);
 }
 
@@ -338,7 +338,7 @@
   font: inherit;
   font-size: 14px;
   font-weight: 500;
-  color: var(--gray-500);
+  color: var(--gray-600);
   background: var(--gray-100);
   border: none;
   border-radius: 999px;
@@ -506,7 +506,7 @@
 
 .item-summary-card__label {
   margin-bottom: 8px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
   font-weight: 600;
 }
@@ -530,7 +530,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
   font-weight: 600;
 }
@@ -582,7 +582,7 @@
 
 .item-suggestions__label {
   margin-bottom: 6px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-xs);
   font-weight: 600;
 }

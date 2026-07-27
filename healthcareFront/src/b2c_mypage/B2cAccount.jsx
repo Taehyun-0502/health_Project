@@ -57,13 +57,13 @@ function B2cAccount() {
   return (
     <div style={{ padding: '16px 16px 32px' }}>
       <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>내 계정 설정 (B2C)</h3>
-      <p style={{ fontSize: '13px', color: 'var(--gray-500)' }}>회원님의 임시 비밀번호와 이메일을 수정할 수 있습니다.</p>
+      <p style={{ fontSize: '13px', color: 'var(--gray-600)' }}>회원님의 임시 비밀번호와 이메일을 수정할 수 있습니다.</p>
 
       {message && <div style={{ color: 'var(--danger)', backgroundColor: 'var(--danger-bg)', padding: '10px 12px', borderRadius: '10px', fontSize: '13px', marginBottom: '10px' }}>{message}</div>}
 
       <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '15px' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)', marginBottom: '6px' }}>아이디 (전화번호)</label>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-600)', marginBottom: '6px' }}>아이디 (전화번호)</label>
           <input
             type="text"
             value={user.username || ''}
@@ -73,7 +73,7 @@ function B2cAccount() {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)', marginBottom: '6px' }}>이메일 주소</label>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-600)', marginBottom: '6px' }}>이메일 주소</label>
           <input
             type="email"
             value={email}
@@ -83,7 +83,7 @@ function B2cAccount() {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)', marginBottom: '6px' }}>새 비밀번호 입력</label>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-600)', marginBottom: '6px' }}>새 비밀번호 입력</label>
           <input
             type="password"
             value={password}
@@ -95,7 +95,7 @@ function B2cAccount() {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)', marginBottom: '6px' }}>새 비밀번호 확인</label>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-600)', marginBottom: '6px' }}>새 비밀번호 확인</label>
           <input
             type="password"
             value={passwordCheck}
@@ -106,7 +106,7 @@ function B2cAccount() {
           />
         </div>
 
-        <button type="submit" style={{ width: '100%', minHeight: '48px', padding: '12px', backgroundColor: 'var(--black)', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '15px', marginTop: '10px' }}>
+        <button type="submit" style={{ width: '100%', minHeight: '48px', padding: '12px', backgroundColor: 'var(--black)', color: 'var(--white)', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '15px', marginTop: '10px' }}>
           수정 완료
         </button>
       </form>

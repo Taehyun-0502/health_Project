@@ -55,8 +55,8 @@ function B2cSurvey() {
             height: '30px',
             borderRadius: '50%',
             border: n === value ? '2px solid var(--b2c-accent)' : '1px solid var(--gray-300)',
-            background: n === value ? 'var(--b2c-accent)' : '#fff',
-            color: n === value ? '#fff' : 'var(--gray-700)',
+            background: n === value ? 'var(--b2c-accent)' : 'var(--white)',
+            color: n === value ? 'var(--white)' : 'var(--gray-700)',
             fontWeight: n === value ? 'bold' : 'normal',
           }}
         >
@@ -127,14 +127,14 @@ function B2cSurvey() {
   return (
     <div style={{ padding: '16px 16px 32px' }}>
       <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>회원 설문</h3>
-      <p style={{ color: 'var(--gray-500)', fontSize: '14px' }}>
+      <p style={{ color: 'var(--gray-600)', fontSize: '14px' }}>
         각 항목을 매우좋음 ~ 매우나쁨의 5단계로 평가해주세요.
       </p>
 
       <form onSubmit={handleSubmit}>
         {/* 아이디 (로그인 연동 전 임시 직접 입력) */}
         <div style={{ margin: '10px 0' }}>
-          <label style={{ display: 'inline-block', width: '130px', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)' }}>아이디</label>
+          <label style={{ display: 'inline-block', width: '130px', fontSize: '13px', fontWeight: '600', color: 'var(--gray-600)' }}>아이디</label>
           <input
             type="text"
             value={username}
@@ -173,7 +173,7 @@ function B2cSurvey() {
         {/* 부상 부위 (부상 있음일 때만) */}
         {injuryIssue && (
           <div style={{ margin: '10px 0' }}>
-            <label style={{ display: 'inline-block', width: '130px', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)' }}>부상 부위</label>
+            <label style={{ display: 'inline-block', width: '130px', fontSize: '13px', fontWeight: '600', color: 'var(--gray-600)' }}>부상 부위</label>
             <input
               type="text"
               value={injuryArea}
@@ -185,7 +185,7 @@ function B2cSurvey() {
           </div>
         )}
 
-        <button type="submit" style={{ marginTop: '15px', width: '100%', minHeight: '48px', padding: '12px', backgroundColor: 'var(--b2c-accent)', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}>설문 제출</button>
+        <button type="submit" style={{ marginTop: '15px', width: '100%', minHeight: '48px', padding: '12px', backgroundColor: 'var(--b2c-accent)', color: 'var(--white)', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}>설문 제출</button>
       </form>
     </div>
   );

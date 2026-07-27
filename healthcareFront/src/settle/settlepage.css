@@ -67,7 +67,7 @@
 }
 
 .settle-pagehead__meta {
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
   line-height: 1.6;
 }
@@ -139,7 +139,7 @@
 .stat-card-title {
   font-size: 12px;
   font-weight: 600;
-  color: var(--gray-500);
+  color: var(--gray-600);
   margin-bottom: 8px;
   letter-spacing: 0.02em;
 }
@@ -154,7 +154,7 @@
 
 .stat-card-desc {
   font-size: 12px;
-  color: var(--gray-500);
+  color: var(--gray-600);
 }
 
 /* Tabs — 칩형 탭 (활성: 차콜 알약 + 흰 글자, 프로토타입 기준) */
@@ -169,7 +169,7 @@
   padding: 7px 14px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--gray-500);
+  color: var(--gray-600);
   background: var(--gray-100);
   border: none;
   border-radius: 999px;
@@ -207,7 +207,7 @@
 }
 
 .settle-rail__label {
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
   font-weight: 600;
 }
@@ -253,7 +253,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.settle-rail__hero-split .is-revenue { color: #ff8534; }
+.settle-rail__hero-split .is-revenue { color: var(--tier-serious); }
 .settle-rail__hero-split .is-expense { color: var(--gray-300); }
 
 /* 매출·지출 요약 카드 (클릭 시 해당 탭으로 전환) */
@@ -446,7 +446,7 @@
 .no-data-row {
   text-align: center;
   padding: 40px !important;
-  color: var(--gray-500);
+  color: var(--gray-600);
 }
 
 /* Status Badges */
@@ -518,7 +518,7 @@
 }
 
 .unpaid-contract-filter label {
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: 13px;
   font-weight: 600;
 }
@@ -575,7 +575,7 @@
   justify-content: space-between;
   font-size: 13px;
   font-weight: 600;
-  color: var(--gray-500);
+  color: var(--gray-600);
 }
 
 .pnl-bar-label-row .value {
@@ -603,7 +603,7 @@
 }
 
 .pnl-progress-fill.expense {
-  background: var(--gray-500);
+  background: var(--gray-600);
 }
 
 .pnl-progress-fill.commission {
@@ -644,7 +644,7 @@
   border: 1px solid var(--gray-300);
   border-radius: 8px;
   background-color: var(--white);
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -693,7 +693,7 @@
 
 .unauth-desc {
   font-size: 14px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   line-height: 1.6;
 }
 
@@ -711,7 +711,7 @@
 .settle-loading {
   text-align: center;
   padding: 50px;
-  color: var(--gray-500);
+  color: var(--gray-600);
 }
 
 /* stat 카드 값 색상 모디파이어 */
@@ -727,7 +727,7 @@
 }
 .generate-commission-card p {
   font-size: var(--text-sm);
-  color: var(--gray-500);
+  color: var(--gray-600);
   margin: 0 0 12px 0;
 }
 .gen-commission-controls {
@@ -740,7 +740,7 @@
 /* 필터 우측 검색 건수 */
 .filter-count {
   font-size: var(--text-sm);
-  color: var(--gray-500);
+  color: var(--gray-600);
 }
 
 /* 금액 셀 */
@@ -762,12 +762,12 @@
 
 /* 매출 테이블 쿠폰 사용/미사용 표시 */
 .pay-coupon-used { color: var(--info-solid); }
-.pay-coupon-unused { color: var(--gray-500); }
+.pay-coupon-unused { color: var(--gray-600); }
 
 /* 폼·카드 설명문 공통 */
 .settle-form-desc {
   font-size: var(--text-sm);
-  color: var(--gray-500);
+  color: var(--gray-600);
   margin-bottom: 15px;
 }
 
@@ -784,7 +784,7 @@
 /* 지출 금액 분해 표기 (기본급 + 인센티브) */
 .expense-breakdown {
   font-size: var(--text-xs);
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-weight: 400;
   margin-top: 2px;
 }
@@ -861,7 +861,7 @@
 }
 .expense-item-id {
   font-size: var(--text-xs);
-  color: var(--gray-500);
+  color: var(--gray-600);
 }
 .expense-item-target {
   font-size: 14px;
@@ -876,14 +876,14 @@
 .expense-empty {
   text-align: center;
   padding: 40px 0;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
 }
 
 /* 지출 폼: 기본급 안내 + 연동 배너 + 선택 해제 버튼 */
 .expense-base-note {
   font-size: var(--text-xs);
-  color: var(--gray-500);
+  color: var(--gray-600);
   margin-top: 4px;
 }
 .expense-linked-banner {
@@ -932,7 +932,7 @@
 .settle-summary-rail__title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--gray-500);
+  color: var(--gray-600);
   margin-bottom: 2px;
 }
 
@@ -980,7 +980,7 @@
 }
 
 .summary-hero--expense {
-  background: linear-gradient(145deg, #17191f 0%, #272b35 100%);
+  background: linear-gradient(145deg, var(--gray-900) 0%, var(--gray-700) 100%);
 }
 
 .summary-hero__sub--single {
@@ -1111,7 +1111,7 @@
 
 .expense-drawer__header p {
   margin: 6px 0 0;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: 13px;
 }
 

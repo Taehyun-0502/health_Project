@@ -15,7 +15,7 @@ const chipStyle = (isActive) => ({
   fontSize: '13px',
   padding: '8px 14px',
   borderRadius: '999px',
-  color: isActive ? '#fff' : 'var(--gray-500)',
+  color: isActive ? 'var(--white)' : 'var(--gray-600)',
   backgroundColor: isActive ? 'var(--b2c-accent)' : 'var(--gray-100)',
 });
 
@@ -37,7 +37,7 @@ function B2cMain() {
       </div>
 
       {/* 자식 라우트 컴포넌트들이 마운트되는 슬롯 */}
-      <div style={{ border: '1px solid var(--gray-200)', borderRadius: '14px', backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(23,23,23,.06)', padding: '16px 12px', minHeight: '300px' }}>
+      <div style={{ border: '1px solid var(--gray-200)', borderRadius: '14px', backgroundColor: 'var(--white)', boxShadow: '0 1px 3px rgba(23,23,23,.06)', padding: '16px 12px', minHeight: '300px' }}>
         <Outlet />
       </div>
 

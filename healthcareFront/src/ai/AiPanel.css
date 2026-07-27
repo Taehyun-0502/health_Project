@@ -10,7 +10,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fff;
+  background: var(--white);
   border: 1px solid var(--gray-300);
   border-radius: 28px;
   padding: 7px 7px 7px 16px;
@@ -45,7 +45,7 @@
   border: none;
   border-radius: 50%;
   background: var(--accent-strong);
-  color: #fff;
+  color: var(--white);
   font-size: 14px;
   cursor: pointer;
   flex-shrink: 0;
@@ -66,7 +66,7 @@
 }
 
 .ai-chat input {
-  background: #fff;
+  background: var(--white);
   color: var(--gray-900);
 }
 
@@ -76,13 +76,13 @@
   gap: 4px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--gray-200);
-  background: #fff;
+  background: var(--white);
   flex-shrink: 0;
 }
 
 .ai-chat-toolbar button {
   border: 1px solid var(--gray-200);
-  background: #fff;
+  background: var(--white);
   color: var(--gray-700);
   font: inherit;
   font-size: 12px;
@@ -129,7 +129,7 @@
 .ai-bubble-user {
   align-self: flex-end;
   background: var(--black);
-  color: #fff;
+  color: var(--white);
   border-bottom-right-radius: 4px;
 }
 
@@ -149,7 +149,7 @@
 .ai-bubble-warn {
   align-self: flex-start;
   background: var(--warning-bg);
-  border: 1px solid #fde047;
+  border: 1px solid var(--tier-warn);
   color: var(--warning);
 }
 
@@ -188,7 +188,7 @@
 
 .ai-chart-value {
   font-size: 9.5px;
-  color: var(--gray-500);
+  color: var(--gray-600);
 }
 
 .ai-chart-bar {
@@ -301,7 +301,7 @@
 .ai-session-item {
   text-align: left;
   border: 1px solid var(--gray-200);
-  background: #fff;
+  background: var(--white);
   border-radius: 8px;
   padding: 8px 10px;
   cursor: pointer;
@@ -341,7 +341,7 @@
   text-align: center;
   padding: 6px 0;
   border-top: 1px solid var(--gray-200);
-  background: #fff;
+  background: var(--white);
   flex-shrink: 0;
 }
 
@@ -350,7 +350,7 @@
   display: flex;
   gap: 6px;
   padding: 10px 12px;
-  background: #fff;
+  background: var(--white);
   border-top: 1px solid var(--gray-200);
   flex-shrink: 0;
 }
@@ -371,7 +371,7 @@
 .ai-inputbar button {
   border: none;
   background: var(--accent-strong);
-  color: #fff;
+  color: var(--white);
   border-radius: 18px;
   padding: 8px 16px;
   font-size: 13px;

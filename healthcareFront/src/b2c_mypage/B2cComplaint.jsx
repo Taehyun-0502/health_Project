@@ -79,14 +79,14 @@ function B2cComplaint() {
       {/* 건의사항 작성 폼 */}
       <form ref={suggestFormRef} onSubmit={handleSuggestSubmit} style={{ marginBottom: '30px' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)', marginBottom: '6px' }}>건의 제목: </label>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-600)', marginBottom: '6px' }}>건의 제목: </label>
           <input type="text" name="title" required style={{ width: '100%', boxSizing: 'border-box', padding: '12px', border: '1px solid var(--gray-300)', borderRadius: '10px' }} />
         </div>
         <div style={{ marginTop: '12px' }}>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-500)', marginBottom: '6px' }}>건의 내용: </label>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-600)', marginBottom: '6px' }}>건의 내용: </label>
           <textarea name="content" required style={{ width: '100%', boxSizing: 'border-box', height: '100px', padding: '12px', border: '1px solid var(--gray-300)', borderRadius: '10px', fontFamily: 'inherit' }}></textarea>
         </div>
-        <button type="submit" style={{ marginTop: '12px', width: '100%', minHeight: '48px', padding: '12px', backgroundColor: 'var(--b2c-accent)', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}>건의사항 보내기</button>
+        <button type="submit" style={{ marginTop: '12px', width: '100%', minHeight: '48px', padding: '12px', backgroundColor: 'var(--b2c-accent)', color: 'var(--white)', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}>건의사항 보내기</button>
       </form>
 
       <hr style={{ border: 'none', borderTop: '1px solid var(--gray-200)', margin: '24px 0' }} />
@@ -98,7 +98,7 @@ function B2cComplaint() {
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '13px' }}>
           <thead>
-            <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-500)', borderBottom: '2px solid var(--gray-200)' }}>
+            <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-600)', borderBottom: '2px solid var(--gray-200)' }}>
               <th style={{ padding: '10px', fontWeight: '600' }}>번호</th>
               <th style={{ padding: '10px', fontWeight: '600' }}>제목</th>
               <th style={{ padding: '10px', fontWeight: '600' }}>상태</th>
@@ -123,7 +123,7 @@ function B2cComplaint() {
                     {item.status}
                   </span>
                 </td>
-                <td style={{ padding: '10px', color: 'var(--gray-500)' }}>{item.createAt}</td>
+                <td style={{ padding: '10px', color: 'var(--gray-600)' }}>{item.createAt}</td>
               </tr>
             ))}
           </tbody>

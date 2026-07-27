@@ -150,7 +150,7 @@ function OwnerManagement({ onGoPromotion, gymId }) {
     <div style={{ maxWidth: '750px', margin: '0 auto', padding: '20px' }}>
 
       {/* ===== 탭바 ===== */}
-      <div role="tablist" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>
+      <div role="tablist" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px', borderBottom: '1px solid var(--gray-200)', paddingBottom: '12px' }}>
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -159,9 +159,9 @@ function OwnerManagement({ onGoPromotion, gymId }) {
             onClick={() => setActiveTab(tab.key)}
             style={{
               padding: '7px 16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer',
-              borderRadius: '999px', border: '1px solid ' + (activeTab === tab.key ? '#171717' : '#d4d4d4'),
-              backgroundColor: activeTab === tab.key ? '#171717' : '#fff',
-              color: activeTab === tab.key ? '#fff' : '#525252',
+              borderRadius: '999px', border: '1px solid ' + (activeTab === tab.key ? 'var(--gray-900)' : 'var(--gray-300)'),
+              backgroundColor: activeTab === tab.key ? 'var(--gray-900)' : 'var(--white)',
+              color: activeTab === tab.key ? 'var(--white)' : 'var(--gray-600)',
             }}
           >
             {tab.label}
@@ -174,27 +174,27 @@ function OwnerManagement({ onGoPromotion, gymId }) {
         <div role="tabpanel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0 }}>👥 회원 명단</h3>
-            <button onClick={() => { fetchMembers(); fetchContractCoupons(); }} style={{ padding: '6px 14px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>
+            <button onClick={() => { fetchMembers(); fetchContractCoupons(); }} style={{ padding: '6px 14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '4px', backgroundColor: 'var(--white)' }}>
               🔄 새로고침
             </button>
           </div>
-          <p style={{ fontSize: '13px', color: '#666', margin: '8px 0 15px 0' }}>
+          <p style={{ fontSize: '13px', color: 'var(--gray-500)', margin: '8px 0 15px 0' }}>
             현재 이용 중(ACTIVE)인 이용권·PT 계약을 보유한 회원입니다. 쿠폰 사용여부는 해당 계약 결제 시 쿠폰 적용 여부입니다.
           </p>
 
           {members.length === 0 ? (
-            <p style={{ padding: '30px', textAlign: 'center', color: '#999', border: '1px dashed #ddd', borderRadius: '8px' }}>
+            <p style={{ padding: '30px', textAlign: 'center', color: 'var(--gray-400)', border: '1px dashed var(--gray-200)', borderRadius: '8px' }}>
               이용 중인 회원이 없습니다.
             </p>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
               <thead>
-                <tr style={{ backgroundColor: '#f3f4f6' }}>
-                  <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>회원명</th>
-                  <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>전화번호</th>
-                  <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>계약유형</th>
-                  <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>종료일</th>
-                  <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>쿠폰 사용여부</th>
+                <tr style={{ backgroundColor: 'var(--gray-100)' }}>
+                  <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>회원명</th>
+                  <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>전화번호</th>
+                  <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>계약유형</th>
+                  <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>종료일</th>
+                  <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>쿠폰 사용여부</th>
                 </tr>
               </thead>
               <tbody>
@@ -204,34 +204,34 @@ function OwnerManagement({ onGoPromotion, gymId }) {
                   const couponUsed = pay?.couponId != null; // 결제 시 쿠폰 적용 여부
                   return (
                     <tr key={m.dataId ?? m.member?.username}>
-                      <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontWeight: 'bold' }}>{m.member?.name ?? '-'}</td>
-                      <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{m.member?.username ?? '-'}</td>
-                      <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                      <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center', fontWeight: 'bold' }}>{m.member?.name ?? '-'}</td>
+                      <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>{m.member?.username ?? '-'}</td>
+                      <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>
                         {m.dataId != null ? (
-                          <Link to={`/fitb/contract/${m.dataId}`} style={{ color: '#2563eb', fontWeight: 'bold', textDecoration: 'underline' }}>
+                          <Link to={`/fitb/contract/${m.dataId}`} style={{ color: 'var(--info-solid)', fontWeight: 'bold', textDecoration: 'underline' }}>
                             {contractLabel[m.contract] ?? '-'}
                           </Link>
                         ) : (
                           contractLabel[m.contract] ?? '-'
                         )}
                       </td>
-                      <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                        {m.endDate ? <>{m.endDate}{dday != null && <span style={{ fontSize: '11px', color: dday <= 7 ? '#b91c1c' : '#888' }}> (D-{dday})</span>}</> : '-'}
+                      <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>
+                        {m.endDate ? <>{m.endDate}{dday != null && <span style={{ fontSize: '11px', color: dday <= 7 ? 'var(--danger)' : 'var(--gray-500)' }}> (D-{dday})</span>}</> : '-'}
                       </td>
-                      <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                      <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>
                         {payCouponStatus === 'error' ? (
-                          <span style={{ color: '#b91c1c' }}>확인 불가</span>
+                          <span style={{ color: 'var(--danger)' }}>확인 불가</span>
                         ) : payCouponMap === null ? (
-                          <span style={{ color: '#999' }}>확인 중</span>
+                          <span style={{ color: 'var(--gray-400)' }}>확인 중</span>
                         ) : !pay ? (
-                          <span style={{ color: '#999' }}>결제 내역 없음</span>
+                          <span style={{ color: 'var(--gray-400)' }}>결제 내역 없음</span>
                         ) : couponUsed ? (
                           <span style={{ display: 'inline-flex', flexDirection: 'column', gap: '2px', alignItems: 'center' }}>
-                            <span style={{ fontSize: '11px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '2px 7px', borderRadius: '10px', fontWeight: 'bold' }}>사용</span>
-                            {pay.couponName && <span style={{ fontSize: '11px', color: '#666' }}>{pay.couponName}</span>}
+                            <span style={{ fontSize: '11px', backgroundColor: 'var(--info-bg)', color: 'var(--info)', border: '1px solid var(--info-soft)', padding: '2px 7px', borderRadius: '10px', fontWeight: 'bold' }}>사용</span>
+                            {pay.couponName && <span style={{ fontSize: '11px', color: 'var(--gray-500)' }}>{pay.couponName}</span>}
                           </span>
                         ) : (
-                          <span style={{ fontSize: '11px', backgroundColor: '#f5f5f4', color: '#525252', border: '1px solid #e5e5e5', padding: '2px 7px', borderRadius: '10px', fontWeight: 'bold' }}>미사용</span>
+                          <span style={{ fontSize: '11px', backgroundColor: 'var(--gray-100)', color: 'var(--gray-600)', border: '1px solid var(--gray-200)', padding: '2px 7px', borderRadius: '10px', fontWeight: 'bold' }}>미사용</span>
                         )}
                       </td>
                     </tr>
@@ -254,27 +254,27 @@ function OwnerManagement({ onGoPromotion, gymId }) {
       {activeTab === 'trainers' && (
       <div role="tabpanel">
       <h3>🏋️ 트레이너별 성과</h3>
-      <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+      <p style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '15px' }}>
         우리 지점 트레이너의 담당 회원 수와 이번 달 수업 실적입니다. 수행률 = 완료 / (완료 + 미수행).
       </p>
 
-      <button onClick={() => fetchOverview()} style={{ marginBottom: '15px', padding: '6px 14px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>
+      <button onClick={() => fetchOverview()} style={{ marginBottom: '15px', padding: '6px 14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '4px', backgroundColor: 'var(--white)' }}>
         🔄 새로고침
       </button>
 
       {trainers.length === 0 ? (
-        <p style={{ padding: '30px', textAlign: 'center', color: '#999', border: '1px dashed #ddd', borderRadius: '8px' }}>
+        <p style={{ padding: '30px', textAlign: 'center', color: 'var(--gray-400)', border: '1px dashed var(--gray-200)', borderRadius: '8px' }}>
           지점에 소속된 트레이너가 없습니다.
         </p>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
           <thead>
-            <tr style={{ backgroundColor: '#f3f4f6' }}>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>트레이너</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>담당 회원</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>이번 달 수업</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>수행률</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>재등록 임박</th>
+            <tr style={{ backgroundColor: 'var(--gray-100)' }}>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>트레이너</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>담당 회원</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>이번 달 수업</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>수행률</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>재등록 임박</th>
             </tr>
           </thead>
           <tbody>
@@ -284,21 +284,21 @@ function OwnerManagement({ onGoPromotion, gymId }) {
               const rate = done + missed > 0 ? Math.round((done / (done + missed)) * 100) : null;
               return (
                 <tr key={trainer.username}>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontWeight: 'bold' }}>
-                    {trainer.name}<br /><span style={{ fontSize: '11px', fontWeight: 'normal', color: '#888' }}>{trainer.username}</span>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center', fontWeight: 'bold' }}>
+                    {trainer.name}<br /><span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--gray-500)' }}>{trainer.username}</span>
                   </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{trainer.memberCount || 0}명</td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                    {done}건{missed > 0 && <span style={{ fontSize: '11px', color: '#b91c1c' }}> (미수행 {missed})</span>}
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>{trainer.memberCount || 0}명</td>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>
+                    {done}건{missed > 0 && <span style={{ fontSize: '11px', color: 'var(--danger)' }}> (미수행 {missed})</span>}
                   </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontWeight: 'bold', color: rate == null ? '#999' : rate >= 90 ? '#15803d' : rate >= 70 ? '#d97706' : '#b91c1c' }}>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center', fontWeight: 'bold', color: rate == null ? 'var(--gray-400)' : rate >= 90 ? 'var(--success)' : rate >= 70 ? 'var(--warning-solid)' : 'var(--danger)' }}>
                     {rate != null ? `${rate}%` : '-'}
                   </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>
                     {(trainer.rebookCount || 0) > 0 ? (
-                      <span style={{ fontSize: '11px', backgroundColor: '#f59e0b', color: '#fff', padding: '3px 8px', borderRadius: '10px', fontWeight: 'bold' }}>{trainer.rebookCount}명</span>
+                      <span style={{ fontSize: '11px', backgroundColor: 'var(--tier-serious)', color: 'var(--white)', padding: '3px 8px', borderRadius: '10px', fontWeight: 'bold' }}>{trainer.rebookCount}명</span>
                     ) : (
-                      <span style={{ color: '#999' }}>-</span>
+                      <span style={{ color: 'var(--gray-400)' }}>-</span>
                     )}
                   </td>
                 </tr>
@@ -324,27 +324,27 @@ function OwnerManagement({ onGoPromotion, gymId }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ margin: 0 }}>⏰ 재등록 임박 회원</h3>
         <button onClick={() => onGoPromotion && onGoPromotion()}
-          style={{ padding: '7px 14px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: '4px', backgroundColor: '#f59e0b', color: '#fff' }}>
+          style={{ padding: '7px 14px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: '4px', backgroundColor: 'var(--tier-serious)', color: 'var(--white)' }}>
           🎟️ 프로모션(쿠폰) 발행하러 가기
         </button>
       </div>
-      <p style={{ fontSize: '13px', color: '#666', margin: '8px 0 15px 0' }}>
+      <p style={{ fontSize: '13px', color: 'var(--gray-500)', margin: '8px 0 15px 0' }}>
         PT 잔여 3회 이하 또는 이용권 종료 7일 이내인 회원입니다. 쿠폰 발행으로 재등록을 유도해 보세요.
       </p>
 
       {rebooks.length === 0 ? (
-        <p style={{ padding: '30px', textAlign: 'center', color: '#999', border: '1px dashed #ddd', borderRadius: '8px' }}>
+        <p style={{ padding: '30px', textAlign: 'center', color: 'var(--gray-400)', border: '1px dashed var(--gray-200)', borderRadius: '8px' }}>
           재등록 임박 회원이 없습니다.
         </p>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
           <thead>
-            <tr style={{ backgroundColor: '#f3f4f6' }}>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>구분</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>회원명</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>전화번호</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>담당 트레이너</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>남은 상태</th>
+            <tr style={{ backgroundColor: 'var(--gray-100)' }}>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>구분</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>회원명</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>전화번호</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>담당 트레이너</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>남은 상태</th>
             </tr>
           </thead>
           <tbody>
@@ -356,15 +356,15 @@ function OwnerManagement({ onGoPromotion, gymId }) {
               const dday = rebook.endDate ? Math.ceil((new Date(rebook.endDate) - new Date(todayStr)) / 86400000) : null;
               return (
                 <tr key={`${rebook.category}-${rebook.dataId}`}>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                    <span style={{ fontSize: '11px', backgroundColor: isPt ? '#7c3aed' : '#0284c7', color: '#fff', padding: '3px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>
+                    <span style={{ fontSize: '11px', backgroundColor: isPt ? 'var(--pt)' : 'var(--gym)', color: 'var(--white)', padding: '3px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
                       {rebook.category}
                     </span>
                   </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontWeight: 'bold' }}>{rebook.memberName || '-'}</td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{rebook.username}</td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{rebook.trainerName || '-'}</td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontWeight: 'bold', color: '#d97706' }}>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center', fontWeight: 'bold' }}>{rebook.memberName || '-'}</td>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>{rebook.username}</td>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>{rebook.trainerName || '-'}</td>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center', fontWeight: 'bold', color: 'var(--warning-solid)' }}>
                     {isPt
                       ? `잔여 ${rebook.remainingCount}회`
                       : `종료 ${rebook.endDate} (D-${dday})`}

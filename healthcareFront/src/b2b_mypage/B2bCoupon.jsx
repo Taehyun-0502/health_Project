@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 // 이탈율(0~1)에 따른 색상 (B2bList와 동일 기준)
-const churnColor = (rate) => (rate >= 0.5 ? '#c62828' : rate >= 0.25 ? '#ef6c00' : '#2e7d32');
+const churnColor = (rate) => (rate >= 0.5 ? 'var(--danger)' : rate >= 0.25 ? 'var(--accent)' : 'var(--success)');
 
 // B2B 사장님용 — 이탈율 높은 순 회원 명단에서 쿠폰 발송 대상 선택 컴포넌트
 function B2bCoupon() {
@@ -70,10 +70,10 @@ function B2bCoupon() {
       onClick={() => setMode(m)}
       style={{
         padding: '8px 20px', borderRadius: '6px', cursor: 'pointer',
-        border: mode === m ? '2px solid #ef6c00' : '1px solid #ccc',
-        background: mode === m ? '#fff3e0' : '#fff',
+        border: mode === m ? '2px solid var(--accent)' : '1px solid var(--gray-300)',
+        background: mode === m ? 'var(--accent-soft)' : 'var(--white)',
         fontWeight: mode === m ? 'bold' : 'normal',
-        color: mode === m ? '#ef6c00' : '#333',
+        color: mode === m ? 'var(--accent)' : 'var(--gray-700)',
       }}
     >
       {label}
@@ -83,7 +83,7 @@ function B2bCoupon() {
   return (
     <div style={{ padding: '20px', maxWidth: '760px' }}>
       <h2>🎟️ 쿠폰 대상 회원 선택 ({user.name} 사장님)</h2>
-      <p style={{ fontSize: '13px', color: '#666' }}>
+      <p style={{ fontSize: '13px', color: 'var(--gray-500)' }}>
         이탈율이 높은 순으로 정렬된 회원 명단입니다. 기준을 골라 대상을 자동 선택하거나, 개별로 체크할 수 있습니다.
       </p>
 
@@ -94,16 +94,16 @@ function B2bCoupon() {
       </div>
 
       {/* 기준별 입력 */}
-      <div style={{ background: '#fafafa', border: '1px solid #eee', borderRadius: '8px', padding: '12px 14px', marginBottom: '14px' }}>
+      <div style={{ background: 'var(--gray-50)', border: '1px solid var(--gray-200)', borderRadius: '8px', padding: '12px 14px', marginBottom: '14px' }}>
         {mode === 'count' ? (
           <label style={{ fontSize: '14px' }}>
             이탈율 높은 순으로 상위{' '}
             <input
               type="number" min="0" max={members.length} value={countN}
               onChange={(e) => setCountN(e.target.value)}
-              style={{ width: '80px', padding: '6px 8px', border: '1px solid #ccc', borderRadius: '4px', textAlign: 'right' }}
+              style={{ width: '80px', padding: '6px 8px', border: '1px solid var(--gray-300)', borderRadius: '4px', textAlign: 'right' }}
             />
-            {' '}명 선택 <span style={{ color: '#999' }}>(전체 {members.length}명)</span>
+            {' '}명 선택 <span style={{ color: 'var(--gray-400)' }}>(전체 {members.length}명)</span>
           </label>
         ) : (
           <label style={{ fontSize: '14px' }}>
@@ -111,7 +111,7 @@ function B2bCoupon() {
             <input
               type="number" min="0" max="100" value={rateThreshold}
               onChange={(e) => setRateThreshold(e.target.value)}
-              style={{ width: '80px', padding: '6px 8px', border: '1px solid #ccc', borderRadius: '4px', textAlign: 'right' }}
+              style={{ width: '80px', padding: '6px 8px', border: '1px solid var(--gray-300)', borderRadius: '4px', textAlign: 'right' }}
             />
             {' '}% 이상 회원 전부 선택
           </label>
@@ -120,21 +120,21 @@ function B2bCoupon() {
 
       {/* 선택 요약 */}
       <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '10px' }}>
-        <strong style={{ color: '#ef6c00', fontSize: '15px' }}>{selectedCount}명 선택됨</strong>
+        <strong style={{ color: 'var(--accent)', fontSize: '15px' }}>{selectedCount}명 선택됨</strong>
         {avgSelectedChurn != null && (
-          <span style={{ fontSize: '13px', color: '#666' }}>
+          <span style={{ fontSize: '13px', color: 'var(--gray-500)' }}>
             선택 회원 평균 이탈율 <b style={{ color: churnColor(avgSelectedChurn) }}>{(avgSelectedChurn * 100).toFixed(1)}%</b>
           </span>
         )}
       </div>
 
       {loading ? (
-        <p style={{ color: '#888' }}>명단 불러오는 중…</p>
+        <p style={{ color: 'var(--gray-500)' }}>명단 불러오는 중…</p>
       ) : members.length === 0 ? (
-        <p style={{ color: '#888' }}>회원 데이터가 없습니다. (이탈 예측 배치 실행 후 표시됩니다)</p>
+        <p style={{ color: 'var(--gray-500)' }}>회원 데이터가 없습니다. (이탈 예측 배치 실행 후 표시됩니다)</p>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-          <thead style={{ background: '#f5f5f5' }}>
+          <thead style={{ background: 'var(--gray-100)' }}>
             <tr>
               <th style={{ padding: '8px', width: '48px', textAlign: 'center' }}>선택</th>
               <th style={{ padding: '8px', width: '48px', textAlign: 'center' }}>순위</th>
@@ -149,16 +149,16 @@ function B2bCoupon() {
               return (
                 <tr key={m.username}
                     onClick={() => toggleMember(m.username)}
-                    style={{ cursor: 'pointer', background: checked ? '#fff3e0' : '#fff', borderBottom: '1px solid #eee' }}>
+                    style={{ cursor: 'pointer', background: checked ? 'var(--accent-soft)' : 'var(--white)', borderBottom: '1px solid var(--gray-200)' }}>
                   <td style={{ padding: '6px 8px', textAlign: 'center' }}>
                     <input type="checkbox" checked={checked}
                            onChange={() => toggleMember(m.username)}
                            onClick={(e) => e.stopPropagation()}
                            style={{ cursor: 'pointer' }} />
                   </td>
-                  <td style={{ padding: '6px 8px', textAlign: 'center', color: '#999' }}>{i + 1}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'center', color: 'var(--gray-400)' }}>{i + 1}</td>
                   <td style={{ padding: '6px 8px', fontWeight: 'bold' }}>{m.name}</td>
-                  <td style={{ padding: '6px 8px', color: '#666' }}>{m.username}</td>
+                  <td style={{ padding: '6px 8px', color: 'var(--gray-500)' }}>{m.username}</td>
                   <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold', color: churnColor(m.churnRate) }}>
                     {(m.churnRate * 100).toFixed(1)}%
                   </td>

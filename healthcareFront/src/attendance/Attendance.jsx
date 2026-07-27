@@ -65,49 +65,49 @@ function Attendance() {
     border: 'none',
     borderRadius: '16px',
     cursor: 'pointer',
-    color: '#fff',
+    color: 'var(--white)',
   };
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 20px', textAlign: 'center' }}>
       <h2 style={{ marginBottom: '8px' }}>🏋️ 출석 체크</h2>
-      <p style={{ color: '#666', marginBottom: '40px' }}>출석 유형을 선택한 뒤 본인 계정으로 확인해 주세요.</p>
+      <p style={{ color: 'var(--gray-500)', marginBottom: '40px' }}>출석 유형을 선택한 뒤 본인 계정으로 확인해 주세요.</p>
 
       {/* 3화면: 출석 완료 안내 */}
       {result ? (
-        <div style={{ padding: '40px 20px', border: '2px solid #22c55e', borderRadius: '16px', backgroundColor: '#f0fdf4' }}>
+        <div style={{ padding: '40px 20px', border: '2px solid var(--tier-good)', borderRadius: '16px', backgroundColor: 'var(--success-bg)' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
-          <h2 style={{ margin: '0 0 12px 0', color: '#166534' }}>{result.memberName}님 출석 완료!</h2>
+          <h2 style={{ margin: '0 0 12px 0', color: 'var(--success)' }}>{result.memberName}님 출석 완료!</h2>
           {result.inoutType === 2 ? (
-            <p style={{ color: '#374151', fontSize: '15px' }}>
+            <p style={{ color: 'var(--gray-700)', fontSize: '15px' }}>
               PT 출석이 접수되었습니다.<br />
               담당 트레이너 확인 후 잔여 횟수가 차감됩니다. (현재 잔여 {result.remainingCount}회)
             </p>
           ) : (
-            <p style={{ color: '#374151', fontSize: '15px' }}>오늘도 좋은 운동 되세요!</p>
+            <p style={{ color: 'var(--gray-700)', fontSize: '15px' }}>오늘도 좋은 운동 되세요!</p>
           )}
-          <button onClick={handleReset} style={{ marginTop: '20px', padding: '10px 30px', fontSize: '15px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '8px', backgroundColor: '#fff' }}>
+          <button onClick={handleReset} style={{ marginTop: '20px', padding: '10px 30px', fontSize: '15px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '8px', backgroundColor: 'var(--white)' }}>
             확인
           </button>
         </div>
       ) : mode === null ? (
         /* 1화면: 출석 유형 선택 버튼 2개 */
         <div style={{ display: 'flex', gap: '30px', justifyContent: 'center' }}>
-          <button onClick={() => setMode('gym')} style={{ ...bigButtonStyle, backgroundColor: '#0284c7' }}>
+          <button onClick={() => setMode('gym')} style={{ ...bigButtonStyle, backgroundColor: 'var(--gym)' }}>
             💪<br />헬스장 출석
           </button>
-          <button onClick={() => setMode('pt')} style={{ ...bigButtonStyle, backgroundColor: '#7c3aed' }}>
+          <button onClick={() => setMode('pt')} style={{ ...bigButtonStyle, backgroundColor: 'var(--pt)' }}>
             🤝<br />PT 출석
           </button>
         </div>
       ) : (
         /* 2화면: 계정 입력 폼 (로그인 형식 본인 확인) */
-        <div style={{ maxWidth: '360px', margin: '0 auto', padding: '30px', border: '1px solid #ddd', borderRadius: '16px', textAlign: 'left' }}>
-          <h3 style={{ marginTop: 0, textAlign: 'center', color: mode === 'gym' ? '#0284c7' : '#7c3aed' }}>
+        <div style={{ maxWidth: '360px', margin: '0 auto', padding: '30px', border: '1px solid var(--gray-200)', borderRadius: '16px', textAlign: 'left' }}>
+          <h3 style={{ marginTop: 0, textAlign: 'center', color: mode === 'gym' ? 'var(--gym)' : 'var(--pt)' }}>
             {mode === 'gym' ? '💪 헬스장 출석' : '🤝 PT 출석'}
           </h3>
           {mode === 'pt' && (
-            <p style={{ fontSize: '12px', color: '#666', textAlign: 'center' }}>
+            <p style={{ fontSize: '12px', color: 'var(--gray-500)', textAlign: 'center' }}>
               접수 후 담당 트레이너가 확인하면 잔여 횟수가 1회 차감됩니다.
             </p>
           )}
@@ -123,11 +123,11 @@ function Attendance() {
                 style={{ width: '100%', padding: '10px', fontSize: '16px', boxSizing: 'border-box' }} />
             </div>
             <button type="submit" disabled={loading}
-              style={{ width: '100%', padding: '12px', fontSize: '16px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', backgroundColor: mode === 'gym' ? '#0284c7' : '#7c3aed' }}>
+              style={{ width: '100%', padding: '12px', fontSize: '16px', fontWeight: 'bold', color: 'var(--white)', border: 'none', borderRadius: '8px', cursor: 'pointer', backgroundColor: mode === 'gym' ? 'var(--gym)' : 'var(--pt)' }}>
               {loading ? '처리 중...' : '출석하기'}
             </button>
           </form>
-          <button onClick={handleReset} style={{ width: '100%', marginTop: '10px', padding: '10px', fontSize: '14px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '8px', backgroundColor: '#fff' }}>
+          <button onClick={handleReset} style={{ width: '100%', marginTop: '10px', padding: '10px', fontSize: '14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '8px', backgroundColor: 'var(--white)' }}>
             ← 처음으로
           </button>
         </div>

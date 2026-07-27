@@ -244,9 +244,9 @@ function AttendanceConfirm() {
 
   // 일정 상태별 표기 상수
   const statusMeta = {
-    done: { label: '✅ 완료', color: '#6d28d9', bg: '#f3e8ff', border: '#e9d5ff' },
-    planned: { label: '🕒 예정', color: '#15803d', bg: '#f0fdf4', border: '#dcfce7' },
-    missed: { label: '❌ 미수행', color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+    done: { label: '✅ 완료', color: 'var(--pt-text)', bg: 'var(--pt-bg)', border: 'var(--pt-soft)' },
+    planned: { label: '🕒 예정', color: 'var(--success)', bg: 'var(--success-bg)', border: 'var(--success-soft)' },
+    missed: { label: '❌ 미수행', color: 'var(--danger)', bg: 'var(--danger-bg)', border: 'var(--danger-soft)' },
   };
 
   const tabs = [
@@ -258,7 +258,7 @@ function AttendanceConfirm() {
     <div style={{ maxWidth: '700px', margin: '0 auto', padding: '20px' }}>
 
       {/* ===== 탭바 ===== */}
-      <div role="tablist" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>
+      <div role="tablist" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px', borderBottom: '1px solid var(--gray-200)', paddingBottom: '12px' }}>
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -267,9 +267,9 @@ function AttendanceConfirm() {
             onClick={() => setActiveTab(tab.key)}
             style={{
               padding: '7px 16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer',
-              borderRadius: '999px', border: '1px solid ' + (activeTab === tab.key ? '#171717' : '#d4d4d4'),
-              backgroundColor: activeTab === tab.key ? '#171717' : '#fff',
-              color: activeTab === tab.key ? '#fff' : '#525252',
+              borderRadius: '999px', border: '1px solid ' + (activeTab === tab.key ? 'var(--gray-900)' : 'var(--gray-300)'),
+              backgroundColor: activeTab === tab.key ? 'var(--gray-900)' : 'var(--white)',
+              color: activeTab === tab.key ? 'var(--white)' : 'var(--gray-600)',
             }}
           >
             {tab.label}
@@ -283,25 +283,25 @@ function AttendanceConfirm() {
 
       {/* ===== 담당 회원 현황 섹션 - 유효 PT 계약별 총/사용/잔여, 잔여 적은 순 ===== */}
       <h3>👥 담당 회원 현황</h3>
-      <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+      <p style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '15px' }}>
         담당 중인 유효 PT 계약별 잔여 횟수입니다. 잔여가 적은 회원이 위로 정렬되며, 3회 이하는 재등록 제안 대상으로 표시됩니다.
       </p>
 
       {memberStatus.length === 0 ? (
-        <p style={{ padding: '30px', textAlign: 'center', color: '#999', border: '1px dashed #ddd', borderRadius: '8px' }}>
+        <p style={{ padding: '30px', textAlign: 'center', color: 'var(--gray-400)', border: '1px dashed var(--gray-200)', borderRadius: '8px' }}>
           담당 중인 유효 PT 계약이 없습니다.
         </p>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
           <thead>
-            <tr style={{ backgroundColor: '#f3f4f6' }}>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>회원명</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>전화번호</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>진행 현황</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>잔여</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>최근 수업</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>계약 기간</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>상태</th>
+            <tr style={{ backgroundColor: 'var(--gray-100)' }}>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>회원명</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>전화번호</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>진행 현황</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>잔여</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>최근 수업</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>계약 기간</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>상태</th>
             </tr>
           </thead>
           <tbody>
@@ -320,57 +320,57 @@ function AttendanceConfirm() {
 
               return (
                 <tr key={row.dataId}>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>
                     {/* 회원명 클릭 시 하단에 상세 드릴다운 패널 표시 */}
                     <button
                       onClick={() => setSelectedMember(selectedMember === String(row.username) ? null : String(row.username))}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', color: '#2563eb', textDecoration: 'underline', padding: 0 }}>
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', color: 'var(--info-solid)', textDecoration: 'underline', padding: 0 }}>
                       {row.memberName || '-'}
                     </button>
                     {row.contract === 5 && (
-                      <span style={{ display: 'block', marginTop: '3px', fontSize: '10px', color: '#d97706', fontWeight: 'bold' }}>
+                      <span style={{ display: 'block', marginTop: '3px', fontSize: '10px', color: 'var(--warning-solid)', fontWeight: 'bold' }}>
                         {PT_TYPE_LABEL[5]}
                       </span>
                     )}
                   </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{row.username}</td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>{row.username}</td>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>
                     {/* 사용/총 진행 바 */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ flex: 1, height: '8px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ width: `${percent}%`, height: '100%', backgroundColor: isDone ? '#9ca3af' : isLow ? '#f59e0b' : '#7c3aed', transition: 'width 0.3s' }} />
+                      <div style={{ flex: 1, height: '8px', backgroundColor: 'var(--gray-200)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${percent}%`, height: '100%', backgroundColor: isDone ? 'var(--gray-500)' : isLow ? 'var(--tier-serious)' : 'var(--pt)', transition: 'width 0.3s' }} />
                       </div>
-                      <span style={{ fontSize: '12px', color: '#666', whiteSpace: 'nowrap' }}>{used} / {total}회</span>
+                      <span style={{ fontSize: '12px', color: 'var(--gray-500)', whiteSpace: 'nowrap' }}>{used} / {total}회</span>
                     </div>
                   </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontWeight: 'bold', color: isDone ? '#9ca3af' : isLow ? '#d97706' : '#6d28d9' }}>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center', fontWeight: 'bold', color: isDone ? 'var(--gray-500)' : isLow ? 'var(--warning-solid)' : 'var(--pt-text)' }}>
                     {remaining}회
                   </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontSize: '12px', color: needCare ? '#b91c1c' : '#666' }}>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center', fontSize: '12px', color: needCare ? 'var(--danger)' : 'var(--gray-500)' }}>
                     {lastSession ? (
                       <>
                         {lastSession.substring(0, 10)}<br />
                         <b>({elapsed === 0 ? '오늘' : `${elapsed}일 전`})</b>
                         {needCare && (
-                          <span style={{ display: 'inline-block', marginLeft: '4px', fontSize: '10px', backgroundColor: '#dc2626', color: '#fff', padding: '1px 6px', borderRadius: '8px', fontWeight: 'bold' }}>
+                          <span style={{ display: 'inline-block', marginLeft: '4px', fontSize: '10px', backgroundColor: 'var(--danger-solid)', color: 'var(--white)', padding: '1px 6px', borderRadius: '8px', fontWeight: 'bold' }}>
                             관리 필요
                           </span>
                         )}
                       </>
                     ) : (
-                      <span style={{ color: '#999' }}>수업 이력 없음</span>
+                      <span style={{ color: 'var(--gray-400)' }}>수업 이력 없음</span>
                     )}
                   </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center', fontSize: '12px', color: '#666' }}>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center', fontSize: '12px', color: 'var(--gray-500)' }}>
                     {row.startDate || '-'} ~ {row.endDate || '무기한'}
                   </td>
-                  <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                  <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>
                     {isDone ? (
-                      <span style={{ fontSize: '11px', backgroundColor: '#6b7280', color: '#fff', padding: '3px 8px', borderRadius: '10px', fontWeight: 'bold' }}>소진 완료</span>
+                      <span style={{ fontSize: '11px', backgroundColor: 'var(--gray-500)', color: 'var(--white)', padding: '3px 8px', borderRadius: '10px', fontWeight: 'bold' }}>소진 완료</span>
                     ) : isLow ? (
-                      <span style={{ fontSize: '11px', backgroundColor: '#f59e0b', color: '#fff', padding: '3px 8px', borderRadius: '10px', fontWeight: 'bold' }}>재등록 제안</span>
+                      <span style={{ fontSize: '11px', backgroundColor: 'var(--tier-serious)', color: 'var(--white)', padding: '3px 8px', borderRadius: '10px', fontWeight: 'bold' }}>재등록 제안</span>
                     ) : (
-                      <span style={{ fontSize: '11px', backgroundColor: '#e5e7eb', color: '#374151', padding: '3px 8px', borderRadius: '10px' }}>진행 중</span>
+                      <span style={{ fontSize: '11px', backgroundColor: 'var(--gray-200)', color: 'var(--gray-700)', padding: '3px 8px', borderRadius: '10px' }}>진행 중</span>
                     )}
                   </td>
                 </tr>
@@ -382,25 +382,25 @@ function AttendanceConfirm() {
 
       {/* 회원 상세 드릴다운 패널 - 현황에서 회원명 클릭 시 표시 */}
       {drill && (
-        <div style={{ marginTop: '15px', padding: '15px', border: '2px solid #bfdbfe', borderRadius: '8px', backgroundColor: '#eff6ff' }}>
+        <div style={{ marginTop: '15px', padding: '15px', border: '2px solid var(--info-soft)', borderRadius: '8px', backgroundColor: 'var(--info-bg)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h4 style={{ margin: 0, color: '#1d4ed8' }}>🔍 {drillName}님 상세</h4>
+            <h4 style={{ margin: 0, color: 'var(--info)' }}>🔍 {drillName}님 상세</h4>
             <button onClick={() => setSelectedMember(null)}
-              style={{ padding: '3px 10px', fontSize: '12px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>
+              style={{ padding: '3px 10px', fontSize: '12px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '4px', backgroundColor: 'var(--white)' }}>
               닫기 ✕
             </button>
           </div>
 
           {/* 계약별 진행 현황 */}
           <div style={{ marginBottom: '12px' }}>
-            <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#374151' }}>📋 계약 진행</h5>
+            <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--gray-700)' }}>📋 계약 진행</h5>
             {drill.contracts.map((contract) => {
               const total = contract.totalCount || 0;
               const used = contract.usedCount || 0;
               return (
-                <p key={contract.dataId} style={{ margin: '2px 0', fontSize: '13px', color: '#444' }}>
+                <p key={contract.dataId} style={{ margin: '2px 0', fontSize: '13px', color: 'var(--gray-700)' }}>
                   계약 #{contract.dataId} [{PT_TYPE_LABEL[contract.contract] ?? '-'}] — {used} / {total}회 사용, <b>잔여 {contract.remainingCount}회</b>
-                  <span style={{ color: '#888', fontSize: '12px' }}> ({contract.startDate || '-'} ~ {contract.endDate || '무기한'})</span>
+                  <span style={{ color: 'var(--gray-500)', fontSize: '12px' }}> ({contract.startDate || '-'} ~ {contract.endDate || '무기한'})</span>
                 </p>
               );
             })}
@@ -408,14 +408,14 @@ function AttendanceConfirm() {
 
           {/* 예정 일정 */}
           <div style={{ marginBottom: '12px' }}>
-            <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#15803d' }}>🕒 예정 일정 ({drill.upcoming.length}건)</h5>
+            <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--success)' }}>🕒 예정 일정 ({drill.upcoming.length}건)</h5>
             {drill.upcoming.length === 0 ? (
-              <p style={{ margin: 0, fontSize: '13px', color: '#999' }}>예정된 일정이 없습니다. 캘린더에서 다음 수업을 잡아주세요.</p>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--gray-400)' }}>예정된 일정이 없습니다. 캘린더에서 다음 수업을 잡아주세요.</p>
             ) : (
               drill.upcoming.map((schedule) => (
-                <p key={schedule.scheduleId} style={{ margin: '2px 0', fontSize: '13px', color: '#444' }}>
+                <p key={schedule.scheduleId} style={{ margin: '2px 0', fontSize: '13px', color: 'var(--gray-700)' }}>
                   {schedule.scheduleAt.substring(0, 10).replaceAll('-', '.')} {schedule.scheduleAt.substring(11, 16)}
-                  {schedule.memo && <span style={{ color: '#888', fontSize: '12px' }}> — {schedule.memo}</span>}
+                  {schedule.memo && <span style={{ color: 'var(--gray-500)', fontSize: '12px' }}> — {schedule.memo}</span>}
                 </p>
               ))
             )}
@@ -424,9 +424,9 @@ function AttendanceConfirm() {
           {/* 노쇼(미수행) 이력 */}
           {drill.missed.length > 0 && (
             <div style={{ marginBottom: '12px' }}>
-              <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#b91c1c' }}>❌ 미수행 일정 ({drill.missed.length}건)</h5>
+              <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--danger)' }}>❌ 미수행 일정 ({drill.missed.length}건)</h5>
               {drill.missed.map((schedule) => (
-                <p key={schedule.scheduleId} style={{ margin: '2px 0', fontSize: '13px', color: '#b91c1c' }}>
+                <p key={schedule.scheduleId} style={{ margin: '2px 0', fontSize: '13px', color: 'var(--danger)' }}>
                   {schedule.scheduleAt.substring(0, 10).replaceAll('-', '.')} {schedule.scheduleAt.substring(11, 16)}
                   {schedule.memo && <span style={{ fontSize: '12px' }}> — {schedule.memo}</span>}
                 </p>
@@ -436,12 +436,12 @@ function AttendanceConfirm() {
 
           {/* 수업 이력 타임라인 (최근 10건) */}
           <div>
-            <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#6d28d9' }}>✅ 수업 이력 (최근 {Math.min(drill.sessions.length, 10)}건 / 총 {drill.sessions.length}건)</h5>
+            <h5 style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--pt-text)' }}>✅ 수업 이력 (최근 {Math.min(drill.sessions.length, 10)}건 / 총 {drill.sessions.length}건)</h5>
             {drill.sessions.length === 0 ? (
-              <p style={{ margin: 0, fontSize: '13px', color: '#999' }}>아직 진행한 수업이 없습니다.</p>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--gray-400)' }}>아직 진행한 수업이 없습니다.</p>
             ) : (
               drill.sessions.slice(0, 10).map((session) => (
-                <p key={session.id} style={{ margin: '2px 0', fontSize: '13px', color: '#444' }}>
+                <p key={session.id} style={{ margin: '2px 0', fontSize: '13px', color: 'var(--gray-700)' }}>
                   {session.checkIn.substring(0, 10).replaceAll('-', '.')} — 출석 {session.checkIn.substring(11, 16)}
                   {session.trainerConfirm ? ` / 확인 ${session.trainerConfirm.substring(11, 16)}` : ''}
                 </p>
@@ -460,43 +460,43 @@ function AttendanceConfirm() {
 
       {/* ===== 당일 PT 출석 확인 섹션 ===== */}
       <h3>🤝 PT 출석 확인</h3>
-      <p style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>
+      <p style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '20px' }}>
         오늘 접수된 담당 회원의 PT 출석 목록입니다. 확인 버튼을 누르면 해당 회원의 잔여 PT 횟수가 1회 차감되고, 그날 일정이 있으면 완료로 채워집니다.
       </p>
 
-      <button onClick={fetchAll} style={{ marginBottom: '15px', padding: '6px 14px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>
+      <button onClick={fetchAll} style={{ marginBottom: '15px', padding: '6px 14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '4px', backgroundColor: 'var(--white)' }}>
         🔄 새로고침
       </button>
 
       {pendingList.length === 0 ? (
-        <p style={{ padding: '30px', textAlign: 'center', color: '#999', border: '1px dashed #ddd', borderRadius: '8px' }}>
+        <p style={{ padding: '30px', textAlign: 'center', color: 'var(--gray-400)', border: '1px dashed var(--gray-200)', borderRadius: '8px' }}>
           확인 대기 중인 PT 출석이 없습니다.
         </p>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
           <thead>
-            <tr style={{ backgroundColor: '#f3f4f6' }}>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>회원명</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>전화번호</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>출석 시간</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>잔여 횟수</th>
-              <th style={{ padding: '10px', border: '1px solid #e5e7eb' }}>처리</th>
+            <tr style={{ backgroundColor: 'var(--gray-100)' }}>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>회원명</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>전화번호</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>출석 시간</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>잔여 횟수</th>
+              <th style={{ padding: '10px', border: '1px solid var(--gray-200)' }}>처리</th>
             </tr>
           </thead>
           <tbody>
             {pendingList.map((row) => (
               <tr key={row.id}>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{row.memberName || '-'}</td>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{row.username}</td>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>{row.memberName || '-'}</td>
+                <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>{row.username}</td>
+                <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>
                   {row.checkIn ? row.checkIn.substring(11, 16) : '-'}
                 </td>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>
                   {row.remainingCount != null ? `${row.remainingCount}회` : '-'}
                 </td>
-                <td style={{ padding: '10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                <td style={{ padding: '10px', border: '1px solid var(--gray-200)', textAlign: 'center' }}>
                   <button onClick={() => handleConfirm(row)} disabled={loading}
-                    style={{ padding: '6px 14px', cursor: 'pointer', border: 'none', borderRadius: '4px', backgroundColor: '#7c3aed', color: '#fff', fontWeight: 'bold' }}>
+                    style={{ padding: '6px 14px', cursor: 'pointer', border: 'none', borderRadius: '4px', backgroundColor: 'var(--pt)', color: 'var(--white)', fontWeight: 'bold' }}>
                     출석 확인
                   </button>
                 </td>
@@ -507,40 +507,40 @@ function AttendanceConfirm() {
       )}
 
       {/* ===== 내 PT 캘린더 섹션 ===== */}
-      <hr style={{ margin: '30px 0', border: 'none', borderTop: '1px solid #eee' }} />
+      <hr style={{ margin: '30px 0', border: 'none', borderTop: '1px solid var(--gray-200)' }} />
       <h3>📅 내 PT 캘린더</h3>
-      <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
-        등록한 일정이 수행되면 <span style={{ color: '#6d28d9', fontWeight: 'bold' }}>완료</span>로 채워집니다.
-        지나간 일정에 출석이 없으면 <span style={{ color: '#b91c1c', fontWeight: 'bold' }}>미수행</span>으로 표시됩니다.
+      <p style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '15px' }}>
+        등록한 일정이 수행되면 <span style={{ color: 'var(--pt-text)', fontWeight: 'bold' }}>완료</span>로 채워집니다.
+        지나간 일정에 출석이 없으면 <span style={{ color: 'var(--danger)', fontWeight: 'bold' }}>미수행</span>으로 표시됩니다.
         날짜를 클릭하면 상세 확인 및 일정 등록이 가능합니다.
       </p>
 
       {/* 월간 실적 요약 카드 - 캘린더 표시 월 기준 (달 이동 시 함께 갱신) */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-        <div style={{ flex: 1, padding: '12px', border: '1px solid #e9d5ff', borderRadius: '8px', backgroundColor: '#faf5ff', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 'bold' }}>이번 달 수업</div>
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#6d28d9' }}>{monthDone}건</div>
-          <div style={{ fontSize: '11px', color: diffFromPrev > 0 ? '#15803d' : diffFromPrev < 0 ? '#b91c1c' : '#888' }}>
+        <div style={{ flex: 1, padding: '12px', border: '1px solid var(--pt-soft)', borderRadius: '8px', backgroundColor: 'var(--pt-bg)', textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', color: 'var(--pt-text)', fontWeight: 'bold' }}>이번 달 수업</div>
+          <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--pt-text)' }}>{monthDone}건</div>
+          <div style={{ fontSize: '11px', color: diffFromPrev > 0 ? 'var(--success)' : diffFromPrev < 0 ? 'var(--danger)' : 'var(--gray-500)' }}>
             지난달 대비 {diffFromPrev > 0 ? `+${diffFromPrev}` : diffFromPrev}건
           </div>
         </div>
-        <div style={{ flex: 1, padding: '12px', border: '1px solid #bbf7d0', borderRadius: '8px', backgroundColor: '#f0fdf4', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: '#15803d', fontWeight: 'bold' }}>수행률</div>
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#15803d' }}>{performRate != null ? `${performRate}%` : '-'}</div>
-          <div style={{ fontSize: '11px', color: '#888' }}>완료 {monthDone} / 미수행 {monthMissed}</div>
+        <div style={{ flex: 1, padding: '12px', border: '1px solid var(--success-soft)', borderRadius: '8px', backgroundColor: 'var(--success-bg)', textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', color: 'var(--success)', fontWeight: 'bold' }}>수행률</div>
+          <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--success)' }}>{performRate != null ? `${performRate}%` : '-'}</div>
+          <div style={{ fontSize: '11px', color: 'var(--gray-500)' }}>완료 {monthDone} / 미수행 {monthMissed}</div>
         </div>
-        <div style={{ flex: 1, padding: '12px', border: '1px solid #dbeafe', borderRadius: '8px', backgroundColor: '#eff6ff', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: '#1d4ed8', fontWeight: 'bold' }}>담당 회원</div>
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#1d4ed8' }}>{myMembers.length}명</div>
-          <div style={{ fontSize: '11px', color: '#888' }}>유효 계약 {memberStatus.length}건</div>
+        <div style={{ flex: 1, padding: '12px', border: '1px solid var(--info-soft)', borderRadius: '8px', backgroundColor: 'var(--info-bg)', textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', color: 'var(--info)', fontWeight: 'bold' }}>담당 회원</div>
+          <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--info)' }}>{myMembers.length}명</div>
+          <div style={{ fontSize: '11px', color: 'var(--gray-500)' }}>유효 계약 {memberStatus.length}건</div>
         </div>
       </div>
 
       {/* 달력 컨트롤러 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-        <button onClick={handlePrevMonth} style={{ padding: '6px 12px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>&lt; 이전달</button>
+        <button onClick={handlePrevMonth} style={{ padding: '6px 12px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '4px', backgroundColor: 'var(--white)' }}>&lt; 이전달</button>
         <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{year}년 {month + 1}월</span>
-        <button onClick={handleNextMonth} style={{ padding: '6px 12px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}>다음달 &gt;</button>
+        <button onClick={handleNextMonth} style={{ padding: '6px 12px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '4px', backgroundColor: 'var(--white)' }}>다음달 &gt;</button>
       </div>
 
       {/* 요일 구분 그리드 */}
@@ -575,34 +575,34 @@ function AttendanceConfirm() {
               onClick={() => setSelectedDate(isSelected ? null : dateStr)}
               style={{
                 minHeight: '62px',
-                border: isSelected ? '2px solid #7c3aed' : '1px solid #eee',
+                border: isSelected ? '2px solid var(--pt)' : '1px solid var(--gray-200)',
                 borderRadius: '8px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '2px',
-                backgroundColor: doneCount > 0 ? '#f3e8ff' : plannedCount > 0 ? '#f0fdf4' : missedCount > 0 ? '#fef2f2' : '#fafafa',
+                backgroundColor: doneCount > 0 ? 'var(--pt-bg)' : plannedCount > 0 ? 'var(--success-bg)' : missedCount > 0 ? 'var(--danger-bg)' : 'var(--gray-50)',
                 cursor: 'pointer',
                 transition: 'all 0.2s'
               }}
             >
-              <span style={{ fontSize: '12px', fontWeight: hasAny ? 'bold' : 'normal', color: '#333' }}>
+              <span style={{ fontSize: '12px', fontWeight: hasAny ? 'bold' : 'normal', color: 'var(--gray-700)' }}>
                 {day}
               </span>
 
               {doneCount > 0 && (
-                <span style={{ fontSize: '9px', backgroundColor: '#7c3aed', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+                <span style={{ fontSize: '9px', backgroundColor: 'var(--pt)', color: 'var(--white)', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
                   완료 {doneCount}
                 </span>
               )}
               {plannedCount > 0 && (
-                <span style={{ fontSize: '9px', backgroundColor: '#16a34a', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+                <span style={{ fontSize: '9px', backgroundColor: 'var(--success-solid)', color: 'var(--white)', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
                   예정 {plannedCount}
                 </span>
               )}
               {missedCount > 0 && (
-                <span style={{ fontSize: '9px', backgroundColor: '#dc2626', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+                <span style={{ fontSize: '9px', backgroundColor: 'var(--danger-solid)', color: 'var(--white)', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
                   미수행 {missedCount}
                 </span>
               )}
@@ -613,7 +613,7 @@ function AttendanceConfirm() {
 
       {/* 선택한 날짜의 상세 패널 - 일정 칸에 수행 결과가 채워진 통합 목록 + 일정 등록 폼 */}
       {selectedDate && selected && (
-        <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fcfcfc' }}>
+        <div style={{ marginTop: '20px', padding: '15px', border: '1px solid var(--gray-200)', borderRadius: '8px', backgroundColor: 'var(--gray-50)' }}>
           <h4 style={{ margin: '0 0 12px 0' }}>{selectedDate.replaceAll('-', '.')}</h4>
 
           {/* 일정 목록 (수행 결과 포함) */}
@@ -628,10 +628,10 @@ function AttendanceConfirm() {
                       <span style={{ fontWeight: 'bold', color: meta.color, marginRight: '8px' }}>{meta.label}</span>
                       <b>{schedule.scheduleAt ? schedule.scheduleAt.substring(11, 16) : '-'}</b>{' '}
                       {schedule.memberName || schedule.username}
-                      {schedule.memo && <span style={{ color: '#888', fontSize: '12px' }}> — {schedule.memo}</span>}
+                      {schedule.memo && <span style={{ color: 'var(--gray-500)', fontSize: '12px' }}> — {schedule.memo}</span>}
                       {/* 수행된 일정 칸에는 실제 출석/확인 시각이 채워진다 */}
                       {session && (
-                        <span style={{ color: '#6d28d9', fontSize: '12px', marginLeft: '8px' }}>
+                        <span style={{ color: 'var(--pt-text)', fontSize: '12px', marginLeft: '8px' }}>
                           (출석 {session.checkIn ? session.checkIn.substring(11, 16) : '-'}
                           {session.trainerConfirm ? ` / 확인 ${session.trainerConfirm.substring(11, 16)}` : ''})
                         </span>
@@ -640,7 +640,7 @@ function AttendanceConfirm() {
                     {/* 완료된 일정은 기록 보존을 위해 삭제 버튼 미노출 */}
                     {status !== 'done' && (
                       <button onClick={() => handleScheduleDelete(schedule)} disabled={loading}
-                        style={{ padding: '3px 10px', fontSize: '12px', cursor: 'pointer', border: '1px solid #fca5a5', borderRadius: '4px', backgroundColor: '#fff', color: '#dc2626', flexShrink: 0 }}>
+                        style={{ padding: '3px 10px', fontSize: '12px', cursor: 'pointer', border: '1px solid var(--danger-soft)', borderRadius: '4px', backgroundColor: 'var(--white)', color: 'var(--danger-solid)', flexShrink: 0 }}>
                         삭제
                       </button>
                     )}
@@ -653,12 +653,12 @@ function AttendanceConfirm() {
           {/* 일정 없이 진행된 수업 (키오스크 워크인) */}
           {selected.walkIns.length > 0 && (
             <div style={{ marginBottom: '15px' }}>
-              <h5 style={{ margin: '0 0 6px 0', color: '#6d28d9' }}>📌 일정 외 진행 수업 ({selected.walkIns.length}건)</h5>
+              <h5 style={{ margin: '0 0 6px 0', color: 'var(--pt-text)' }}>📌 일정 외 진행 수업 ({selected.walkIns.length}건)</h5>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {selected.walkIns.map((session) => (
-                  <li key={`s-${session.id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 4px', borderBottom: '1px solid #f3e8ff', fontSize: '14px' }}>
+                  <li key={`s-${session.id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 4px', borderBottom: '1px solid var(--pt-bg)', fontSize: '14px' }}>
                     <span style={{ fontWeight: 'bold' }}>{session.memberName || session.username}</span>
-                    <span style={{ color: '#666' }}>
+                    <span style={{ color: 'var(--gray-500)' }}>
                       출석 {session.checkIn ? session.checkIn.substring(11, 16) : '-'}
                       {session.trainerConfirm ? ` / 확인 ${session.trainerConfirm.substring(11, 16)}` : ''}
                     </span>
@@ -669,12 +669,12 @@ function AttendanceConfirm() {
           )}
 
           {selected.items.length === 0 && selected.walkIns.length === 0 && (
-            <p style={{ fontSize: '13px', color: '#999', margin: '0 0 15px 0' }}>이 날짜에는 수업/일정이 없습니다.</p>
+            <p style={{ fontSize: '13px', color: 'var(--gray-400)', margin: '0 0 15px 0' }}>이 날짜에는 수업/일정이 없습니다.</p>
           )}
 
           {/* 일정 등록 폼 */}
-          <div style={{ padding: '12px', border: '1px solid #bbf7d0', borderRadius: '8px', backgroundColor: '#f0fdf4' }}>
-            <h5 style={{ margin: '0 0 8px 0', color: '#15803d' }}>➕ 이 날짜에 일정 등록</h5>
+          <div style={{ padding: '12px', border: '1px solid var(--success-soft)', borderRadius: '8px', backgroundColor: 'var(--success-bg)' }}>
+            <h5 style={{ margin: '0 0 8px 0', color: 'var(--success)' }}>➕ 이 날짜에 일정 등록</h5>
             <form ref={scheduleFormRef} onSubmit={handleScheduleAdd} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
               <select name="username" required style={{ padding: '7px', fontSize: '13px' }}>
                 <option value="">담당 회원 선택</option>
@@ -685,7 +685,7 @@ function AttendanceConfirm() {
               <input type="time" name="time" required style={{ padding: '6px', fontSize: '13px' }} />
               <input type="text" name="memo" placeholder="메모 (선택)" maxLength={100} style={{ padding: '7px', fontSize: '13px', flex: 1, minWidth: '120px' }} />
               <button type="submit" disabled={loading}
-                style={{ padding: '7px 16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: '4px', backgroundColor: '#16a34a', color: '#fff' }}>
+                style={{ padding: '7px 16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: '4px', backgroundColor: 'var(--success-solid)', color: 'var(--white)' }}>
                 등록
               </button>
             </form>

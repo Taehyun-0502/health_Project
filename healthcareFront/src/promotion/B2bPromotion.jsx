@@ -237,54 +237,54 @@ function B2bPromotion() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', textAlign: 'left' }}>
       
       {/* 0. 쿠폰 발송 및 사용 상태 집계 카드 현황판 */}
-      <div style={{ padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-        <h4 style={{ margin: '0 0 15px 0', color: '#111827' }}>📊 쿠폰 발행 및 사용 통계 현황</h4>
+      <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '8px', backgroundColor: 'var(--white)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <h4 style={{ margin: '0 0 15px 0', color: 'var(--gray-900)' }}>📊 쿠폰 발행 및 사용 통계 현황</h4>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
           
           {/* 총 발행 수 */}
-          <div style={{ padding: '12px', border: '1px solid #f3f4f6', borderRadius: '6px', backgroundColor: '#f9fafb', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '3px' }}>총 발행 수</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>{totalCount}건</div>
+          <div style={{ padding: '12px', border: '1px solid var(--gray-100)', borderRadius: '6px', backgroundColor: 'var(--gray-50)', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: 'var(--gray-500)', marginBottom: '3px' }}>총 발행 수</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--gray-900)' }}>{totalCount}건</div>
           </div>
 
           {/* 미사용 수 */}
-          <div style={{ padding: '12px', border: '1px solid #dbeafe', borderRadius: '6px', backgroundColor: '#eff6ff', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#2563eb', marginBottom: '3px' }}>미사용 (사용대기)</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e40af' }}>{unuseCount}건</div>
+          <div style={{ padding: '12px', border: '1px solid var(--info-soft)', borderRadius: '6px', backgroundColor: 'var(--info-bg)', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: 'var(--info-solid)', marginBottom: '3px' }}>미사용 (사용대기)</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--info)' }}>{unuseCount}건</div>
           </div>
 
           {/* 사용 완료 수 */}
-          <div style={{ padding: '12px', border: '1px solid #d1fae5', borderRadius: '6px', backgroundColor: '#ecfdf5', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#10b981', marginBottom: '3px' }}>사용 완료</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#065f46' }}>{usedCount}건</div>
+          <div style={{ padding: '12px', border: '1px solid var(--success-soft)', borderRadius: '6px', backgroundColor: 'var(--success-bg)', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: 'var(--tier-good)', marginBottom: '3px' }}>사용 완료</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--success)' }}>{usedCount}건</div>
           </div>
 
           {/* 유효기간 만료 수 */}
-          <div style={{ padding: '12px', border: '1px solid #fee2e2', borderRadius: '6px', backgroundColor: '#fef2f2', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#ef4444', marginBottom: '3px' }}>기간 만료</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#991b1b' }}>{expiredCount}건</div>
+          <div style={{ padding: '12px', border: '1px solid var(--danger-bg)', borderRadius: '6px', backgroundColor: 'var(--danger-bg)', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: 'var(--tier-crit)', marginBottom: '3px' }}>기간 만료</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--danger)' }}>{expiredCount}건</div>
           </div>
 
         </div>
       </div>
 
       {/* 1. 쿠폰 종류 생성 폼 */}
-      <div style={{ padding: '20px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fafafa' }}>
-        <h4 style={{ margin: '0 0 15px 0', color: '#333' }}>🎟️ 새 할인 쿠폰 종류 만들기 (커스터마이징)</h4>
+      <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '8px', backgroundColor: 'var(--gray-50)' }}>
+        <h4 style={{ margin: '0 0 15px 0', color: 'var(--gray-700)' }}>🎟️ 새 할인 쿠폰 종류 만들기 (커스터마이징)</h4>
         <form onSubmit={handleCreateType} style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignItems: 'flex-end' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>쿠폰 이름</label>
+            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: 'var(--gray-700)' }}>쿠폰 이름</label>
             <input 
               type="text" 
               value={couponName} 
               onChange={(e) => setCouponName(e.target.value)} 
               required 
               placeholder="예: 헬린이 응원 할인권" 
-              style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} 
+              style={{ padding: '8px', border: '1px solid var(--gray-300)', borderRadius: '4px' }} 
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>카테고리</label>
+            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: 'var(--gray-700)' }}>카테고리</label>
             <select 
               value={category} 
               onChange={(e) => { 
@@ -298,7 +298,7 @@ function B2bPromotion() {
                   setPercent('');    // ◀ 타 카테고리로 복귀 시 초기화
                 }
               }}
-              style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', height: '35px', color: '#333', backgroundColor: '#fff' }}
+              style={{ padding: '8px', border: '1px solid var(--gray-300)', borderRadius: '4px', height: '35px', color: 'var(--gray-700)', backgroundColor: 'var(--white)' }}
             >
               <option value="헬스">헬스</option>
               <option value="PT">PT</option>
@@ -306,7 +306,7 @@ function B2bPromotion() {
             </select>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>할인율 (%)</label>
+            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: 'var(--gray-700)' }}>할인율 (%)</label>
             <input 
               type="number" 
               value={percent} 
@@ -318,11 +318,11 @@ function B2bPromotion() {
               readOnly={category === '체험권'} // ◀ 체험권일 시 읽기전용(수정불가) 적용
               style={{ 
                 padding: '8px', 
-                border: '1px solid #ccc', 
+                border: '1px solid var(--gray-300)', 
                 borderRadius: '4px', 
                 width: '80px',
-                backgroundColor: category === '체험권' ? '#f3f4f6' : '#fff', // ◀ 체험권일 시 회색 배경
-                color: category === '체험권' ? '#9ca3af' : '#333'
+                backgroundColor: category === '체험권' ? 'var(--gray-100)' : 'var(--white)', // ◀ 체험권일 시 회색 배경
+                color: category === '체험권' ? 'var(--gray-500)' : 'var(--gray-700)'
               }} 
             />
           </div>
@@ -330,14 +330,14 @@ function B2bPromotion() {
           {/* 헬스, PT인 경우에만 최대 할인 한도금액(maxAmount)을 기입하도록 노출 */}
           {category !== '체험권' && (
             <div>
-              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>최대 할인 금액 (원)</label>
+              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: 'var(--gray-700)' }}>최대 할인 금액 (원)</label>
               <input 
                 type="number" 
                 value={maxAmount} 
                 onChange={(e) => setMaxAmount(e.target.value)} 
                 required 
                 placeholder="10000" 
-                style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', width: '120px' }} 
+                style={{ padding: '8px', border: '1px solid var(--gray-300)', borderRadius: '4px', width: '120px' }} 
               />
             </div>
           )}
@@ -345,19 +345,19 @@ function B2bPromotion() {
           {/* 오직 PT체험권 계열인 경우에만 할인 횟수를 입력하도록 노출 */}
           {category === '체험권' && (
             <div>
-              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>할인 적용 횟수 (PT)</label>
+              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: 'var(--gray-700)' }}>할인 적용 횟수 (PT)</label>
               <input 
                 type="number" 
                 value={couponCount} 
                 onChange={(e) => setCouponCount(e.target.value)} 
                 required 
                 placeholder="10" 
-                style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', width: '80px' }} 
+                style={{ padding: '8px', border: '1px solid var(--gray-300)', borderRadius: '4px', width: '80px' }} 
               />
             </div>
           )}
 
-          <button type="submit" style={{ padding: '9px 16px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+          <button type="submit" style={{ padding: '9px 16px', backgroundColor: 'var(--info-solid)', color: 'var(--white)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
             등록하기
           </button>
         </form>
@@ -365,39 +365,39 @@ function B2bPromotion() {
 
       {/* 2. 등록된 쿠폰 종류 목록 및 발송 */}
       <div>
-        <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>📋 등록된 쿠폰 목록 및 발송 현황</h4>
+        <h4 style={{ margin: '0 0 10px 0', color: 'var(--gray-700)' }}>📋 등록된 쿠폰 목록 및 발송 현황</h4>
         {couponTypes.length === 0 ? (
-          <p style={{ color: '#999', fontSize: '14px' }}>등록된 쿠폰 종류가 없습니다.</p>
+          <p style={{ color: 'var(--gray-400)', fontSize: '14px' }}>등록된 쿠폰 종류가 없습니다.</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', color: '#333' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', color: 'var(--gray-700)' }}>
             <thead>
-              <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
-                <th style={{ padding: '10px', textAlign: 'left', color: '#333' }}>쿠폰명</th>
-                <th style={{ padding: '10px', textAlign: 'left', color: '#333' }}>종류</th>
-                <th style={{ padding: '10px', textAlign: 'left', color: '#333' }}>할인율</th>
-                <th style={{ padding: '10px', textAlign: 'left', color: '#333' }}>상세 혜택</th>
-                <th style={{ padding: '10px', textAlign: 'center', color: '#333' }}>누적 발송 수</th>
-                <th style={{ padding: '10px', textAlign: 'center', color: '#333' }}>발송 작업</th>
+              <tr style={{ backgroundColor: 'var(--gray-100)', borderBottom: '2px solid var(--gray-300)' }}>
+                <th style={{ padding: '10px', textAlign: 'left', color: 'var(--gray-700)' }}>쿠폰명</th>
+                <th style={{ padding: '10px', textAlign: 'left', color: 'var(--gray-700)' }}>종류</th>
+                <th style={{ padding: '10px', textAlign: 'left', color: 'var(--gray-700)' }}>할인율</th>
+                <th style={{ padding: '10px', textAlign: 'left', color: 'var(--gray-700)' }}>상세 혜택</th>
+                <th style={{ padding: '10px', textAlign: 'center', color: 'var(--gray-700)' }}>누적 발송 수</th>
+                <th style={{ padding: '10px', textAlign: 'center', color: 'var(--gray-700)' }}>발송 작업</th>
               </tr>
             </thead>
             <tbody>
               {couponTypes.map((type) => (
-                <tr key={type.couponNum} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td style={{ padding: '10px', fontWeight: 'bold', color: '#333' }}>{type.couponName}</td>
-                  <td style={{ padding: '10px', color: '#333' }}>{type.category}</td>
-                  <td style={{ padding: '10px', color: '#2563eb', fontWeight: 'bold' }}>{type.percent}%</td>
-                  <td style={{ padding: '10px', color: '#333' }}>
+                <tr key={type.couponNum} style={{ borderBottom: '1px solid var(--gray-200)' }}>
+                  <td style={{ padding: '10px', fontWeight: 'bold', color: 'var(--gray-700)' }}>{type.couponName}</td>
+                  <td style={{ padding: '10px', color: 'var(--gray-700)' }}>{type.category}</td>
+                  <td style={{ padding: '10px', color: 'var(--info-solid)', fontWeight: 'bold' }}>{type.percent}%</td>
+                  <td style={{ padding: '10px', color: 'var(--gray-700)' }}>
                     {type.category === '헬스' && `헬스권 ${type.percent}% 할인 (최대 ${type.maxAmount}원)`}
                     {type.category === 'PT' && `PT ${type.percent}% 할인 (최대 ${type.maxAmount}원)`}
                     {type.category === '체험권' && `${type.couponCount}회 PT 무료체험`}
                   </td>
-                  <td style={{ padding: '10px', textAlign: 'center', color: '#e11d48', fontWeight: 'bold' }}>
+                  <td style={{ padding: '10px', textAlign: 'center', color: 'var(--danger-solid)', fontWeight: 'bold' }}>
                     {type.sendCount}회
                   </td>
                   <td style={{ padding: '10px', textAlign: 'center' }}>
                     <button 
                       onClick={() => setSelectedType(type)}
-                      style={{ padding: '4px 10px', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
+                      style={{ padding: '4px 10px', backgroundColor: 'var(--tier-good)', color: 'var(--white)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
                     >
                       회원에게 전송
                     </button>
@@ -415,19 +415,19 @@ function B2bPromotion() {
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
         }}>
-          <div style={{ backgroundColor: '#fff', padding: '25px', borderRadius: '8px', width: '350px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
-            <h4 style={{ margin: '0 0 15px 0', color: '#333' }}>✉️ 쿠폰 발송 설정</h4>
-            <p style={{ fontSize: '12px', color: '#666', marginBottom: '15px' }}>
-              선택한 쿠폰: <strong style={{ color: '#333' }}>{selectedType.couponName} ({selectedType.percent}%)</strong>
+          <div style={{ backgroundColor: 'var(--white)', padding: '25px', borderRadius: '8px', width: '350px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
+            <h4 style={{ margin: '0 0 15px 0', color: 'var(--gray-700)' }}>✉️ 쿠폰 발송 설정</h4>
+            <p style={{ fontSize: '12px', color: 'var(--gray-500)', marginBottom: '15px' }}>
+              선택한 쿠폰: <strong style={{ color: 'var(--gray-700)' }}>{selectedType.couponName} ({selectedType.percent}%)</strong>
             </p>
             <form onSubmit={handleSendCoupon} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: 'var(--gray-700)' }}>
                   수신 회원 선택 ({selectedMembers.length}명 선택됨)
                 </label>
                 
                 {/* 전체 선택 체크박스 + 이탈위험(가격불만) 회원 선택 */}
-                <div style={{ marginBottom: '10px', paddingBottom: '8px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ marginBottom: '10px', paddingBottom: '8px', borderBottom: '1px solid var(--gray-200)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <input
                     type="checkbox"
                     id="checkAll"
@@ -435,21 +435,21 @@ function B2bPromotion() {
                     onChange={(e) => handleCheckAll(e.target.checked)}
                     style={{ cursor: 'pointer' }}
                   />
-                  <label htmlFor="checkAll" style={{ marginLeft: '6px', fontSize: '12px', fontWeight: 'bold', color: '#111827', cursor: 'pointer' }}>
+                  <label htmlFor="checkAll" style={{ marginLeft: '6px', fontSize: '12px', fontWeight: 'bold', color: 'var(--gray-900)', cursor: 'pointer' }}>
                     전체 회원 선택
                   </label>
                   <button
                     type="button"
                     onClick={handleSelectChurnRisk}
                     style={{ marginLeft: 'auto', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer',
-                             border: '1px solid #ef6c00', borderRadius: '4px', backgroundColor: '#fff', color: '#ef6c00' }}
+                             border: '1px solid var(--accent)', borderRadius: '4px', backgroundColor: 'var(--white)', color: 'var(--accent)' }}
                   >
                     이탈위험 회원 선택 (가격불만)
                   </button>
                 </div>
 
                 {/* 회원 목록 개별 체크박스 스크롤 리스트 */}
-                <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid #ccc', borderRadius: '4px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: '#fff' }}>
+                <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--gray-300)', borderRadius: '4px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: 'var(--white)' }}>
                   {members.map((member) => (
                     <div key={member.username} style={{ display: 'flex', alignItems: 'center' }}>
                       <input 
@@ -459,7 +459,7 @@ function B2bPromotion() {
                         onChange={() => handleCheckMember(member.username)}
                         style={{ cursor: 'pointer' }}
                       />
-                      <label htmlFor={`member-${member.username}`} style={{ marginLeft: '8px', fontSize: '12px', color: '#333', cursor: 'pointer' }}>
+                      <label htmlFor={`member-${member.username}`} style={{ marginLeft: '8px', fontSize: '12px', color: 'var(--gray-700)', cursor: 'pointer' }}>
                         {member.name} ({member.username})
                       </label>
                     </div>
@@ -467,13 +467,13 @@ function B2bPromotion() {
                 </div>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#333' }}>사용 만료 기한</label>
+                <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: 'var(--gray-700)' }}>사용 만료 기한</label>
                 <input 
                   type="date" 
                   value={expiryDate} 
                   onChange={(e) => setExpiryDate(e.target.value)} 
                   required 
-                  style={{ width: '90%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', color: '#333' }}
+                  style={{ width: '90%', padding: '8px', border: '1px solid var(--gray-300)', borderRadius: '4px', color: 'var(--gray-700)' }}
                 />
               </div>
 
@@ -481,13 +481,13 @@ function B2bPromotion() {
                 <button 
                   type="button" 
                   onClick={() => { setSelectedType(null); setSelectedMembers([]); setExpiryDate(''); }}
-                  style={{ padding: '6px 12px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }}
+                  style={{ padding: '6px 12px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '4px', backgroundColor: 'var(--white)' }}
                 >
                   취소
                 </button>
                 <button 
                   type="submit" 
-                  style={{ padding: '6px 15px', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                  style={{ padding: '6px 15px', backgroundColor: 'var(--tier-good)', color: 'var(--white)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
                 >
                   보내기
                 </button>

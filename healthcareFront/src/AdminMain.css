@@ -17,7 +17,7 @@
 
 .admin-home__header > p {
   margin-top: 6px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: 14px;
 }
 
@@ -81,7 +81,7 @@
 
 .admin-home__copy span {
   margin-top: 5px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
   line-height: 1.5;
 }
@@ -102,7 +102,7 @@
 /* 기타 메뉴 */
 .admin-home__section-label {
   margin: 36px 0 14px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
   font-weight: 600;
 }

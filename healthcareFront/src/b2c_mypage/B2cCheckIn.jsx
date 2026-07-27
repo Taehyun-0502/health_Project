@@ -84,7 +84,7 @@ function B2cCheckIn() {
   return (
     <div style={{ padding: '16px 16px 32px' }}>
       <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>출석 일지 (달력 보기)</h3>
-      <p style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '15px' }}>최근 30일 이내에 출석 완료된 날짜에 체크 표시가 찍힙니다.</p>
+      <p style={{ fontSize: '13px', color: 'var(--gray-600)', marginBottom: '15px' }}>최근 30일 이내에 출석 완료된 날짜에 체크 표시가 찍힙니다.</p>
 
       {/* 다가오는 PT 일정 안내 (담당 트레이너가 등록한 예정 수업, 조회 전용) */}
       {ptSchedules.length > 0 && (
@@ -97,7 +97,7 @@ function B2cCheckIn() {
                   <b>{schedule.scheduleAt ? `${schedule.scheduleAt.substring(0, 10).replaceAll('-', '.')} ${schedule.scheduleAt.substring(11, 16)}` : '-'}</b>
                   {schedule.memo && <span style={{ color: 'var(--gray-400)' }}> — {schedule.memo}</span>}
                 </span>
-                <span style={{ color: 'var(--gray-500)' }}>{schedule.trainerName ? `${schedule.trainerName} 트레이너` : ''}</span>
+                <span style={{ color: 'var(--gray-600)' }}>{schedule.trainerName ? `${schedule.trainerName} 트레이너` : ''}</span>
               </li>
             ))}
           </ul>
@@ -106,9 +106,9 @@ function B2cCheckIn() {
 
       {/* 달력 컨트롤러 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-        <button onClick={handlePrevMonth} style={{ padding: '10px 14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: '#fff', color: 'var(--gray-700)', fontWeight: '600' }}>&lt; 이전달</button>
+        <button onClick={handlePrevMonth} style={{ padding: '10px 14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: 'var(--white)', color: 'var(--gray-700)', fontWeight: '600' }}>&lt; 이전달</button>
         <span style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--gray-900)' }}>{year}년 {month + 1}월</span>
-        <button onClick={handleNextMonth} style={{ padding: '10px 14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: '#fff', color: 'var(--gray-700)', fontWeight: '600' }}>다음달 &gt;</button>
+        <button onClick={handleNextMonth} style={{ padding: '10px 14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: 'var(--white)', color: 'var(--gray-700)', fontWeight: '600' }}>다음달 &gt;</button>
       </div>
 
       {/* 요일 구분 그리드 */}
@@ -160,7 +160,7 @@ function B2cCheckIn() {
               <span style={{
                 fontSize: '12px',
                 fontWeight: isAttended ? 'bold' : 'normal',
-                color: isAttended ? '#fff' : 'var(--gray-900)',
+                color: isAttended ? 'var(--white)' : 'var(--gray-900)',
                 backgroundColor: isAttended ? 'var(--b2c-accent)' : 'transparent',
                 width: '20px',
                 height: '20px',

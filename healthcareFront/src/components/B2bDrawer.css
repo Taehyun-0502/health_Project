@@ -75,7 +75,7 @@
   padding: 10px 12px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--gray-500);
+  color: var(--gray-600);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -125,7 +125,7 @@
   border: 1px solid var(--gray-200);
   border-radius: 8px;
   background: var(--white);
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: 13px;
   line-height: 1;
   cursor: pointer;
@@ -213,7 +213,7 @@
   margin: 24px 0;
   text-align: center;
   font-size: 13px;
-  color: var(--gray-500);
+  color: var(--gray-600);
 }
 
 /* 라벨/값 2열 리스트 */
@@ -233,7 +233,7 @@
 .b2b-drawer__row dt {
   font-size: 12px;
   font-weight: 600;
-  color: var(--gray-500);
+  color: var(--gray-600);
   word-break: break-all;
 }
 
@@ -265,7 +265,7 @@
 }
 
 .b2b-drawer__badge--issued {
-  color: var(--gray-500);
+  color: var(--gray-600);
   background: var(--gray-100);
 }
 

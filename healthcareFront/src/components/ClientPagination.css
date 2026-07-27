@@ -10,10 +10,10 @@
 .client-pagination__button {
   min-width: 36px;
   padding: 8px 12px;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--gray-300);
   border-radius: 8px;
-  color: #404040;
-  background: #fff;
+  color: var(--gray-700);
+  background: var(--white);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -21,20 +21,20 @@
 }
 
 .client-pagination__button:hover:not(:disabled) {
-  border-color: #a3a3a3;
-  background: #f5f5f5;
+  border-color: var(--gray-400);
+  background: var(--gray-100);
 }
 
 .client-pagination__button:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--info-solid);
   outline-offset: 2px;
 }
 
 .client-pagination__button--active,
 .client-pagination__button--active:hover:not(:disabled) {
-  border-color: #171717;
-  color: #fff;
-  background: #171717;
+  border-color: var(--gray-900);
+  color: var(--white);
+  background: var(--gray-900);
 }
 
 .client-pagination__button:disabled {

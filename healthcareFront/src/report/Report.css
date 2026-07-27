@@ -10,7 +10,7 @@
   --cs-border-strong: var(--gray-300);
   --cs-ink: var(--gray-900);
   --cs-ink-2: var(--gray-700);
-  --cs-ink-3: var(--gray-500);
+  --cs-ink-3: var(--gray-600);
   --cs-accent: var(--accent-strong);
   --cs-accent-weak: var(--accent-bg);
   --cs-on-accent: var(--white);
@@ -18,10 +18,6 @@
   --cs-warn: var(--warning);      --cs-warn-bg: var(--warning-bg);
   --cs-serious: var(--accent-text); --cs-serious-bg: var(--accent-bg);
   --cs-crit: var(--danger);       --cs-crit-bg: var(--danger-bg);
-  --tier-good: #10b981;
-  --tier-warn: #facc15;
-  --tier-serious: #f59e0b;
-  --tier-crit: #ef4444;
   --cs-track: var(--gray-200);
   --cs-shadow: var(--shadow-card);
   --cs-radius: 12px;
@@ -51,8 +47,8 @@
 
 /* ── 통제: 제목 → 안내 문구 → 탭 + 기간 선택 ── */
 .b2blist-title { display: flex; align-items: baseline; gap: 8px; margin: 0; font-size: var(--text-h2); font-weight: 700; color: var(--gray-900); }
-.b2blist-title-sub { font-size: var(--text-sm); font-weight: 400; color: var(--gray-500); }
-.b2blist-desc { margin: 6px 0 12px; font-size: var(--text-sm); color: var(--gray-500); }
+.b2blist-title-sub { font-size: var(--text-sm); font-weight: 400; color: var(--gray-600); }
+.b2blist-desc { margin: 6px 0 12px; font-size: var(--text-sm); color: var(--gray-600); }
 .cs-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 /* 계약 리스트 필터(.roster-filter/.roster-filter-btn)와 동일한 칩 스타일 */

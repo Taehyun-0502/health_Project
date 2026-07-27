@@ -18,7 +18,7 @@
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--gray-500);
+  color: var(--gray-600);
   background: var(--gray-100);
   border: none;
   border-radius: 999px;
@@ -53,7 +53,7 @@
 .admin-management__desc {
   margin: 0;
   font-size: 13px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   line-height: 1.5;
 }
 
@@ -209,7 +209,7 @@
 }
 
 .admin-management__badge--none {
-  color: var(--gray-500);
+  color: var(--gray-600);
   background: var(--gray-100);
 }
 

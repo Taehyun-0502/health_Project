@@ -57,7 +57,7 @@ function B2cAccount() {
   return (
     <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
       <h3>내 계정 설정 (B2B)</h3>
-      <p style={{ fontSize: '13px', color: '#666' }}>회원님의 임시 비밀번호와 이메일을 수정할 수 있습니다.</p>
+      <p style={{ fontSize: '13px', color: 'var(--gray-500)' }}>회원님의 임시 비밀번호와 이메일을 수정할 수 있습니다.</p>
 
       {message && <div style={{ color: 'red', fontSize: '13px', marginBottom: '10px' }}>{message}</div>}
 
@@ -68,7 +68,7 @@ function B2cAccount() {
             type="text" 
             value={user.username || ''} 
             disabled 
-            style={{ width: '100%', padding: '8px', backgroundColor: '#f5f5f5', border: '1px solid #ccc', borderRadius: '4px' }} 
+            style={{ width: '100%', padding: '8px', backgroundColor: 'var(--gray-100)', border: '1px solid var(--gray-300)', borderRadius: '4px' }} 
           />
         </div>
 
@@ -78,7 +78,7 @@ function B2cAccount() {
             type="email" 
             value={email} 
             onChange={(e) => setEmail(e.target.value)} 
-            style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} 
+            style={{ width: '100%', padding: '8px', border: '1px solid var(--gray-300)', borderRadius: '4px' }} 
           />
         </div>
 
@@ -90,7 +90,7 @@ function B2cAccount() {
             onChange={(e) => setPassword(e.target.value)} 
             required 
             placeholder="변경할 새 비밀번호"
-            style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} 
+            style={{ width: '100%', padding: '8px', border: '1px solid var(--gray-300)', borderRadius: '4px' }} 
           />
         </div>
 
@@ -102,11 +102,11 @@ function B2cAccount() {
             onChange={(e) => setPasswordCheck(e.target.value)} 
             required 
             placeholder="변경할 새 비밀번호 재입력"
-            style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} 
+            style={{ width: '100%', padding: '8px', border: '1px solid var(--gray-300)', borderRadius: '4px' }} 
           />
         </div>
 
-        <button type="submit" style={{ padding: '10px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}>
+        <button type="submit" style={{ padding: '10px', backgroundColor: 'var(--info-solid)', color: 'var(--white)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}>
           수정 완료
         </button>
       </form>

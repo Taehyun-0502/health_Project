@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 const colors = {
   skinLight: '#ffd6b5',
   skinDark: '#e5a97a',
-  outline: '#3e2723',
-  pants: '#a3e635',
-  hair: '#2c3e50',
-  shoes: '#ffffff'
+  outline: '#404040', /* gray-700 토큰값 — canvas는 var() 미지원 */
+  pants: '#a3e635', /* b2c-lime 토큰값 — canvas는 var() 미지원 */
+  hair: '#171717', /* gray-900 토큰값 — canvas는 var() 미지원 */
+  shoes: '#ffffff' /* white 토큰값 — canvas는 var() 미지원 */
 };
 
 // 레벨별 메시지 데이터
@@ -277,11 +277,11 @@ function B2cAvatar() {
     ctx.lineWidth = 6;
     ctx.beginPath(); ctx.arc(cx, headY, headRadius, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = '#171717'; /* gray-900 토큰값 — canvas는 var() 미지원 */
     ctx.beginPath(); ctx.arc(cx - 12, headY - 5, 4, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(cx + 12, headY - 5, 4, 0, Math.PI*2); ctx.fill();
 
-    ctx.strokeStyle = '#000';
+    ctx.strokeStyle = '#171717'; /* gray-900 토큰값 — canvas는 var() 미지원 */
     ctx.lineWidth = 3;
     ctx.beginPath(); 
     if(factor < 0.2) {
@@ -340,15 +340,15 @@ function B2cAvatar() {
             출석 데이터를 불러오는 중...
           </div>
         ) : (
-          <div style={{ padding: '10px', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid var(--gray-200)' }}>
+          <div style={{ padding: '10px', backgroundColor: 'var(--white)', borderRadius: '12px', border: '1px solid var(--gray-200)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '14px', color: 'var(--gray-500)' }}>
+              <span style={{ fontSize: '14px', color: 'var(--gray-600)' }}>
                 출석: <strong style={{ fontSize: '18px', color: 'var(--b2c-accent)' }}>{days}</strong>일
               </span>
               <span style={{
                 fontSize: '11px',
                 backgroundColor: 'var(--b2c-accent)',
-                color: '#fff',
+                color: 'var(--white)',
                 padding: '2px 8px',
                 borderRadius: '999px',
                 fontWeight: 'bold'

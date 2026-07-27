@@ -18,7 +18,7 @@
 .contract-tab {
   padding: 9px 14px;
   text-decoration: none;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: 14px;
   font-weight: 500;
   border: 0;
@@ -48,7 +48,7 @@
   border: 0;
   border-radius: 999px;
   background: var(--gray-100);
-  color: var(--gray-500);
+  color: var(--gray-600);
   font: inherit;
   font-size: var(--text-sm);
   font-weight: 600;
@@ -78,7 +78,7 @@
 
 .salary-page__desc {
   margin-top: 4px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
 }
 
@@ -125,7 +125,7 @@
 
 .contract-placeholder__desc {
   margin-top: 8px;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
   line-height: 1.6;
 }
@@ -228,7 +228,7 @@
 
 .contract-modal__desc {
   margin: 0;
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: var(--text-sm);
   line-height: 1.6;
 }
@@ -306,7 +306,7 @@
   border: 0;
   border-radius: 50%;
   background: var(--gray-200);
-  color: var(--gray-500);
+  color: var(--gray-600);
   font-size: 10px;
   cursor: pointer;
 }
@@ -394,7 +394,7 @@
 }
 
 .contract-table__muted {
-  color: var(--gray-500);
+  color: var(--gray-600);
 }
 
 /* 상태 배지 — 디자인 시스템 시맨틱 */
@@ -409,9 +409,9 @@
 
 .contract-badge--active { background: var(--success-bg); color: var(--success); }
 .contract-badge--signed { background: var(--warning-bg); color: var(--warning); }
-.contract-badge--issued { background: var(--gray-100); color: var(--gray-500); }
+.contract-badge--issued { background: var(--gray-100); color: var(--gray-600); }
 .contract-badge--terminated { background: var(--danger-bg); color: var(--danger); }
-.contract-badge--draft { background: var(--gray-100); color: var(--gray-500); }
+.contract-badge--draft { background: var(--gray-100); color: var(--gray-600); }
 
 /* 갱신·연계 이동 링크 버튼 */
 .contract-renew-link {

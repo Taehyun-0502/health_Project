@@ -51,11 +51,11 @@ function B2cNotification() {
     <div style={{ padding: '16px 16px 32px' }}>
       <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>알림 내역</h3>
       {alarms.length === 0 ? (
-        <p style={{ color: 'var(--gray-500)', marginTop: '10px' }}>새로운 알림 소식이 없습니다.</p>
+        <p style={{ color: 'var(--gray-600)', marginTop: '10px' }}>새로운 알림 소식이 없습니다.</p>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '13px' }}>
           <thead>
-            <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-500)', borderBottom: '2px solid var(--gray-200)' }}>
+            <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-600)', borderBottom: '2px solid var(--gray-200)' }}>
               <th style={{ padding: '10px', fontWeight: '600' }}>구분</th>
               <th style={{ padding: '10px', fontWeight: '600' }}>내용</th>
               <th style={{ padding: '10px', fontWeight: '600' }}>수신일</th>
@@ -76,7 +76,7 @@ function B2cNotification() {
               >
                 <td style={{ padding: '10px' }}>{alarm.category}</td>
                 <td style={{ padding: '10px' }}>{alarm.message}</td>
-                <td style={{ padding: '10px', color: 'var(--gray-500)' }}>{alarm.createAt}</td>
+                <td style={{ padding: '10px', color: 'var(--gray-600)' }}>{alarm.createAt}</td>
                 <td style={{ padding: '10px', color: alarm.read === 'Y' ? 'var(--gray-400)' : 'var(--b2c-accent)' }}>{alarm.read === 'Y' ? '읽음' : '안읽음'}</td>
               </tr>
             ))}

@@ -58,7 +58,7 @@ function B2cCoupon() {
   return (
     <div style={{ padding: '0 0 16px' }}>
       <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--gray-900)' }}>내 쿠폰함</h3>
-      <p style={{ fontSize: '12px', color: 'var(--gray-500)', marginBottom: '15px' }}>회원님이 보유하고 계신 가맹점 할인 혜택 쿠폰 목록입니다.</p>
+      <p style={{ fontSize: '12px', color: 'var(--gray-600)', marginBottom: '15px' }}>회원님이 보유하고 계신 가맹점 할인 혜택 쿠폰 목록입니다.</p>
 
       {coupons.length === 0 ? (
         <p style={{ color: 'var(--gray-400)', marginTop: '20px', textAlign: 'center', fontSize: '13px' }}>보유 중인 혜택 쿠폰이 없습니다.</p>
@@ -66,7 +66,7 @@ function B2cCoupon() {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
             <thead>
-              <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-500)', borderBottom: '2px solid var(--gray-200)', whiteSpace: 'nowrap' }}>
+              <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-600)', borderBottom: '2px solid var(--gray-200)', whiteSpace: 'nowrap' }}>
                 <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>보낸사람</th>
                 <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>쿠폰 이름</th>
                 <th style={{ padding: '8px 4px', textAlign: 'left', whiteSpace: 'nowrap' }}>종류</th>
@@ -89,7 +89,7 @@ function B2cCoupon() {
                     {coupon.category === 'PT' && coupon.maxAmount && `최대 ${coupon.maxAmount}원 할인`}
                     {coupon.category === '체험권' && coupon.couponCount && `${coupon.couponCount}회`}
                   </td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', color: 'var(--gray-500)', whiteSpace: 'nowrap' }}>{coupon.date}</td>
+                  <td style={{ padding: '8px 4px', textAlign: 'center', color: 'var(--gray-600)', whiteSpace: 'nowrap' }}>{coupon.date}</td>
                   <td style={{ padding: '8px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                     <span style={{
                       padding: '2px 8px',
@@ -113,7 +113,7 @@ function B2cCoupon() {
               <button
                 disabled={currentPage === 1}
                 onClick={() => handlePageChange(currentPage - 1)}
-                style={{ padding: '8px 12px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: '#fff', color: 'var(--gray-700)' }}
+                style={{ padding: '8px 12px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: 'var(--white)', color: 'var(--gray-700)' }}
               >
                 이전
               </button>
@@ -126,8 +126,8 @@ function B2cCoupon() {
                     cursor: 'pointer',
                     border: currentPage === page ? '1px solid var(--black)' : '1px solid var(--gray-300)',
                     borderRadius: '10px',
-                    backgroundColor: currentPage === page ? 'var(--black)' : '#fff',
-                    color: currentPage === page ? '#fff' : 'var(--gray-700)',
+                    backgroundColor: currentPage === page ? 'var(--black)' : 'var(--white)',
+                    color: currentPage === page ? 'var(--white)' : 'var(--gray-700)',
                     fontWeight: currentPage === page ? 'bold' : 'normal'
                   }}
                 >
@@ -137,7 +137,7 @@ function B2cCoupon() {
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => handlePageChange(currentPage + 1)}
-                style={{ padding: '8px 12px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: '#fff', color: 'var(--gray-700)' }}
+                style={{ padding: '8px 12px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: 'var(--white)', color: 'var(--gray-700)' }}
               >
                 다음
               </button>

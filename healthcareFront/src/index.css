@@ -9,11 +9,12 @@
   --black: #171717;
   --gray-900: #171717;
   --gray-700: #404040;
-  --gray-500: #525252;
+  --gray-600: #525252;
+  --gray-500: #7a7a7a;
   --gray-400: #a3a3a3;
   --gray-300: #d4d4d4;
   --gray-200: #e5e5e5;
-  --gray-100: #f5f5f4;
+  --gray-100: #f5f5f5;
   --gray-50: #fafaf8;
   --white: #ffffff;
 
@@ -25,16 +26,32 @@
 
   --success: #15803d;
   --success-solid: #16a34a;
+  --success-soft: #d1fae5; /* 배경(bg)보다 한 단계 진한 success 테두리/틴트용 */
   --success-bg: #f0fdf4;
   --danger: #b91c1c;
   --danger-solid: #dc2626;
+  --danger-soft: #fecaca; /* 배경(bg)보다 한 단계 진한 danger 테두리/틴트용 */
   --danger-bg: #fef2f2;
   --warning: #92400e;
   --warning-solid: #d97706;
   --warning-bg: #fef3c7;
   --info: #1d4ed8;
   --info-solid: #2563eb;
+  --info-soft: #dbeafe; /* 배경(bg)보다 한 단계 진한 info 테두리/틴트용 */
   --info-bg: #eff6ff;
+
+  /* PT(개인 트레이닝) 강조 — 일반 헬스(gym)와 구분하는 도메인 색 */
+  --pt: #7c3aed; /* PT 강조 — 버튼·배지·진행률·선택 테두리 */
+  --pt-text: #6d28d9; /* PT 텍스트 — 제목·수치(더 진함) */
+  --pt-soft: #e9d5ff; /* PT 테두리 */
+  --pt-bg: #f3e8ff; /* PT 배경 */
+  --gym: #0284c7; /* 일반 헬스(gym) 구분 — PT의 짝 색 */
+
+  /* 상태 등급(Tier) — 이탈 위험도 등 등급 표현용 */
+  --tier-good: #22c55e;
+  --tier-warn: #facc15;
+  --tier-serious: #f59e0b;
+  --tier-crit: #ef4444;
 
   /* B2C(회원 앱) 전용 액센트 — 차콜 + 라임 그린 (B2C 회원앱 목업 팔레트).
      뉴트럴·시맨틱은 위 공통 토큰을 그대로 공유한다. */
@@ -163,7 +180,7 @@ h6 { line-height: 1.5; }
 
 .nav-link-btn {
   background: var(--primary-gradient);
-  color: #ffffff !important;
+  color: var(--white) !important;
   font-weight: 600;
   box-shadow: var(--shadow-sm);
 }
@@ -229,7 +246,7 @@ h6 { line-height: 1.5; }
   padding: 14px;
   font-size: 15px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--white);
   background: var(--primary-gradient);
   border: none;
   border-radius: 10px;
