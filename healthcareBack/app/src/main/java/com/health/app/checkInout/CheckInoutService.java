@@ -17,9 +17,6 @@ public class CheckInoutService {
     // 재등록 제안 알림을 보내는 잔여 횟수 기준 (이 값에 도달하는 순간 1회 발송)
     private static final int REBOOK_THRESHOLD = 3;
 
-    // 헬스장 출석의 근거가 되는 계약 유형 탐색 순서 (3=이용권, 4=PT, 5=PT 체험)
-    private static final Long[] GYM_ACCESS_CONTRACT_TYPES = { 3L, 4L, 5L };
-
     @Autowired
     private CheckInoutMapper checkInoutMapper;
 
@@ -42,17 +39,12 @@ public class CheckInoutService {
     // 헬스장 출석 처리 (키오스크)
     // 1. 계정 검증 -> 2. 유효한 이용권(3) 또는 기간 내 PT형 계약(4·5) 확인 -> 3. 하루 1회 제한 -> 4. 출석 기록
     // PT 회원(PT 체험 포함)은 계약 기간 동안 이용권처럼 헬스장 이용 가능 (기간 기준 - 잔여 횟수와 무관)
-    // 이용권을 먼저 조회하는 이유: 병행 보유 시 헬스장 이용의 근거가 되는 계약이 이용권이므로 gym_id를 그쪽에서 취한다
+    // 이용권을 먼저 보는 이유: 병행 보유 시 헬스장 이용의 근거가 되는 계약이 이용권이므로 gym_id를 그쪽에서 취한다.
+    // 이 우선순위(3 > 4 > 5)는 findGymAccessContract의 order by가 처리한다 - 유형별로 나눠 조회하지 않는다.
     public CheckInoutDTO gymCheckIn(MemberDTO credential, String clientIp) throws Exception {
         MemberDTO member = verifyMember(credential, clientIp);
 
-        ContractDTO contract = null;
-        for (Long contractType : GYM_ACCESS_CONTRACT_TYPES) {
-            contract = checkInoutMapper.findActiveContract(member.getUsername(), contractType);
-            if (contract != null) {
-                break;
-            }
-        }
+        ContractDTO contract = checkInoutMapper.findGymAccessContract(member.getUsername());
         if (contract == null) {
             throw new IllegalStateException("이용 가능한 헬스장 이용권 또는 PT 계약이 없습니다.");
         }

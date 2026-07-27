@@ -12,9 +12,9 @@ public interface CheckInoutMapper {
 
     public List<CheckInoutDTO> list(Long username) throws Exception;
 
-    // 회원의 유효(ACTIVE·기간 내) 계약 1건 조회 - 유형별 단건 조회 (3=이용권, 4=PT, 5=PT 체험)
-    public ContractDTO findActiveContract(@Param("username") Long username,
-            @Param("contractType") Long contractType) throws Exception;
+    // 헬스장 출석의 근거가 되는 유효(ACTIVE·기간 내) 계약 1건 조회
+    // 우선순위 이용권(3) > PT(4) > PT 체험(5)를 SQL의 order by로 처리해 유형별 조회를 왕복 1회로 통합
+    public ContractDTO findGymAccessContract(@Param("username") Long username) throws Exception;
 
     // 현재 소진 대상 PT 계약 조회 - 유효 PT형 계약(PT=4, PT 체험=5) 중 잔여가 남은 가장 오래된 계약 1건
     // 팀 정책: 먼저 계약한 건을 다 사용해야 다음 계약(PT 체험 등)을 이용 가능
@@ -56,7 +56,7 @@ public interface CheckInoutMapper {
     // 트레이너 담당 회원 현황 - 유효 PT형 계약(4·5)별 총횟수/사용/잔여 (잔여 적은 순)
     public List<PtMemberStatusDTO> memberStatusList(Long trainerId) throws Exception;
 
-    // 회원+트레이너 조합의 유효 PT형 계약(4·5) 조회 (일정 등록 검증용 - 회원의 최신 계약 하나만 보는 findActiveContract와 달리 담당 조합으로 직접 매칭)
+    // 회원+트레이너 조합의 유효 PT형 계약(4·5) 조회 (일정 등록 검증용 - 회원의 계약 하나만 보는 findGymAccessContract와 달리 담당 조합으로 직접 매칭)
     public com.health.app.contract.ContractDTO findActivePtByTrainer(@Param("username") Long username,
             @Param("trainerId") Long trainerId) throws Exception;
 
