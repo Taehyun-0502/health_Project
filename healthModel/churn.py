@@ -44,11 +44,32 @@ sys.path.insert(0, HERE)
 _BUNDLE = joblib.load(os.path.join(HERE, "churn_bundle.joblib"))
 _CHURN_MODEL = _BUNDLE["churn_model"]
 _CALIB_MODEL = _BUNDLE.get("calib_model")
-_FEATURES = _BUNDLE["features"]                                     # 모델 입력 피처 순서(16개)
+_FEATURES = _BUNDLE["features"]                                     # full 모델 입력 피처 순서(16개: 행동8+설문8)
 _CONG_MAP = _BUNDLE.get("cong_map", {"여유": 1, "보통": 2, "혼잡": 3, "매우혼잡": 4})
 _TIER_EDGES = _BUNDLE.get("tier_edges", [25, 45, 65])
 _TIER_NAMES = _BUNDLE.get("tier_names", ["안정", "관찰", "개입", "긴급"])
 _EXPLAINER = shap.TreeExplainer(_CHURN_MODEL)
+
+# ── 행동 전용 모델(설문 미응답 회원용) ──────────────────────────────────
+# 설문이 없으면 full 모델에 설문 자리를 NaN으로 넣는 대신, 행동 8피처만으로
+# 학습한 전용 모델로 예측한다(정확도·확률보정 회복). 번들에 없으면(구버전)
+# full 모델 NaN 마스킹으로 자동 폴백한다.
+_CHURN_MODEL_BEH = _BUNDLE.get("churn_model_behavior")
+_CALIB_MODEL_BEH = _BUNDLE.get("calib_model_behavior")
+_FEATURES_BEH = _BUNDLE.get("features_behavior")
+_EXPLAINER_BEH = shap.TreeExplainer(_CHURN_MODEL_BEH) if _CHURN_MODEL_BEH is not None else None
+_HAS_BEH_MODEL = _CHURN_MODEL_BEH is not None and _FEATURES_BEH is not None
+
+# 설문 응답 여부 판정용 — row_to_member 가 설문이 있을 때만 넣는 키들
+_SURVEY_KEYS = {"서비스불만_비매너회원", "서비스불만_환경불편", "가격불만",
+                "기구불만_기구상태불만", "기구불만_기구부족", "직원불만_불친절",
+                "직원불만_전문성부족", "최근한달_부상경험"}
+
+
+def _has_survey(member: dict) -> bool:
+    """회원 dict에 설문 응답 피처가 (하나라도) 들어있으면 True.
+    row_to_member 는 survey_id 가 있을 때만 설문 8종을 통째로 채운다."""
+    return any(k in member for k in _SURVEY_KEYS)
 
 
 # ─────────────────────────── DB 설정 ───────────────────────────
@@ -595,12 +616,14 @@ def _tier(score):
     return _TIER_NAMES[-1]
 
 
-def _vectorize(member: dict) -> np.ndarray:
-    """회원 dict → 모델 입력 피처 벡터(_FEATURES 순서). 결측은 NaN(XGBoost가 처리).
+def _vectorize(member: dict, features=None) -> np.ndarray:
+    """회원 dict → 모델 입력 피처 벡터(features 순서, 기본 _FEATURES). 결측은 NaN(XGBoost가 처리).
     · 상대_방문공백 = 마지막_방문_경과일 ÷ 평소주기(=7/이번달_주당방문횟수)로 파생.
     · 주_이용_시간대_혼잡도(문자열) → cong_map 코드로 변환."""
+    if features is None:
+        features = _FEATURES
     vals = []
-    for f in _FEATURES:
+    for f in features:
         if f == "상대_방문공백":
             rel = member.get("상대_방문공백")
             if rel is None:
@@ -622,23 +645,52 @@ def _vectorize(member: dict) -> np.ndarray:
     return np.array(vals, dtype=float)
 
 
-def _predict_batch(members):
-    """회원 dict 리스트 → [(churn_rate(0~1), tier, [이탈요인 컬럼 top3])].
+def _predict_group(members, model, calib, features, explainer):
+    """같은 피처셋(모델)을 쓰는 회원 묶음 예측 → [(churn_rate, tier, top3 요인)].
     이탈요인 = SHAP 값이 양수(이탈↑)인 피처 상위 3개(컬럼 이름)."""
-    X = np.vstack([_vectorize(m) for m in members])
-    proba = (_CALIB_MODEL.predict_proba(X) if _CALIB_MODEL is not None
-             else _CHURN_MODEL.predict_proba(X))
+    X = np.vstack([_vectorize(m, features) for m in members])
+    proba = (calib.predict_proba(X) if calib is not None else model.predict_proba(X))
     probs = proba[:, 1]
-    sv = np.asarray(_EXPLAINER.shap_values(X))
+    sv = np.asarray(explainer.shap_values(X))
     if sv.ndim == 3:            # (classes, n, features) 형태면 양성 클래스 선택
         sv = sv[-1]
     out = []
     for i in range(len(members)):
         score = float(probs[i]) * 100.0
         order = np.argsort(-sv[i])                       # 기여도 큰 순
-        tops = [_FEATURES[j] for j in order if sv[i][j] > 0][:3]
+        tops = [features[j] for j in order if sv[i][j] > 0][:3]
         out.append((float(probs[i]), _tier(score), tops))
     return out
+
+
+def _predict_batch(members):
+    """회원 dict 리스트 → [(churn_rate(0~1), tier, [이탈요인 컬럼 top3])].
+    · 설문 응답이 있는 회원 → full 모델(행동8+설문8).
+    · 설문 미응답 회원 → 행동 전용 모델(행동8). 번들에 없으면 full 모델 NaN 마스킹으로 폴백.
+    입력 순서를 보존해 반환한다."""
+    results = [None] * len(members)
+
+    if _HAS_BEH_MODEL:
+        surveyed = [i for i, m in enumerate(members) if _has_survey(m)]
+        behavior = [i for i, m in enumerate(members) if not _has_survey(m)]
+    else:
+        # 행동 전용 모델이 없으면 전원 full 모델로(기존 NaN 마스킹 동작).
+        surveyed = list(range(len(members)))
+        behavior = []
+
+    if surveyed:
+        preds = _predict_group([members[i] for i in surveyed],
+                               _CHURN_MODEL, _CALIB_MODEL, _FEATURES, _EXPLAINER)
+        for idx, p in zip(surveyed, preds):
+            results[idx] = p
+
+    if behavior:
+        preds = _predict_group([members[i] for i in behavior],
+                               _CHURN_MODEL_BEH, _CALIB_MODEL_BEH, _FEATURES_BEH, _EXPLAINER_BEH)
+        for idx, p in zip(behavior, preds):
+            results[idx] = p
+
+    return results
 
 
 # ─────────────────────── 전체 회원 이탈 예측 배치 ───────────────────────
