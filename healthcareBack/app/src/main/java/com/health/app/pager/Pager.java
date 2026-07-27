@@ -9,6 +9,15 @@ import lombok.ToString;
 @ToString
 public class Pager {
 
+    // 한 페이지에 허용하는 최대 행 수.
+    // pageSize는 클라이언트 쿼리스트링에서 그대로 들어와 SQL의 LIMIT이 되므로 상한이 없으면
+    // pageSize=99999999 한 번으로 테이블 전체를 덤프받을 수 있다(전 목록 API가 이 Pager를 공유).
+    // 현재 화면들은 5~10만 사용하므로 100이면 충분한 여유값이다.
+    private static final long MAX_PAGE_SIZE = 100L;
+
+    // 기본 페이지 크기 (null·음수 등 잘못된 값이 들어왔을 때)
+    private static final long DEFAULT_PAGE_SIZE = 10L;
+
     // 현재 페이지 번호
     private Long currentPage;
     
@@ -47,10 +56,13 @@ public class Pager {
         return currentPage;    
     }
     
-    // 페이지당 데이터 개수 Getter (널 및 음수 값 방어 보정, 기본값 10개)
+    // 페이지당 데이터 개수 Getter (널 및 음수 값 방어 보정 + 과대 요청 상한 보정)
     public Long getPageSize() {
         if (this.pageSize == null || this.pageSize < 1) {
-            this.pageSize = 10L;
+            this.pageSize = DEFAULT_PAGE_SIZE;
+        } else if (this.pageSize > MAX_PAGE_SIZE) {
+            // 과대 요청은 거절하지 않고 상한으로 잘라낸다 (기존 화면 동작을 깨지 않으면서 전량 덤프만 차단)
+            this.pageSize = MAX_PAGE_SIZE;
         }
         return pageSize;
     }

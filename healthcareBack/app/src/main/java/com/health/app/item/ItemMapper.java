@@ -26,10 +26,11 @@ public interface ItemMapper {
     // 물품 등록 폼 자동완성용 물품명 전체 조회 쿼리 호출 (페이징 없음)
     public List<ItemDTO> itemNames(Long gymId) throws Exception;
 
-    // CSV 내보내기용 전체 목록 조회 쿼리 호출 (gymId + 검색어 조건, 페이징 없음)
-    public List<ItemDTO> itemListAll(@Param("gymId") Long gymId, @Param("keyword") String keyword) throws Exception;
+    // CSV 내보내기용 전체 목록 조회 쿼리 호출 (gymId + 검색어 + 카테고리 필터, 페이징 없음 — 조건은 itemList와 동일)
+    public List<ItemDTO> itemListAll(@Param("gymId") Long gymId, @Param("keyword") String keyword,
+            @Param("category") String category) throws Exception;
 
-    // 등록된 아이템의 디테일 쿼리 호출
+    // 등록된 아이템의 디테일 쿼리 호출 (gymId + 물품명 + 분류 3개 키로 식별)
     public List<ItemDTO> itemDetail(ItemDTO itemDTO) throws Exception;
 
     // 등록된 아이템 수정 쿼리 호출

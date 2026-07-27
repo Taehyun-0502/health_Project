@@ -31,13 +31,16 @@ function B2bNotification() {
   const handleAlarmClick = async (alarm) => {
     if (alarm.read !== 'Y') {
       try {
-        await fetch(`${import.meta.env.VITE_BACKEND_URL}/alarm/read?alarmId=${alarm.alarmId}`, {
+        // 서버는 본인 수신 알림만 읽음 처리한다(아니면 404). 성공했을 때만 화면 상태를 바꾼다.
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/alarm/read?alarmId=${alarm.alarmId}`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
         });
-        setAlarms((prev) =>
-          prev.map((a) => (a.alarmId === alarm.alarmId ? { ...a, read: 'Y' } : a))
-        );
+        if (response.ok) {
+          setAlarms((prev) =>
+            prev.map((a) => (a.alarmId === alarm.alarmId ? { ...a, read: 'Y' } : a))
+          );
+        }
       } catch (error) {
         console.error('알림 읽음 처리 실패:', error);
       }

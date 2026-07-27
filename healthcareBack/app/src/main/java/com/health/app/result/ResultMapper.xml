@@ -178,9 +178,12 @@
             <when test="mode == 'monthly'">
                 select r.username                           as username,
                        mem.name                             as name,
-                       max(r.churn_rate)                    as churnRate
+                       max(r.churn_rate)                    as churnRate,
+                       (current_date - max(lv.last_dt))     as lastDays
                 from "h_churn_result" r
                 join "h_member" mem on r.username = mem.username
+                left join (select username, max(check_in)::date as last_dt
+                             from "h_check_inout" group by username) lv on lv.username = r.username
                 where mem.gym_id = #{gymId}
                   and r.churn_date is not null
                   and to_char(r.churn_date, 'YYYY-MM') = #{period}
@@ -192,9 +195,12 @@
             <otherwise>
                 select r.username     as username,
                        mem.name       as name,
-                       r.churn_rate   as churnRate
+                       r.churn_rate   as churnRate,
+                       (current_date - lv.last_dt) as lastDays
                 from "h_churn_result" r
                 join "h_member" mem on r.username = mem.username
+                left join (select username, max(check_in)::date as last_dt
+                             from "h_check_inout" group by username) lv on lv.username = r.username
                 where mem.gym_id = #{gymId}
                   and r.churn_date = cast(#{period} as date)
                   and r.churn_rate >= 0.45

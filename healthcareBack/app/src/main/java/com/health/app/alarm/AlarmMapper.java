@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface AlarmMapper {
@@ -14,8 +15,8 @@ public interface AlarmMapper {
     // 수신자 기준 알림 이력 목록 조회 쿼리 호출 (최신순)
     public List<AlarmDTO> alarmList(Long receiver) throws Exception;
 
-    // 알림 읽음 처리 쿼리 호출
-    public int alarmRead(Long alarmId) throws Exception;
+    // 알림 읽음 처리 쿼리 호출 - 본인(receiver) 알림만 갱신되도록 수신자를 함께 넘긴다
+    public int alarmRead(@Param("alarmId") Long alarmId, @Param("receiver") Long receiver) throws Exception;
 
     // 수신 회원의 모든 알림 일괄 읽음 처리 쿼리 호출 (신규 추가 메서드)
     public int readAllByReceiver(Long receiver) throws Exception;

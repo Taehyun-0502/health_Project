@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AiChat from '../ai/AiChat.jsx';
+import { FactorDetailLoader, RiskMembersPanel } from '../report/Report.jsx';
 import './B2bDrawer.css';
 
 // 우측 통합 드로어 (추가 동선) - 리스트 행 클릭 시 'b2b-drawer-open' 커스텀 이벤트로 탭이 쌓인다.
-// detail = { kind: 'contract'|'settle'|'item'|'ai', id, title, data? }
+// detail = { kind: 'contract'|'settle'|'expense'|'item'|'ai', id, title, data? }
 // 같은 kind+id 탭은 중복 생성 없이 활성화만 전환. 바깥 클릭 = 접힘(탭 보존), ✕ = 전체 닫기.
 // AI 비서(2026-07-21 기획서)도 같은 드로어의 한 탭으로 편입되며, 탭 상태는 'b2b-drawer-state'로 방송한다.
 
@@ -18,10 +19,83 @@ const STATUS_BADGE = {
   TERMINATED: 'b2b-drawer__badge--terminated',
 };
 
-// settle/item 탭 하단 이동 버튼 메타
-const KIND_LINK = {
-  settle: { label: '정산 페이지 열기', path: '/fitb/Settlepage' },
-  item: { label: '물품 페이지 열기', path: '/fitb/itempage' },
+// settle/item 탭에는 하단 이동 버튼을 두지 않는다 — 드로어를 연 페이지와 목적지가 같아 이동 의미가 없음
+
+// 값 포맷터: null 반환 = 해당 행 생략
+const won = (value) => new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
+const fmtId = (value) => `#${value}`;
+const fmtWon = (value) => won(value);
+const fmtDiscount = (value) => (value > 0 ? `−${won(value)}` : null);
+const fmtInstallment = (value) => (Number(value) === 0 ? '일시불' : `${value}개월 할부`);
+const fmtRate = (value) => (Number(value) > 0 ? `${(Number(value) * 100).toFixed(0)}%` : null);
+
+// kind별 표시 필드 메타 — 이 순서대로 렌더하며 응답 키 순서에 의존하지 않는다.
+// tone: 'strong'(금액 강조) | 'danger'(지출·할인), hidden: 화면에 의미 없는 내부 키(라벨 없이 노출 방지)
+const DATA_FIELDS = {
+  settle: {
+    fields: [
+      { key: 'payId', label: '결제 ID', format: fmtId },
+      { key: 'dataId', label: '계약 ID', format: fmtId },
+      { key: 'username', label: '회원 연락처' },
+      { key: 'payName', label: '결제 항목' },
+      { key: 'payPrice', label: '결제 금액', format: fmtWon, tone: 'strong' },
+      { key: 'couponName', label: '사용 쿠폰' },
+      { key: 'discountAmount', label: '할인 금액', format: fmtDiscount, tone: 'danger' },
+      { key: 'installment', label: '결제 방법', format: fmtInstallment },
+      { key: 'payDate', label: '결제일', tone: 'num' },
+    ],
+    hidden: ['gymId', 'couponId'],
+  },
+  expense: {
+    fields: [
+      { key: 'expenseId', label: '지출 ID', format: fmtId },
+      { key: 'expenseName', label: '지출 항목' },
+      { key: 'expensePrice', label: '지출 금액', format: fmtWon, tone: 'danger' },
+      { key: 'expenseDate', label: '결제일', tone: 'num' },
+      { key: 'expenseRate', label: '수수료·인센 비율', format: fmtRate },
+      { key: 'dataId', label: '계약 ID', format: fmtId },
+      { key: 'settlementId', label: '커미션 정산 ID', format: fmtId },
+      { key: 'originItemId', label: '물품 등록 ID', format: fmtId },
+    ],
+    hidden: ['gymId'],
+  },
+  item: {
+    fields: [
+      { key: 'itemId', label: '물품 ID', format: fmtId },
+      { key: 'itemCategory', label: '분류' },
+      { key: 'itemName', label: '물품명' },
+      { key: 'itemCount', label: '수량' },
+      { key: 'itemPrice', label: '금액', format: fmtWon, tone: 'strong' },
+      { key: 'itemDate', label: '등록일', tone: 'num' },
+      { key: 'itemStatus', label: '상태' },
+      { key: 'itemExpiryDate', label: '유효기간', tone: 'num' },
+    ],
+    hidden: ['gymId'],
+  },
+};
+
+// 메타 순서대로 정리한 뒤, 메타에 없는 키는 원시 키 그대로 뒤에 붙인다(DTO 필드 추가 시 누락 방지)
+const buildRows = (kind, data) => {
+  const source = data || {};
+  const meta = DATA_FIELDS[kind] ?? { fields: [], hidden: [] };
+  const rows = [];
+
+  meta.fields.forEach(({ key, label, format, tone }) => {
+    const value = source[key];
+    if (value === null || value === undefined || value === '') return;
+    const text = format ? format(value) : String(value);
+    if (text === null || text === undefined) return;
+    rows.push({ key, label, text, tone });
+  });
+
+  const known = new Set([...meta.fields.map((f) => f.key), ...meta.hidden]);
+  Object.entries(source).forEach(([key, value]) => {
+    if (known.has(key)) return;
+    if (value === null || value === undefined || typeof value === 'object') return;
+    rows.push({ key, label: key, text: String(value) });
+  });
+
+  return rows;
 };
 
 const DEFAULT_WIDTH = 440;
@@ -108,41 +182,25 @@ function ContractTabContent({ id, onOpenPage }) {
   );
 }
 
-// kind='settle'/'item' 탭 본문: 이벤트로 전달된 행 객체의 key-value를 2열로 표시 (내부 객체/null 제외)
-function DataTabContent({ kind, data, onOpenPage }) {
-  const entries = Object.entries(data || {}).filter(
-    ([, value]) => value !== null && value !== undefined && typeof value !== 'object',
-  );
-  const link = KIND_LINK[kind];
+// kind='settle'/'expense'/'item' 탭 본문: 이벤트로 전달된 행 객체를 한글 라벨 2열로 표시
+function DataTabContent({ kind, data }) {
+  const rows = buildRows(kind, data);
 
   return (
-    <>
-      <div className="b2b-drawer__fields">
-        {entries.length === 0 ? (
-          <p className="b2b-drawer__message">표시할 데이터가 없습니다.</p>
-        ) : (
-          <dl className="b2b-drawer__list">
-            {entries.map(([key, value]) => (
-              <div className="b2b-drawer__row" key={key}>
-                <dt>{key}</dt>
-                <dd>{String(value)}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-      </div>
-      {link && (
-        <div className="b2b-drawer__footer">
-          <button
-            type="button"
-            className="b2b-drawer__primary-btn"
-            onClick={() => onOpenPage(link.path)}
-          >
-            {link.label}
-          </button>
-        </div>
+    <div className="b2b-drawer__fields">
+      {rows.length === 0 ? (
+        <p className="b2b-drawer__message">표시할 데이터가 없습니다.</p>
+      ) : (
+        <dl className="b2b-drawer__list">
+          {rows.map((row) => (
+            <div className="b2b-drawer__row" key={row.key}>
+              <dt>{row.label}</dt>
+              <dd className={row.tone ? `b2b-drawer__value--${row.tone}` : undefined}>{row.text}</dd>
+            </div>
+          ))}
+        </dl>
       )}
-    </>
+    </div>
   );
 }
 
@@ -350,8 +408,17 @@ function B2bDrawer() {
                 <AiChat onNavigate={openPage} />
               ) : tab.kind === 'contract' ? (
                 <ContractTabContent id={tab.id} onOpenPage={openPage} />
+              ) : tab.kind === 'report' ? (
+                <FactorDetailLoader
+                  statKey={tab.data?.statKey}
+                  gymId={tab.data?.gymId}
+                  mode={tab.data?.mode}
+                  period={tab.data?.period}
+                />
+              ) : tab.kind === 'riskmembers' ? (
+                <RiskMembersPanel data={tab.data} />
               ) : (
-                <DataTabContent kind={tab.kind} data={tab.data} onOpenPage={openPage} />
+                <DataTabContent kind={tab.kind} data={tab.data} />
               )}
             </div>
           ))}

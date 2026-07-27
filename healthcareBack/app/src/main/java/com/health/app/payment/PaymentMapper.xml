@@ -31,7 +31,10 @@
         VALUES (#{username}, #{gymId}, #{installment}, #{payPrice}, #{payDate}, #{payName}, #{dataId})
     </insert>
 
-    <!-- 사장님용: 해당 지점(gym_id)의 매출 내역 목록 페이징 조회 (h_pay 연동 결제 건은 사용 쿠폰/할인액 함께 조회) -->
+    <!-- 사장님용: 해당 지점(gym_id)의 매출 내역 목록 페이징 조회 (h_pay 연동 결제 건은 사용 쿠폰/할인액 함께 조회)
+         h_pay는 LATERAL + LIMIT 1로 붙인다. data_id에 유니크 제약이 없어 같은 계약의 결제 행이 2건 이상
+         생기면 일반 조인은 매출 1건이 여러 행으로 늘어나는데, 건수 쿼리(paymentListCount)는 이 조인을
+         하지 않으므로 목록과 총건수가 어긋나 페이지네이션이 깨진다. -->
     <select id="paymentList" resultType="com.health.app.payment.PaymentDTO">
         SELECT
             p.pay_id as payId,
@@ -46,7 +49,13 @@
             ct.coupon_name as couponName,
             CASE WHEN hp.coupon_id IS NOT NULL THEN (d.amount - p.pay_price) ELSE NULL END as discountAmount
         FROM "h_payment" p
-        LEFT JOIN "h_pay" hp ON p.data_id = hp.data_id
+        LEFT JOIN LATERAL (
+            SELECT hp2.coupon_id
+            FROM "h_pay" hp2
+            WHERE hp2.data_id = p.data_id
+            ORDER BY hp2.p_id DESC
+            LIMIT 1
+        ) hp ON TRUE
         LEFT JOIN "h_coupon" hc ON hp.coupon_id = hc.coupon_id
         LEFT JOIN "h_coupon_type" ct ON hc.coupon_num = ct.coupon_num
         LEFT JOIN "h_contract_data" d ON p.data_id = d.data_id
@@ -90,7 +99,8 @@
         </if>
     </select>
 
-    <!-- CSV 내보내기용: paymentList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환 -->
+    <!-- CSV 내보내기용: paymentList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환
+         (h_pay 조인도 paymentList와 동일하게 LATERAL + LIMIT 1 - 매출 1건이 여러 줄로 중복 출력되지 않도록) -->
     <select id="paymentListAll" resultType="com.health.app.payment.PaymentDTO">
         SELECT
             p.pay_id as payId,
@@ -105,7 +115,13 @@
             ct.coupon_name as couponName,
             CASE WHEN hp.coupon_id IS NOT NULL THEN (d.amount - p.pay_price) ELSE NULL END as discountAmount
         FROM "h_payment" p
-        LEFT JOIN "h_pay" hp ON p.data_id = hp.data_id
+        LEFT JOIN LATERAL (
+            SELECT hp2.coupon_id
+            FROM "h_pay" hp2
+            WHERE hp2.data_id = p.data_id
+            ORDER BY hp2.p_id DESC
+            LIMIT 1
+        ) hp ON TRUE
         LEFT JOIN "h_coupon" hc ON hp.coupon_id = hc.coupon_id
         LEFT JOIN "h_coupon_type" ct ON hc.coupon_num = ct.coupon_num
         LEFT JOIN "h_contract_data" d ON p.data_id = d.data_id

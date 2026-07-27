@@ -282,15 +282,6 @@ function Settlepage() {
           </div>
           <div className="summary-card__value">{formatWon(summary.commissionPaid || 0)}</div>
         </div>
-        <div className="summary-card">
-          <div className="summary-card__head">
-            <span className="summary-card__label">월급 지급</span>
-            <span className={`summary-badge ${(summary.wagePending || 0) > 0 ? 'summary-badge--pending' : 'summary-badge--done'}`}>
-              {(summary.wagePending || 0) > 0 ? `전체 ${summary.wagePending}건 대기` : '전체 완료'}
-            </span>
-          </div>
-          <div className="summary-card__value">{formatWon(summary.wagePaid || 0)}</div>
-        </div>
         <div className="summary-card summary-card--filtered">
           <div className="summary-card__head">
             <span className="summary-card__label">현재 필터 매출</span>
@@ -619,10 +610,6 @@ function Settlepage() {
       (total, commission) => total + Number(commission.commission || 0),
       0,
     );
-    const wagePendingTotal = unpaidExpenses.reduce(
-      (total, contract) => total + Number(contract.amount || 0) + getIncentiveAmount(contract),
-      0,
-    );
     const railTitle = !summaryMonth ? '전체 지출 요약' : `${summaryMonth} 지출 요약`;
 
     return (
@@ -637,21 +624,12 @@ function Settlepage() {
         </div>
         <div className="summary-card">
           <div className="summary-card__head">
-            <span className="summary-card__label">커미션 결제 대기 · 전체 기간</span>
+            <span className="summary-card__label">커미션 결제 대기</span>
             <span className={`summary-badge ${unpaidCommissions.length > 0 ? 'summary-badge--pending' : 'summary-badge--done'}`}>
               {unpaidCommissions.length > 0 ? `전체 ${unpaidCommissions.length}건` : '전체 완료'}
             </span>
           </div>
           <div className="summary-card__value">{formatWon(commissionPendingTotal)}</div>
-        </div>
-        <div className="summary-card">
-          <div className="summary-card__head">
-            <span className="summary-card__label">임금 지급 대기 · 전체 기간</span>
-            <span className={`summary-badge ${unpaidExpenseTotalCount > 0 ? 'summary-badge--pending' : 'summary-badge--done'}`}>
-              {unpaidExpenseTotalCount > 0 ? `전체 ${unpaidExpenseTotalCount}건` : '전체 완료'}
-            </span>
-          </div>
-          <div className="summary-card__value">현재 페이지 금액 {formatWon(wagePendingTotal)}</div>
         </div>
       </aside>
     );
@@ -1287,7 +1265,16 @@ function Settlepage() {
                   </thead>
                   <tbody>
                     {expenses.map(e => (
-                        <tr key={e.expenseId}>
+                        // 행 클릭 = 우측 통합 드로어에 지출 탭 추가 (삭제 버튼은 stopPropagation으로 기존 동작 유지)
+                        <tr
+                          key={e.expenseId}
+                          className="row-clickable"
+                          onClick={() =>
+                            window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
+                              detail: { kind: 'expense', id: e.expenseId, title: e.expenseName ?? '지출', data: e },
+                            }))
+                          }
+                        >
                           <td>#{e.expenseId}</td>
                           <td><strong>{e.expenseName}</strong></td>
                            <td className="cell-amount is-danger">
@@ -1315,7 +1302,7 @@ function Settlepage() {
                           <td>
                             <button
                               className="btn-action btn-action-danger btn-xs"
-                              onClick={() => handleDeleteExpense(e)}
+                              onClick={(ev) => { ev.stopPropagation(); handleDeleteExpense(e); }}
                             >
                               삭제
                             </button>
