@@ -4,6 +4,52 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.health.app.payment.PaymentMapper">
 
+    <!-- ===== 공통 SQL 조각 =====
+         목록/건수/합계/CSV가 같은 컬럼·조인·필터를 반복하던 부분을 모았다.
+         <include>는 컴파일 타임 치환이라 생성 SQL·실행계획은 기존과 동일하다.
+         목록과 건수의 필터가 어긋나면 페이지네이션이 깨지므로 조건은 반드시 이 조각 하나만 고칠 것. -->
+
+    <sql id="paymentColumns">
+        p.pay_id as payId,
+        p.username,
+        p.gym_id as gymId,
+        p.installment,
+        p.pay_price as payPrice,
+        p.pay_date as payDate,
+        p.pay_name as payName,
+        p.data_id as dataId,
+        hp.coupon_id as couponId,
+        ct.coupon_name as couponName,
+        CASE WHEN hp.coupon_id IS NOT NULL THEN (d.amount - p.pay_price) ELSE NULL END as discountAmount
+    </sql>
+
+    <!-- h_pay는 LATERAL + LIMIT 1로 붙인다. data_id에 유니크 제약이 없어 같은 계약의 결제 행이 2건 이상
+         생기면 일반 조인은 매출 1건이 여러 행으로 늘어나는데, 건수 쿼리(paymentListCount)는 이 조인을
+         하지 않으므로 목록과 총건수가 어긋나 페이지네이션이 깨진다. LATERAL을 일반 조인으로 바꾸지 말 것. -->
+    <sql id="paymentCouponJoin">
+        LEFT JOIN LATERAL (
+            SELECT hp2.coupon_id
+            FROM "h_pay" hp2
+            WHERE hp2.data_id = p.data_id
+            ORDER BY hp2.p_id DESC
+            LIMIT 1
+        ) hp ON TRUE
+        LEFT JOIN "h_coupon" hc ON hp.coupon_id = hc.coupon_id
+        LEFT JOIN "h_coupon_type" ct ON hc.coupon_num = ct.coupon_num
+        LEFT JOIN "h_contract_data" d ON p.data_id = d.data_id
+    </sql>
+
+    <!-- 매출 목록 검색 조건 (목록/건수/합계/CSV 공용) -->
+    <sql id="paymentFilter">
+        WHERE p.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
+        <if test="pager.month != null and pager.month != ''">
+            AND TO_CHAR(p.pay_date, 'YYYY-MM') = #{pager.month}
+        </if>
+        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+            AND (p.pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(p.username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
+        </if>
+    </sql>
+
     <select id="getOwnerGymId" resultType="long">
         SELECT gym_id FROM "h_member" WHERE username = #{username} AND UPPER(role) = 'OWNER'
     </select>
@@ -31,41 +77,13 @@
         VALUES (#{username}, #{gymId}, #{installment}, #{payPrice}, #{payDate}, #{payName}, #{dataId})
     </insert>
 
-    <!-- 사장님용: 해당 지점(gym_id)의 매출 내역 목록 페이징 조회 (h_pay 연동 결제 건은 사용 쿠폰/할인액 함께 조회)
-         h_pay는 LATERAL + LIMIT 1로 붙인다. data_id에 유니크 제약이 없어 같은 계약의 결제 행이 2건 이상
-         생기면 일반 조인은 매출 1건이 여러 행으로 늘어나는데, 건수 쿼리(paymentListCount)는 이 조인을
-         하지 않으므로 목록과 총건수가 어긋나 페이지네이션이 깨진다. -->
+    <!-- 사장님용: 해당 지점(gym_id)의 매출 내역 목록 페이징 조회 (h_pay 연동 결제 건은 사용 쿠폰/할인액 함께 조회) -->
     <select id="paymentList" resultType="com.health.app.payment.PaymentDTO">
         SELECT
-            p.pay_id as payId,
-            p.username,
-            p.gym_id as gymId,
-            p.installment,
-            p.pay_price as payPrice,
-            p.pay_date as payDate,
-            p.pay_name as payName,
-            p.data_id as dataId,
-            hp.coupon_id as couponId,
-            ct.coupon_name as couponName,
-            CASE WHEN hp.coupon_id IS NOT NULL THEN (d.amount - p.pay_price) ELSE NULL END as discountAmount
+        <include refid="paymentColumns"/>
         FROM "h_payment" p
-        LEFT JOIN LATERAL (
-            SELECT hp2.coupon_id
-            FROM "h_pay" hp2
-            WHERE hp2.data_id = p.data_id
-            ORDER BY hp2.p_id DESC
-            LIMIT 1
-        ) hp ON TRUE
-        LEFT JOIN "h_coupon" hc ON hp.coupon_id = hc.coupon_id
-        LEFT JOIN "h_coupon_type" ct ON hc.coupon_num = ct.coupon_num
-        LEFT JOIN "h_contract_data" d ON p.data_id = d.data_id
-        WHERE p.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
-        <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(p.pay_date, 'YYYY-MM') = #{pager.month}
-        </if>
-        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND (p.pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(p.username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
-        </if>
+        <include refid="paymentCouponJoin"/>
+        <include refid="paymentFilter"/>
         <choose>
             <when test="sort == 'price_desc'">ORDER BY p.pay_price DESC</when>
             <when test="sort == 'price_asc'">ORDER BY p.pay_price ASC</when>
@@ -77,61 +95,23 @@
 
     <!-- 사장님용: 매출 내역 전체 건수 조회 (Pager 총 페이지 계산용) -->
     <select id="paymentListCount" resultType="long">
-        SELECT COUNT(*) FROM "h_payment"
-        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
-        <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(pay_date, 'YYYY-MM') = #{pager.month}
-        </if>
-        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND (pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
-        </if>
+        SELECT COUNT(*) FROM "h_payment" p
+        <include refid="paymentFilter"/>
     </select>
 
     <!-- 사장님용: 매출 내역 전체 합계 금액 조회 (필터 조건 적용, 페이지 무관) -->
     <select id="paymentListSum" resultType="long">
-        SELECT COALESCE(SUM(pay_price), 0) FROM "h_payment"
-        WHERE gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
-        <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(pay_date, 'YYYY-MM') = #{pager.month}
-        </if>
-        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND (pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
-        </if>
+        SELECT COALESCE(SUM(p.pay_price), 0) FROM "h_payment" p
+        <include refid="paymentFilter"/>
     </select>
 
-    <!-- CSV 내보내기용: paymentList와 동일한 검색조건을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환
-         (h_pay 조인도 paymentList와 동일하게 LATERAL + LIMIT 1 - 매출 1건이 여러 줄로 중복 출력되지 않도록) -->
+    <!-- CSV 내보내기용: paymentList와 동일한 컬럼/조인/검색조건을 조각으로 공유하되 LIMIT/OFFSET 없이 전체 반환 -->
     <select id="paymentListAll" resultType="com.health.app.payment.PaymentDTO">
         SELECT
-            p.pay_id as payId,
-            p.username,
-            p.gym_id as gymId,
-            p.installment,
-            p.pay_price as payPrice,
-            p.pay_date as payDate,
-            p.pay_name as payName,
-            p.data_id as dataId,
-            hp.coupon_id as couponId,
-            ct.coupon_name as couponName,
-            CASE WHEN hp.coupon_id IS NOT NULL THEN (d.amount - p.pay_price) ELSE NULL END as discountAmount
+        <include refid="paymentColumns"/>
         FROM "h_payment" p
-        LEFT JOIN LATERAL (
-            SELECT hp2.coupon_id
-            FROM "h_pay" hp2
-            WHERE hp2.data_id = p.data_id
-            ORDER BY hp2.p_id DESC
-            LIMIT 1
-        ) hp ON TRUE
-        LEFT JOIN "h_coupon" hc ON hp.coupon_id = hc.coupon_id
-        LEFT JOIN "h_coupon_type" ct ON hc.coupon_num = ct.coupon_num
-        LEFT JOIN "h_contract_data" d ON p.data_id = d.data_id
-        WHERE p.gym_id = (SELECT gym_id FROM "h_member" WHERE username = #{username})
-        <if test="pager.month != null and pager.month != ''">
-            AND TO_CHAR(p.pay_date, 'YYYY-MM') = #{pager.month}
-        </if>
-        <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-            AND (p.pay_name LIKE CONCAT('%', #{pager.searchKeyword}, '%') OR CAST(p.username AS TEXT) LIKE CONCAT('%', #{pager.searchKeyword}, '%'))
-        </if>
+        <include refid="paymentCouponJoin"/>
+        <include refid="paymentFilter"/>
         ORDER BY p.pay_date DESC, p.pay_id DESC
     </select>
 

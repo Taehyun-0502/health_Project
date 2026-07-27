@@ -4,6 +4,34 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.health.app.item.ItemMapper">
 
+<!-- ===== 공통 SQL 조각 =====
+     목록(itemList) · 건수(itemListCount) · CSV(itemListAll)가 같은 필터와 집계 규칙을 써야 한다.
+     세 쿼리의 조건이 어긋나면 화면 목록과 총건수/CSV 결과가 달라지므로 아래 조각만 고칠 것.
+     세 쿼리 모두 "h_item"에 별칭 h를 부여해 조각을 공유한다. -->
+
+<!-- 카테고리 칩 필터: '기타'는 고정 3종(기구/소모품/용품) 외 나머지, 그 외는 정확히 일치 -->
+<sql id="itemCategoryFilter">
+<if test="category != null and category != ''">
+    <choose>
+        <when test="'기타'.equals(category)">and h.item_category not in ('기구','소모품','용품')</when>
+        <otherwise>and h.item_category = #{category}</otherwise>
+    </choose>
+</if>
+</sql>
+
+<!-- 검색어 필터 (Pager를 받는 목록/건수 전용. CSV는 플랫 파라미터 keyword를 써서 별도로 둔다) -->
+<sql id="itemKeywordFilter">
+<if test="pager.searchKeyword != null and pager.searchKeyword != ''">
+    and (h.item_name like concat('%', #{pager.searchKeyword}, '%') or h.item_category like concat('%', #{pager.searchKeyword}, '%'))
+</if>
+</sql>
+
+<!-- 재고 집계 단위: 물품은 (지점, 분류, 이름) 3키로 묶고 잔여 수량이 남은 그룹만 노출한다 -->
+<sql id="itemGroupBy">
+group by h.gym_id, h.item_category, h.item_name
+having sum(h.item_count) > 0
+</sql>
+
 <select id="getOwnerGymId" resultType="long">
 select gym_id from "h_member" where username = #{username} and upper(role) = 'OWNER'
 </select>
@@ -41,18 +69,9 @@ select
        and h3.item_count > 0 and h3.item_expiry_date is not null) as itemExpiryDate
 from "h_item" h
 where h.gym_id=#{gymId}
-<if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-    and (h.item_name like concat('%', #{pager.searchKeyword}, '%') or h.item_category like concat('%', #{pager.searchKeyword}, '%'))
-</if>
-<!-- 카테고리 칩 필터: '기타'는 고정 3종(기구/소모품/용품) 외 나머지, 그 외는 정확히 일치 -->
-<if test="category != null and category != ''">
-    <choose>
-        <when test="'기타'.equals(category)">and h.item_category not in ('기구','소모품','용품')</when>
-        <otherwise>and h.item_category = #{category}</otherwise>
-    </choose>
-</if>
-group by h.gym_id, h.item_category, h.item_name
-having sum(h.item_count) > 0
+<include refid="itemKeywordFilter"/>
+<include refid="itemCategoryFilter"/>
+<include refid="itemGroupBy"/>
 <choose>
     <when test="sort == 'count_desc'">order by itemCount desc</when>
     <when test="sort == 'count_asc'">order by itemCount asc</when>
@@ -67,19 +86,11 @@ limit #{pager.pageSize} offset #{pager.offset}
 <select id="itemListCount" resultType="long">
 select count(*) from (
     select 1
-    from "h_item"
-    where gym_id=#{gymId}
-    <if test="pager.searchKeyword != null and pager.searchKeyword != ''">
-        and (item_name like concat('%', #{pager.searchKeyword}, '%') or item_category like concat('%', #{pager.searchKeyword}, '%'))
-    </if>
-    <if test="category != null and category != ''">
-        <choose>
-            <when test="'기타'.equals(category)">and item_category not in ('기구','소모품','용품')</when>
-            <otherwise>and item_category = #{category}</otherwise>
-        </choose>
-    </if>
-    group by gym_id, item_category, item_name
-    having sum(item_count) > 0
+    from "h_item" h
+    where h.gym_id=#{gymId}
+    <include refid="itemKeywordFilter"/>
+    <include refid="itemCategoryFilter"/>
+    <include refid="itemGroupBy"/>
 ) t
 </select>
 
@@ -95,28 +106,23 @@ order by item_name
 
 <!-- CSV 내보내기용: itemList와 동일한 검색조건(검색어 + 카테고리 칩)을 적용하되 LIMIT/OFFSET 없이 전체 목록을 반환
      카테고리 조건이 빠지면 화면에서 특정 분류를 필터링해 둔 상태로 내보내도 전 분류가 파일에 담겨
-     사용자가 보고 있는 목록과 다른 결과를 받게 된다. 조건은 itemList와 반드시 같은 규칙을 유지할 것. -->
+     사용자가 보고 있는 목록과 다른 결과를 받게 된다.
+     카테고리/집계는 itemList와 조각을 공유하지만, 검색어만은 이 쿼리가 Pager가 아닌 플랫 파라미터
+     keyword를 받으므로 조각을 쓰지 못하고 아래처럼 따로 둔다(itemKeywordFilter와 규칙을 같게 유지할 것). -->
 <select id="itemListAll" resultType="ItemDTO">
 select
-    gym_id as gymId,
-    item_category as itemCategory,
-    item_name as itemName,
-    sum(item_count) as itemCount
-from "h_item"
-where gym_id=#{gymId}
+    h.gym_id as gymId,
+    h.item_category as itemCategory,
+    h.item_name as itemName,
+    sum(h.item_count) as itemCount
+from "h_item" h
+where h.gym_id=#{gymId}
 <if test="keyword != null and keyword != ''">
-    and (item_name like concat('%', #{keyword}, '%') or item_category like concat('%', #{keyword}, '%'))
+    and (h.item_name like concat('%', #{keyword}, '%') or h.item_category like concat('%', #{keyword}, '%'))
 </if>
-<!-- 카테고리 칩 필터: '기타'는 고정 3종(기구/소모품/용품) 외 나머지, 그 외는 정확히 일치 (itemList와 동일) -->
-<if test="category != null and category != ''">
-    <choose>
-        <when test="'기타'.equals(category)">and item_category not in ('기구','소모품','용품')</when>
-        <otherwise>and item_category = #{category}</otherwise>
-    </choose>
-</if>
-group by gym_id, item_category, item_name
-having sum(item_count) > 0
-order by item_name
+<include refid="itemCategoryFilter"/>
+<include refid="itemGroupBy"/>
+order by h.item_name
 </select>
 
 <!-- 물품 상세(구매/폐기 이력) 조회
