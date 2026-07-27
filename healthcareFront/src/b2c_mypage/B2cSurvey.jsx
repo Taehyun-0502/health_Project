@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import './B2cPages.css';
 
 // B2C 회원 설문 입력 폼 (디자인 제외 Plain 버전)
 // - 불만 7종을 5단계로 평가: 매우좋음(1)·좋음(2)·보통(3)·나쁨(4)·매우나쁨(5).
@@ -44,32 +45,24 @@ function B2cSurvey() {
   // 원 5개(매우좋음 ~ 매우나쁨) 선택 렌더 헬퍼. 저장값 = 1~5 (클수록 나쁨=불만↑).
   const renderScale = (value, onChange) =>
     [1, 2, 3, 4, 5].map((n) => (
-      <span key={n} style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', marginRight: '10px' }}>
+      <span key={n} className="b2c-rating__option">
         <button
           type="button"
           title={SCALE_LABELS[n - 1]}
           onClick={() => onChange(n)}
-          style={{
-            cursor: 'pointer',
-            width: '30px',
-            height: '30px',
-            borderRadius: '50%',
-            border: n === value ? '2px solid var(--b2c-accent)' : '1px solid var(--gray-300)',
-            background: n === value ? 'var(--b2c-accent)' : 'var(--white)',
-            color: n === value ? 'var(--white)' : 'var(--gray-700)',
-            fontWeight: n === value ? 'bold' : 'normal',
-          }}
+          className={`b2c-rating__button${n === value ? ' is-selected' : ''}`}
+          aria-pressed={n === value}
         >
           {n}
         </button>
-        <span style={{ fontSize: '11px', color: 'var(--gray-400)', marginTop: '2px' }}>{SCALE_LABELS[n - 1]}</span>
+        <span className="b2c-rating__label">{SCALE_LABELS[n - 1]}</span>
       </span>
     ));
 
   const ScaleRow = ({ label, field }) => (
-    <div style={{ margin: '10px 0', display: 'flex', alignItems: 'flex-start' }}>
-      <label style={{ display: 'inline-block', width: '130px', paddingTop: '6px' }}>{label}</label>
-      <span>{renderScale(rates[field], (v) => setRate(field, v))}</span>
+    <div className="b2c-survey__row">
+      <span className="b2c-survey__item-label">{label}</span>
+      <div className="b2c-rating">{renderScale(rates[field], (v) => setRate(field, v))}</div>
     </div>
   );
 
@@ -125,30 +118,32 @@ function B2cSurvey() {
   };
 
   return (
-    <div style={{ padding: '16px 16px 32px' }}>
-      <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>회원 설문</h3>
-      <p style={{ color: 'var(--gray-600)', fontSize: '14px' }}>
-        각 항목을 매우좋음 ~ 매우나쁨의 5단계로 평가해주세요.
-      </p>
+    <div className="b2c-page">
+      <header className="b2c-page__header">
+        <h2 className="b2c-page__title">회원 설문</h2>
+        <p className="b2c-page__description">
+          각 항목을 매우좋음 ~ 매우나쁨의 5단계로 평가해주세요.
+        </p>
+      </header>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="b2c-survey">
         {/* 아이디 (로그인 연동 전 임시 직접 입력) */}
-        <div style={{ margin: '10px 0' }}>
-          <label style={{ display: 'inline-block', width: '130px', fontSize: '13px', fontWeight: '600', color: 'var(--gray-600)' }}>아이디</label>
+        <div className="b2c-form__group">
+          <label className="b2c-form__label">아이디</label>
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="회원 아이디(전화번호)"
             required
-            style={{ padding: '10px 12px', border: '1px solid var(--gray-300)', borderRadius: '10px' }}
+            className="b2c-form__input"
           />
         </div>
 
         {/* 불만 7종 (1~5) */}
         {COMPLAINT_GROUPS.map((g) => (
-          <fieldset key={g.group} style={{ margin: '12px 0', border: '1px solid var(--gray-200)', borderRadius: '12px', padding: '12px' }}>
-            <legend style={{ fontWeight: 'bold', color: 'var(--gray-900)' }}>{g.group}</legend>
+          <fieldset key={g.group} className="b2c-survey__fieldset">
+            <legend className="b2c-survey__legend">{g.group}</legend>
             {g.items.map((it) => (
               <ScaleRow key={it.key} label={it.label} field={it.key} />
             ))}
@@ -156,36 +151,38 @@ function B2cSurvey() {
         ))}
 
         {/* 부상 경험 */}
-        <div style={{ margin: '10px 0' }}>
-          <label style={{ display: 'inline-block', width: '220px' }}>
+        <div className="b2c-survey__injury">
+          <span className="b2c-survey__question">
             최근 한 달 부상 경험이 있나요?
-          </label>
-          <label style={{ marginRight: '12px' }}>
-            <input type="radio" name="injuryIssue" checked={injuryIssue === true}
-                   onChange={() => setInjuryIssue(true)} /> 있음
-          </label>
-          <label>
-            <input type="radio" name="injuryIssue" checked={injuryIssue === false}
-                   onChange={() => { setInjuryIssue(false); setInjuryArea(''); }} /> 없음
-          </label>
+          </span>
+          <div className="b2c-survey__radios">
+            <label className="b2c-radio-option">
+              <input type="radio" name="injuryIssue" checked={injuryIssue === true}
+                     onChange={() => setInjuryIssue(true)} /> 있음
+            </label>
+            <label className="b2c-radio-option">
+              <input type="radio" name="injuryIssue" checked={injuryIssue === false}
+                     onChange={() => { setInjuryIssue(false); setInjuryArea(''); }} /> 없음
+            </label>
+          </div>
         </div>
 
         {/* 부상 부위 (부상 있음일 때만) */}
         {injuryIssue && (
-          <div style={{ margin: '10px 0' }}>
-            <label style={{ display: 'inline-block', width: '130px', fontSize: '13px', fontWeight: '600', color: 'var(--gray-600)' }}>부상 부위</label>
+          <div className="b2c-form__group">
+            <label className="b2c-form__label">부상 부위</label>
             <input
               type="text"
               value={injuryArea}
               onChange={(e) => setInjuryArea(e.target.value)}
               placeholder="예: 오른쪽 어깨"
               required
-              style={{ padding: '10px 12px', border: '1px solid var(--gray-300)', borderRadius: '10px' }}
+              className="b2c-form__input"
             />
           </div>
         )}
 
-        <button type="submit" style={{ marginTop: '15px', width: '100%', minHeight: '48px', padding: '12px', backgroundColor: 'var(--b2c-accent)', color: 'var(--white)', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}>설문 제출</button>
+        <button type="submit" className="b2c-button">설문 제출</button>
       </form>
     </div>
   );

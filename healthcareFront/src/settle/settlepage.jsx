@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import NavIcon from '../components/uiIcons.jsx';
 import './settlepage.css';
 import Pagination from './Pagination';
+import useHeaderAction from '../hooks/useHeaderAction.js';
 
 const UNPAID_CONTRACTS_PER_PAGE = 5;
 const UNPAID_CONTRACT_PAGE_BLOCK_SIZE = 5;
@@ -877,6 +879,18 @@ function Settlepage() {
     }
   };
 
+  // 상단 유틸리티 바(알림 종 왼쪽)에 현재 화면 조건 기준 CSV 내보내기 버튼을 등록한다.
+  // ADMIN=커미션 내역 / OWNER=현재 활성 탭(매출·지출) 기준. 권한 없음 화면에서는 등록하지 않는다.
+  useHeaderAction(
+    loading
+      ? null
+      : activeRole === 'ADMIN'
+        ? { label: 'CSV 내보내기', onClick: handleExportCommissionsCsv }
+        : activeRole === 'OWNER'
+          ? { label: 'CSV 내보내기', onClick: ownerTab === 'sales' ? handleExportPaysCsv : handleExportExpensesCsv }
+          : null
+  );
+
   // --- 권한별 화면 렌더링 분기 ---
 
   // 1. 권한 없음 / 비로그인 화면
@@ -884,7 +898,7 @@ function Settlepage() {
     return (
       <div className="settle-container">
         <div className="card-premium unauth-card">
-          <div className="unauth-icon">⚠️</div>
+          <div className="unauth-icon"><NavIcon id="warning" size={40} /></div>
           <h2 className="unauth-title">정산 페이지 접근 제한</h2>
           <p className="unauth-desc">
             이 페이지는 <strong>관리자(ADMIN)</strong> 또는 <strong>사장님(OWNER)</strong> 권한이 있는 사용자만 접근할 수 있습니다.<br />
@@ -900,23 +914,50 @@ function Settlepage() {
 
   return (
     <div className="settle-container">
-      <div className="settle-pagehead">
-        <p className="settle-pagehead__meta">
-          {activeRole === 'ADMIN'
-            ? '가맹점 계약에 따른 플랫폼 커미션 정산 관리'
-            : '사업장 운영 매출 내역 및 지출 비용 손익 관리'}
-          <br />
-          접속자: <span className="settle-pagehead__name">{loginUser?.name || '사용자'}</span>
-          <span className="settle-pagehead__role">{activeRole}</span>
-        </p>
-        <div className="settle-pagehead__actions">
-          <Link to="/fitb" className="settle-pagehead__link">대시보드</Link>
+      {/* 페이지 헤더 (제목 + 안내 문구 + 주요 액션) — 리포트 페이지와 동일 시각 규격 */}
+      <header className="settle-list-head">
+        <div className="settle-list-head__main">
+          <h2 className="settle-list-head__title">정산 매출</h2>
+          <p className="settle-list-head__desc">매출과 지출 내역을 확인하고 기간별 정산 업무를 관리합니다.</p>
         </div>
-      </div>
+        <div className="settle-list-head__actions">
+          {/* ADMIN 전용 - 정산 커미션 수동 집계 (매달 1일 자동 스케줄러와 별개로 즉시 집계) */}
+          {activeRole === 'ADMIN' && (
+            <>
+              <input
+                type="month"
+                className="select-premium"
+                value={generateMonth}
+                onChange={(e) => setGenerateMonth(e.target.value)}
+              />
+              <button type="button" className="btn-export-premium" onClick={handleGenerateCommissions}>
+                수동 집계 실행
+              </button>
+            </>
+          )}
+
+          {/* OWNER 전용 - 지출 관리 탭에서만 노출되는 지출 확정 버튼 */}
+          {activeRole === 'OWNER' && ownerTab === 'expenses' && (
+            <button
+              type="button"
+              className="btn-premium expense-confirm-open"
+              ref={expenseDrawerTriggerRef}
+              onClick={() => setExpenseDrawerOpen(true)}
+            >
+              지출 확정하기
+              {(unpaidCommissions.length + unpaidExpenseTotalCount) > 0 && (
+                <span className="expense-confirm-count">
+                  {unpaidCommissions.length + unpaidExpenseTotalCount}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+      </header>
 
       {errorInfo && (
         <div className="settle-error-banner">
-          <span>⚠️ {errorInfo}</span>
+          <span><NavIcon id="warning" size={16} className="ui-icon" /> {errorInfo}</span>
           <button type="button" onClick={() => setErrorInfo('')}>닫기</button>
         </div>
       )}
@@ -953,23 +994,12 @@ function Settlepage() {
             </div>
           </section>
 
-          {/* 커미션 수동 집계 생성 컨트롤: 매달 1일 자동 스케줄러와 별개로, 관리자가 특정 월을 즉시 강제 집계할 수 있음 */}
+          {/* 커미션 수동 집계 안내: 실행 버튼과 대상 월 선택은 페이지 헤더로 이동(주요 액션 배치 규칙) */}
           <div className="settle-panel generate-commission-card">
-            <h3>⚙️ 정산 커미션 수동 집계</h3>
+            <h3><NavIcon id="mypage" size={18} className="ui-icon" /> 정산 커미션 수동 집계</h3>
             <p>
-              매달 1일 자동으로 전월 정산이 생성되지만, 필요 시 특정 월을 수동으로 즉시 집계할 수 있습니다. 이미 집계된 가맹점/월 조합은 자동으로 건너뜁니다.
+              매달 1일 자동으로 전월 정산이 생성되지만, 필요 시 상단의 대상 월과 &quot;수동 집계 실행&quot; 버튼으로 특정 월을 즉시 강제 집계할 수 있습니다. 이미 집계된 가맹점/월 조합은 자동으로 건너뜁니다.
             </p>
-            <div className="gen-commission-controls">
-              <input
-                type="month"
-                className="select-premium"
-                value={generateMonth}
-                onChange={(e) => setGenerateMonth(e.target.value)}
-              />
-              <button type="button" className="btn-export-premium" onClick={handleGenerateCommissions}>
-                수동 집계 실행
-              </button>
-            </div>
           </div>
 
           {/* 테이블 필터링 제어 영역 */}
@@ -1007,9 +1037,6 @@ function Settlepage() {
               <span className="filter-count">
                 총 <strong>{commissionTotalCount}</strong>건 검색됨
               </span>
-              <button type="button" className="btn-export-premium" onClick={handleExportCommissionsCsv}>
-                CSV 내보내기
-              </button>
             </div>
           </div>
 
@@ -1064,29 +1091,28 @@ function Settlepage() {
       {/* ======================================================== */}
       {!loading && activeRole === 'OWNER' && (
         <div>
-          {/* 사장님 뷰 서브 탭 제어 */}
-          <div className="settle-tabs">
-            <button 
-              className={`settle-tab-btn ${ownerTab === 'sales' ? 'active' : ''}`}
-              onClick={() => setOwnerTab('sales')}
-            >
-              📊 매출 내역
-            </button>
-            <button 
-              className={`settle-tab-btn ${ownerTab === 'expenses' ? 'active' : ''}`}
-              onClick={() => setOwnerTab('expenses')}
-            >
-              💸 지출 관리
-            </button>
-          </div>
+          {/* 사장님 뷰 서브 탭(좌) + 검색·정렬(우) — 칩 줄 오른쪽에 필터 배치 */}
+          <div className="settle-tabs-row">
+            <div className="settle-tabs">
+              <button
+                className={`settle-tab-btn ${ownerTab === 'sales' ? 'active' : ''}`}
+                onClick={() => setOwnerTab('sales')}
+              >
+                <NavIcon id="chart" size={16} className="ui-icon" /> 매출 내역
+              </button>
+              <button
+                className={`settle-tab-btn ${ownerTab === 'expenses' ? 'active' : ''}`}
+                onClick={() => setOwnerTab('expenses')}
+              >
+                <NavIcon id="wallet" size={16} className="ui-icon" /> 지출 관리
+              </button>
+            </div>
 
-          {/* 공통 필터 영역 (매출 및 지출 목록용) */}
-          {ownerTab !== 'pnl' && (
-            <div className="filter-row">
-              <div className="filter-left">
-                <select 
-                  className="select-premium" 
-                  value={ownerMonthFilter} 
+            {ownerTab !== 'pnl' && (
+              <div className="settle-tabs-row__right">
+                <select
+                  className="select-premium"
+                  value={ownerMonthFilter}
                   onChange={(e) => setOwnerMonthFilter(e.target.value)}
                 >
                   <option value="ALL">날짜 기준: 전체</option>
@@ -1110,32 +1136,8 @@ function Settlepage() {
                   <option value="date_asc">날짜 오래된순</option>
                 </select>
               </div>
-              <div className="filter-right">
-                <button
-                  type="button"
-                  className="btn-export-premium"
-                  onClick={ownerTab === 'sales' ? handleExportPaysCsv : handleExportExpensesCsv}
-                >
-                  CSV 내보내기
-                </button>
-                {ownerTab === 'expenses' && (
-                  <button
-                    type="button"
-                    className="btn-premium expense-confirm-open"
-                    ref={expenseDrawerTriggerRef}
-                    onClick={() => setExpenseDrawerOpen(true)}
-                  >
-                    지출 확정하기
-                    {(unpaidCommissions.length + unpaidExpenseTotalCount) > 0 && (
-                      <span className="expense-confirm-count">
-                        {unpaidCommissions.length + unpaidExpenseTotalCount}
-                      </span>
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* 3.1 매출 내역 탭 */}
           {ownerTab === 'sales' && (
@@ -1207,7 +1209,7 @@ function Settlepage() {
               {/* 미결제 계약 목록 (h_pay 연동, /fitb/payment 페이지로 이동) */}
               {unpaidContracts.length > 0 && (
                 <div className="settle-panel expense-form-card">
-                  <h3>💳 미결제 리스트</h3>
+                  <h3><NavIcon id="card" size={18} className="ui-icon" /> 미결제 리스트</h3>
                   <p className="settle-form-desc">
                     회원이 보유한 쿠폰을 확인하고 할인을 적용해 결제를 확정합니다.
                   </p>
@@ -1356,7 +1358,7 @@ function Settlepage() {
                 
                 {/* 왼쪽: 지출 대기 계약서 목록 */}
                 <div className="settle-panel expense-contract-list-card">
-                  <h3>📋 지출 정산 대기</h3>
+                  <h3><NavIcon id="clipboard" size={18} className="ui-icon" /> 지출 정산 대기</h3>
                   <p className="settle-form-desc">
                     전달 매출로 확정된 월별 커미션과 서명 완료된 임금 계약입니다. 항목을 선택하면 우측 폼에 자동 입력됩니다.
                   </p>
@@ -1422,7 +1424,7 @@ function Settlepage() {
 
                 {/* 오른쪽: 지출 등록 폼 */}
                 <div className="settle-panel expense-form-card">
-                  <h3>💸 신규 지출 항목 직접 등록</h3>
+                  <h3><NavIcon id="wallet" size={18} className="ui-icon" /> 신규 지출 항목 직접 등록</h3>
                   <p className="settle-form-desc">
                     좌측의 계약서를 선택하여 자동 입력하거나, 직접 지출 항목을 입력하여 등록할 수 있습니다.
                   </p>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import NavIcon from '../components/uiIcons.jsx';
 import './AiPanel.css';
 
 // AI 비서 플로팅 입력바 (Phase 1 - OWNER 정식 / ADMIN·TRAINER 프리뷰)
@@ -64,7 +65,6 @@ function AiPanel() {
 
   return (
     <div className="ai-fabbar">
-      <span className="ai-fabbar-icon" aria-hidden="true">🤖</span>
       <input
         type="text"
         value={fabInput}
@@ -75,7 +75,7 @@ function AiPanel() {
           if (e.key === 'Enter' && !e.nativeEvent.isComposing) sendFromFab();
         }}
       />
-      <button type="button" title="전송" onClick={sendFromFab}>➤</button>
+      <button type="button" title="전송" onClick={sendFromFab}><NavIcon id="send" size={18} /></button>
     </div>
   );
 }

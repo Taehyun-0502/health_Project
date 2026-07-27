@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AiChat from '../ai/AiChat.jsx';
 import { FactorDetailLoader, RiskMembersPanel } from '../report/Report.jsx';
+import NavIcon from './uiIcons.jsx';
 import './B2bDrawer.css';
 
 // 우측 통합 드로어 (추가 동선) - 리스트 행 클릭 시 'b2b-drawer-open' 커스텀 이벤트로 탭이 쌓인다.
@@ -352,7 +353,7 @@ function B2bDrawer() {
                   title="탭 닫기"
                   onClick={(e) => { e.stopPropagation(); closeTab(tab.key); }}
                 >
-                  ✕
+                  <NavIcon id="close" size={14} />
                 </button>
               </div>
             ))}
@@ -366,7 +367,7 @@ function B2bDrawer() {
                 title="열린 탭 목록"
                 onClick={() => setDropdownOpen((open) => !open)}
               >
-                ∨
+                <NavIcon id="chevron" size={16} className="ui-icon ui-icon--down" />
               </button>
               {dropdownOpen && (
                 <ul className="b2b-drawer__dropdown-list">
@@ -392,7 +393,7 @@ function B2bDrawer() {
             title="모두 닫기"
             onClick={closeAll}
           >
-            ✕
+            <NavIcon id="close" size={18} />
           </button>
         </div>
 

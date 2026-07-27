@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import NavIcon from '../components/uiIcons.jsx';
+import './B2cPages.css';
 
 // B2C 일반 회원 마이페이지용 순수 캘린더 기반 출석 기록 조회 컴포넌트
 function B2cCheckIn() {
@@ -82,51 +84,55 @@ function B2cCheckIn() {
   );
 
   return (
-    <div style={{ padding: '16px 16px 32px' }}>
-      <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>출석 일지 (달력 보기)</h3>
-      <p style={{ fontSize: '13px', color: 'var(--gray-600)', marginBottom: '15px' }}>최근 30일 이내에 출석 완료된 날짜에 체크 표시가 찍힙니다.</p>
+    <div className="b2c-page">
+      <header className="b2c-page__header">
+        <h2 className="b2c-page__title">출석 일지 (달력 보기)</h2>
+        <p className="b2c-page__description">최근 30일 이내에 출석 완료된 날짜에 체크 표시가 찍힙니다.</p>
+      </header>
 
       {/* 다가오는 PT 일정 안내 (담당 트레이너가 등록한 예정 수업, 조회 전용) */}
       {ptSchedules.length > 0 && (
-        <div style={{ marginBottom: '20px', padding: '12px', border: '1px solid var(--b2c-lime-line)', borderRadius: '12px', backgroundColor: 'var(--b2c-lime-bg)' }}>
-          <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'var(--b2c-accent)' }}>🗓️ 다가오는 PT 일정</h4>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        <section className="b2c-pt-card">
+          <h3 className="b2c-pt-card__title">
+            <NavIcon id="calendar" size={17} className="ui-icon" /> 다가오는 PT 일정
+          </h3>
+          <ul className="b2c-pt-card__list">
             {ptSchedules.map((schedule) => (
-              <li key={schedule.scheduleId} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 4px', borderBottom: '1px solid var(--b2c-lime-line)', fontSize: '13px' }}>
+              <li key={schedule.scheduleId} className="b2c-pt-card__item">
                 <span>
                   <b>{schedule.scheduleAt ? `${schedule.scheduleAt.substring(0, 10).replaceAll('-', '.')} ${schedule.scheduleAt.substring(11, 16)}` : '-'}</b>
-                  {schedule.memo && <span style={{ color: 'var(--gray-400)' }}> — {schedule.memo}</span>}
+                  {schedule.memo && <span className="b2c-pt-card__memo"> — {schedule.memo}</span>}
                 </span>
-                <span style={{ color: 'var(--gray-600)' }}>{schedule.trainerName ? `${schedule.trainerName} 트레이너` : ''}</span>
+                <span className="b2c-pt-card__trainer">{schedule.trainerName ? `${schedule.trainerName} 트레이너` : ''}</span>
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
 
       {/* 달력 컨트롤러 헤더 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-        <button onClick={handlePrevMonth} style={{ padding: '10px 14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: 'var(--white)', color: 'var(--gray-700)', fontWeight: '600' }}>&lt; 이전달</button>
-        <span style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--gray-900)' }}>{year}년 {month + 1}월</span>
-        <button onClick={handleNextMonth} style={{ padding: '10px 14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '10px', backgroundColor: 'var(--white)', color: 'var(--gray-700)', fontWeight: '600' }}>다음달 &gt;</button>
+      <div className="b2c-calendar__header">
+        <button onClick={handlePrevMonth} className="b2c-calendar__nav">&lt; 이전달</button>
+        <span className="b2c-calendar__month">{year}년 {month + 1}월</span>
+        <button onClick={handleNextMonth} className="b2c-calendar__nav">다음달 &gt;</button>
       </div>
 
       {/* 요일 구분 그리드 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', textAlign: 'center', fontWeight: 'bold', fontSize: '14px', marginBottom: '10px' }}>
-        <div style={{ color: 'var(--danger-solid)' }}>일</div>
+      <div className="b2c-calendar__week">
+        <div className="b2c-calendar__week--sun">일</div>
         <div>월</div>
         <div>화</div>
         <div>수</div>
         <div>목</div>
         <div>금</div>
-        <div style={{ color: 'var(--b2c-accent)' }}>토</div>
+        <div className="b2c-calendar__week--sat">토</div>
       </div>
 
       {/* 캘린더 날짜 바둑판 그리드 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+      <div className="b2c-calendar__grid">
         {calendarCells.map((day, idx) => {
           if (day === null) {
-            return <div key={`blank-${idx}`} style={{ minHeight: '50px' }} />;
+            return <div key={`blank-${idx}`} className="b2c-calendar__blank" />;
           }
 
           // 해당 일자의 날짜 문자열 완성 (포맷팅: YYYY-MM-DD)
@@ -141,47 +147,16 @@ function B2cCheckIn() {
           return (
             <div
               key={`day-${day}`}
-              style={{
-                minHeight: '50px',
-                border: '1px solid var(--gray-200)',
-                borderRadius: '8px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: isAttended ? 'var(--b2c-lime-bg)' : 'var(--gray-50)', // 출석한 날은 라임 하이라이트 처리
-                outline: isToday ? '2px solid var(--b2c-accent)' : 'none',
-                outlineOffset: isToday ? '-2px' : undefined,
-                transition: 'all 0.2s',
-                position: 'relative'
-              }}
+              className={`b2c-calendar__day${isAttended ? ' is-attended' : ''}${isToday ? ' is-today' : ''}`}
             >
               {/* 날짜 숫자 표시 (출석일은 라임 도장 원형) */}
-              <span style={{
-                fontSize: '12px',
-                fontWeight: isAttended ? 'bold' : 'normal',
-                color: isAttended ? 'var(--white)' : 'var(--gray-900)',
-                backgroundColor: isAttended ? 'var(--b2c-accent)' : 'transparent',
-                width: '20px',
-                height: '20px',
-                borderRadius: '50%',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
+              <span className="b2c-calendar__date">
                 {day}
               </span>
 
               {/* 출석 도장 뱃지 */}
               {isAttended && (
-                <span style={{
-                  fontSize: '9px',
-                  color: 'var(--b2c-accent)',
-                  padding: '2px 4px',
-                  borderRadius: '999px',
-                  marginTop: '2px',
-                  fontWeight: 'bold'
-                }}>
+                <span className="b2c-calendar__stamp">
                   출석
                 </span>
               )}

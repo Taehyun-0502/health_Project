@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import './B2cPages.css';
 
 // B2C 일반 회원 멤버십(이용권) 조회 컴포넌트 (디자인 제외 Plain 버전)
 function Membership() {
@@ -46,31 +47,33 @@ function Membership() {
   };
 
   return (
-    <div style={{ padding: '16px 16px 32px' }}>
-      <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>내 멤버십 정보</h3>
+    <div className="b2c-page">
+      <header className="b2c-page__header">
+        <h2 className="b2c-page__title">내 멤버십 정보</h2>
+      </header>
       {memberships.length === 0 ? (
-        <p style={{ color: 'var(--gray-400)', fontSize: '14px' }}>이용 중인 피트니스 회원권(멤버십) 정보가 없습니다.</p>
+        <p className="b2c-empty">이용 중인 피트니스 회원권(멤버십) 정보가 없습니다.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '13px' }}>
+        <table className="b2c-data-table">
           <thead>
-            <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-600)', borderBottom: '2px solid var(--gray-200)' }}>
-              <th style={{ padding: '10px', fontWeight: '600' }}>번호</th>
-              <th style={{ padding: '10px', fontWeight: '600' }}>계약종류</th>
-              <th style={{ padding: '10px', fontWeight: '600' }}>시작일</th>
-              <th style={{ padding: '10px', fontWeight: '600' }}>만료일</th>
-              <th style={{ padding: '10px', fontWeight: '600' }}>결제액</th>
-              <th style={{ padding: '10px', fontWeight: '600' }}>담당자</th>
+            <tr>
+              <th>번호</th>
+              <th>계약종류</th>
+              <th>시작일</th>
+              <th>만료일</th>
+              <th>결제액</th>
+              <th>담당자</th>
             </tr>
           </thead>
           <tbody>
             {memberships.map((item, idx) => (
-              <tr key={item.dataId || idx} style={{ borderBottom: '1px solid var(--gray-200)', textAlign: 'center' }}>
-                <td style={{ padding: '10px' }}>{idx + 1}</td>
-                <td style={{ padding: '10px', fontWeight: '600', color: 'var(--b2c-accent)' }}>{getContractName(item.contract)}</td>
-                <td style={{ padding: '10px', color: 'var(--gray-600)' }}>{item.startDate}</td>
-                <td style={{ padding: '10px', color: 'var(--gray-600)' }}>{item.endDate}</td>
-                <td style={{ padding: '10px', fontVariantNumeric: 'tabular-nums' }}>{item.amount ? `${item.amount.toLocaleString()}만원` : '0만원'}</td>
-                <td style={{ padding: '10px', color: 'var(--gray-600)' }}>{item.managerId || '미지정'}</td>
+              <tr key={item.dataId || idx}>
+                <td data-label="번호">{idx + 1}</td>
+                <td data-label="계약종류" className="b2c-data-table__accent">{getContractName(item.contract)}</td>
+                <td data-label="시작일" className="b2c-data-table__muted">{item.startDate}</td>
+                <td data-label="만료일" className="b2c-data-table__muted">{item.endDate}</td>
+                <td data-label="결제액" className="b2c-data-table__numeric">{item.amount ? `${item.amount.toLocaleString()}만원` : '0만원'}</td>
+                <td data-label="담당자" className="b2c-data-table__muted">{item.managerId || '미지정'}</td>
               </tr>
             ))}
           </tbody>

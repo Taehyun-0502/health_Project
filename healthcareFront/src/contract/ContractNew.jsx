@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import './Contract.css';
 
 // 계약 유형은 contract FK로 판별 (1=제휴, 2=임금, 3·4=회원 계약 통합폼, 5=PT 체험)
 // 이용권(3)/PT(4)는 하나의 발행폼을 사용하고 서버가 quantity(0=이용권, 1 이상=PT)로 최종 판정한다
@@ -102,10 +103,11 @@ function ContractNew() {
 
   if (!info) {
     return (
-      <div>
-        <h1>계약서 작성</h1>
-        <p>잘못된 계약 유형입니다.</p>
-        <button onClick={() => navigate('/fitb/contractpage')}>리스트로 돌아가기</button>
+      <div className="contract-form-page">
+        <h1 className="contract-page-title">계약서 작성</h1>
+        <div className="contract-empty">
+          <p>잘못된 계약 유형입니다.</p>
+        </div>
       </div>
     );
   }
@@ -113,10 +115,12 @@ function ContractNew() {
   // PT 체험(5)은 체험권 대상 목록을 거치지 않으면 작성 불가
   if (contract === 5 && !trialTarget) {
     return (
-      <div>
-        <h1>PT 체험 계약서 작성</h1>
-        <p>체험권 계약 대상 목록에서 대상을 선택해 진입해 주세요.</p>
-        <button onClick={() => navigate('/fitb/contractpage/trial')}>체험권 대상 목록으로 이동</button>
+      <div className="contract-form-page">
+        <h1 className="contract-page-title">PT 체험 계약서 작성</h1>
+        <div className="contract-empty">
+          <p>체험권 계약 대상 목록에서 대상을 선택해 진입해 주세요.</p>
+          <button className="contract-btn-primary" onClick={() => navigate('/fitb/contractpage/trial')}>체험권 대상 목록으로 이동</button>
+        </div>
       </div>
     );
   }
@@ -201,127 +205,179 @@ function ContractNew() {
   };
 
   return (
-    <div>
-      <h1>{info.name} 작성</h1>
-      <p>{message}</p>
+    <div className="contract-form-page">
+      <h1 className="contract-page-title">{info.name} 작성</h1>
+      {message && <p className="contract-message">{message}</p>}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="contract-form-card">
         {/* 공통: 수신자 정보 (아이디=전화번호를 연락처로 사용) */}
-        <h2>수신자 정보</h2>
-        {contract === 1 && (
-          <>
-            {/* 제휴 계약(1): 사장님(OWNER) 목록 select 선택 -> 수신자 아이디 자동 입력 */}
-            <div>
-              <label>{info.receiverLabel} 선택: </label>
-              <select
-                value={selectedOwner?.username ?? ''}
-                onChange={(e) => {
-                  const owner = owners.find((o) => String(o.username) === e.target.value) ?? null;
-                  setSelectedOwner(owner);
-                }}
-                required
-              >
-                <option value="">선택</option>
-                {owners.map((owner) => (
-                  <option key={owner.username} value={owner.username}>
-                    {owner.name} ({owner.username})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label>수신자 아이디(선택 시 자동 입력): </label>
-              <input value={selectedOwner?.username ?? ''} readOnly />
-            </div>
-          </>
-        )}
-        {contract === 2 && (
-          <>
-            <div>
-              <label>{info.receiverLabel} 이름: </label>
-              <input name="receiverName" required />
-            </div>
-            <div>
-              <label>수신자 아이디(전화번호, 연락처로 사용 / 미가입자는 서명 시 자동 회원가입): </label>
-              <input type="tel" name="receiverId" placeholder="예: 01012345678" />
-            </div>
-          </>
-        )}
-        {isMemberForm && (
-          <>
-            <div>
-              <label>{info.receiverLabel} 이름: </label>
-              <input name="receiverName" required />
-            </div>
-            <div>
-              <label>수신자 아이디(전화번호, 연락처로 사용 / 미가입자는 서명 시 자동 회원가입): </label>
-              <input type="tel" name="receiverId" placeholder="예: 01012345678" />
-            </div>
-            <div>
-              <label>수신자 생년월일: </label>
-              <input type="date" name="birthDate" />
-            </div>
-          </>
-        )}
-        {contract === 5 && (
-          <>
-            {/* 체험권 대상 목록에서 선택한 정보 자동 입력 - 수정 불가 (쿠폰 입력·선택 항목 없음) */}
-            <div><label>이름: </label><input value={trialTarget.member.name ?? ''} readOnly /></div>
-            <div><label>회원 아이디: </label><input value={trialTarget.member.username ?? ''} readOnly /></div>
-            <div><label>이메일: </label><input value={trialTarget.member.email ?? ''} readOnly /></div>
-            <div><label>생년월일: </label><input value={trialTarget.member.birth ?? ''} readOnly /></div>
-            <div><label>계약 유형: </label><input value="PT 체험 (5)" readOnly /></div>
-            <div><label>PT 횟수(체험권 제공 횟수): </label><input value={trialTarget.couponCount ?? ''} readOnly /></div>
-            {trialTarget.baseDataId && (
-              <div>
-                <label>기존 계약 연계: </label>
-                <input value={`${trialTarget.baseContract === 3 ? '이용권' : 'PT'} 계약 #${trialTarget.baseDataId}`} readOnly />
+        <section className="contract-form-section">
+          <h2 className="contract-form-section__title">수신자 정보</h2>
+          {contract === 1 && (
+            <>
+              {/* 제휴 계약(1): 사장님(OWNER) 목록 select 선택 -> 수신자 아이디 자동 입력 */}
+              <div className="contract-field">
+                <label className="contract-field__label">{info.receiverLabel} 선택</label>
+                <select
+                  className="contract-select"
+                  value={selectedOwner?.username ?? ''}
+                  onChange={(e) => {
+                    const owner = owners.find((o) => String(o.username) === e.target.value) ?? null;
+                    setSelectedOwner(owner);
+                  }}
+                  required
+                >
+                  <option value="">선택</option>
+                  {owners.map((owner) => (
+                    <option key={owner.username} value={owner.username}>
+                      {owner.name} ({owner.username})
+                    </option>
+                  ))}
+                </select>
               </div>
-            )}
-          </>
-        )}
+              <div className="contract-field">
+                <label className="contract-field__label">수신자 아이디(선택 시 자동 입력)</label>
+                <input className="contract-input" value={selectedOwner?.username ?? ''} readOnly />
+              </div>
+            </>
+          )}
+          {contract === 2 && (
+            <>
+              <div className="contract-field">
+                <label className="contract-field__label">{info.receiverLabel} 이름</label>
+                <input className="contract-input" name="receiverName" required />
+              </div>
+              <div className="contract-field">
+                <label className="contract-field__label">수신자 아이디(전화번호, 연락처로 사용 / 미가입자는 서명 시 자동 회원가입)</label>
+                <input className="contract-input" type="tel" name="receiverId" placeholder="예: 01012345678" />
+              </div>
+            </>
+          )}
+          {isMemberForm && (
+            <>
+              <div className="contract-field">
+                <label className="contract-field__label">{info.receiverLabel} 이름</label>
+                <input className="contract-input" name="receiverName" required />
+              </div>
+              <div className="contract-field">
+                <label className="contract-field__label">수신자 아이디(전화번호, 연락처로 사용 / 미가입자는 서명 시 자동 회원가입)</label>
+                <input className="contract-input" type="tel" name="receiverId" placeholder="예: 01012345678" />
+              </div>
+              <div className="contract-field">
+                <label className="contract-field__label">수신자 생년월일</label>
+                <input className="contract-input" type="date" name="birthDate" />
+              </div>
+            </>
+          )}
+          {contract === 5 && (
+            <>
+              {/* 체험권 대상 목록에서 선택한 정보 자동 입력 - 수정 불가 (쿠폰 입력·선택 항목 없음) */}
+              <div className="contract-field">
+                <label className="contract-field__label">이름</label>
+                <input className="contract-input" value={trialTarget.member.name ?? ''} readOnly />
+              </div>
+              <div className="contract-field">
+                <label className="contract-field__label">회원 아이디</label>
+                <input className="contract-input" value={trialTarget.member.username ?? ''} readOnly />
+              </div>
+              <div className="contract-field">
+                <label className="contract-field__label">이메일</label>
+                <input className="contract-input" value={trialTarget.member.email ?? ''} readOnly />
+              </div>
+              <div className="contract-field">
+                <label className="contract-field__label">생년월일</label>
+                <input className="contract-input" value={trialTarget.member.birth ?? ''} readOnly />
+              </div>
+              <div className="contract-field">
+                <label className="contract-field__label">계약 유형</label>
+                <input className="contract-input" value="PT 체험 (5)" readOnly />
+              </div>
+              <div className="contract-field">
+                <label className="contract-field__label">PT 횟수(체험권 제공 횟수)</label>
+                <input className="contract-input" value={trialTarget.couponCount ?? ''} readOnly />
+              </div>
+              {trialTarget.baseDataId && (
+                <div className="contract-field">
+                  <label className="contract-field__label">기존 계약 연계</label>
+                  <input className="contract-input" value={`${trialTarget.baseContract === 3 ? '이용권' : 'PT'} 계약 #${trialTarget.baseDataId}`} readOnly />
+                </div>
+              )}
+            </>
+          )}
+        </section>
 
         {/* 유형별 계약 조건 */}
-        <h2>계약 조건</h2>
-        {contract === 1 && (
-          <div>
-            <label>수수료율(%): </label>
-            <input type="number" name="contractRate" min="0" step="0.1" required />
-          </div>
-        )}
-        {contract === 2 && (
-          <>
-            <div>
-              <label>월 기본급(만원): </label>
-              <input type="number" name="amount" min="0" required />
+        <section className="contract-form-section">
+          <h2 className="contract-form-section__title">계약 조건</h2>
+          {contract === 1 && (
+            <div className="contract-field">
+              <label className="contract-field__label">수수료율(%)</label>
+              <input className="contract-input" type="number" name="contractRate" min="0" step="0.1" required />
             </div>
-            <div>
-              <label>인센티브 정산비율(%): </label>
-              <input type="number" name="contractRate" min="0" max="100" />
-            </div>
-          </>
-        )}
-        {isMemberForm && (
-          <>
-            <div>
-              <label>총 PT 횟수(회, 0 = 이용권 계약): </label>
-              <input
-                type="number"
-                min="0"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                required
-              />
-              <span> → {isPt ? 'PT 계약(4)으로 발행' : '이용권 계약(3)으로 발행'}</span>
-            </div>
-            <div>
-              <label>{isPt ? '총 이용금액(만원): ' : '이용 금액(만원): '}</label>
-              <input type="number" name="amount" min="0" required />
-            </div>
-            {isPt && (
-              <div>
-                <label>담당 트레이너 선택(본인 소속): </label>
+          )}
+          {contract === 2 && (
+            <>
+              <div className="contract-field">
+                <label className="contract-field__label">월 기본급(만원)</label>
+                <input className="contract-input" type="number" name="amount" min="0" required />
+              </div>
+              <div className="contract-field">
+                <label className="contract-field__label">인센티브 정산비율(%)</label>
+                <input className="contract-input" type="number" name="contractRate" min="0" max="100" />
+              </div>
+            </>
+          )}
+          {isMemberForm && (
+            <>
+              <div className="contract-field">
+                <label className="contract-field__label">총 PT 횟수(회, 0 = 이용권 계약)</label>
+                <input
+                  className="contract-input"
+                  type="number"
+                  min="0"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  required
+                />
+                <span className="contract-field__hint">→ {isPt ? 'PT 계약(4)으로 발행' : '이용권 계약(3)으로 발행'}</span>
+              </div>
+              <div className="contract-field">
+                <label className="contract-field__label">{isPt ? '총 이용금액(만원)' : '이용 금액(만원)'}</label>
+                <input className="contract-input" type="number" name="amount" min="0" required />
+              </div>
+              {isPt && (
+                <div className="contract-field">
+                  <label className="contract-field__label">담당 트레이너 선택(본인 소속)</label>
+                  <select
+                    className="contract-select"
+                    value={selectedTrainer?.username ?? ''}
+                    onChange={(e) => {
+                      const trainer = trainers.find((t) => String(t.username) === e.target.value) ?? null;
+                      setSelectedTrainer(trainer);
+                    }}
+                  >
+                    <option value="">선택</option>
+                    {trainers.map((trainer) => (
+                      <option key={trainer.username} value={trainer.username}>
+                        {trainer.name} ({trainer.username})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
+          )}
+          {contract === 5 && (
+            <>
+              <div className="contract-field">
+                <label className="contract-field__label">금액(만원)</label>
+                <input className="contract-input" type="number" name="amount" min="0" required />
+              </div>
+              <div className="contract-field">
+                {/* 유효한 기존 PT(4)의 담당 트레이너가 초기값, OWNER가 변경 가능 */}
+                <label className="contract-field__label">담당 트레이너 선택(본인 소속)</label>
                 <select
+                  className="contract-select"
                   value={selectedTrainer?.username ?? ''}
                   onChange={(e) => {
                     const trainer = trainers.find((t) => String(t.username) === e.target.value) ?? null;
@@ -336,67 +392,48 @@ function ContractNew() {
                   ))}
                 </select>
               </div>
-            )}
-          </>
-        )}
-        {contract === 5 && (
-          <>
-            <div>
-              <label>금액(만원): </label>
-              <input type="number" name="amount" min="0" required />
+            </>
+          )}
+          {(isMemberForm || contract === 5) && (
+            <div className="contract-field">
+              <label className="contract-field__label">하루평균 운동 시간</label>
+              <div className="contract-inline">
+                <select className="contract-select" name="avgWorkoutHour" defaultValue="">
+                  <option value="">선택</option>
+                  {Array.from({ length: 24 }, (_, h) => (
+                    <option key={h} value={h}>{h}</option>
+                  ))}
+                </select>
+                <span className="contract-inline__unit">시간</span>
+                <select className="contract-select" name="avgWorkoutMinute" defaultValue="">
+                  <option value="">선택</option>
+                  {[0, 10, 20, 30, 40, 50].map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <span className="contract-inline__unit">분</span>
+              </div>
             </div>
-            <div>
-              {/* 유효한 기존 PT(4)의 담당 트레이너가 초기값, OWNER가 변경 가능 */}
-              <label>담당 트레이너 선택(본인 소속): </label>
-              <select
-                value={selectedTrainer?.username ?? ''}
-                onChange={(e) => {
-                  const trainer = trainers.find((t) => String(t.username) === e.target.value) ?? null;
-                  setSelectedTrainer(trainer);
-                }}
-              >
-                <option value="">선택</option>
-                {trainers.map((trainer) => (
-                  <option key={trainer.username} value={trainer.username}>
-                    {trainer.name} ({trainer.username})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </>
-        )}
-        {(isMemberForm || contract === 5) && (
-          <div>
-            <label>하루평균 운동 시간: </label>
-            <select name="avgWorkoutHour" defaultValue="">
-              <option value="">선택</option>
-              {Array.from({ length: 24 }, (_, h) => (
-                <option key={h} value={h}>{h}</option>
-              ))}
-            </select>
-            <label> 시간 </label>
-            <select name="avgWorkoutMinute" defaultValue="">
-              <option value="">선택</option>
-              {[0, 10, 20, 30, 40, 50].map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-            <label> 분</label>
-          </div>
-        )}
+          )}
+        </section>
 
         {/* 공통: 계약 기간 */}
-        <div>
-          <label>계약(이용) 시작일: </label>
-          <input type="date" name="startDate" />
-        </div>
-        <div>
-          <label>계약(이용) 종료일: </label>
-          <input type="date" name="endDate" />
-        </div>
+        <section className="contract-form-section">
+          <h2 className="contract-form-section__title">계약 기간</h2>
+          <div className="contract-field">
+            <label className="contract-field__label">계약(이용) 시작일</label>
+            <input className="contract-input" type="date" name="startDate" />
+          </div>
+          <div className="contract-field">
+            <label className="contract-field__label">계약(이용) 종료일</label>
+            <input className="contract-input" type="date" name="endDate" />
+          </div>
+        </section>
 
-        <button type="submit">계약서 발행</button>
-        <button type="button" onClick={() => navigate('/fitb/contractpage')}>취소</button>
+        <div className="contract-form-actions">
+          <button type="submit" className="contract-btn-primary">계약서 발행</button>
+          <button type="button" className="contract-btn-secondary" onClick={() => navigate('/fitb/contractpage')}>취소</button>
+        </div>
       </form>
     </div>
   );

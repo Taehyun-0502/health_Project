@@ -1,4 +1,11 @@
 import { useState, useEffect } from 'react';
+import './B2bSubpages.css';
+
+const complaintStatusClass = (status) => {
+  if (status === '처리완료') return 'b2b-status-badge--complete';
+  if (status === '처리중') return 'b2b-status-badge--progress';
+  return 'b2b-status-badge--waiting';
+};
 
 // B2B 사장님/관리자용 건의사항 접수 및 처리 컴포넌트 (Plain 버전)
 function B2bComplaint() {
@@ -53,52 +60,58 @@ function B2bComplaint() {
   };
 
   return (
-    <div>
-      <h3>회원 건의사항 접수 현황</h3>
+    <section className="b2b-subpage" aria-labelledby="b2b-complaint-title">
+      <header className="b2b-subpage__header">
+        <h2 id="b2b-complaint-title">회원 건의사항 접수 현황</h2>
+      </header>
       {complaints.length === 0 ? (
-        <p>접수된 건의 내역이 없습니다.</p>
+        <p className="b2b-subpage__empty">접수된 건의 내역이 없습니다.</p>
       ) : (
-        <table border="1" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-          <thead>
-            <tr>
-              <th>번호</th>
-              <th>회원 ID(전화번호)</th>
-              <th>제목</th>
-              <th>내용</th>
-              <th>접수일자</th>
-              <th>현재상태</th>
-              <th>상태 변경</th>
-            </tr>
-          </thead>
-          <tbody>
-            {complaints.map((item) => (
-              <tr key={item.complaintId}>
-                <td>{item.complaintId}</td>
-                <td>{item.username}</td>
-                <td>{item.title}</td>
-                <td>{item.content}</td>
-                <td>{item.createAt}</td>
-                <td>
-                  <strong style={{ color: item.status === '처리완료' ? 'green' : item.status === '처리중' ? 'blue' : 'orange' }}>
-                    {item.status}
-                  </strong>
-                </td>
-                <td>
-                  <select 
-                    value={item.status} 
-                    onChange={(e) => handleStatusChange(item.complaintId, e.target.value)}
-                  >
-                    <option value="처리대기">처리대기</option>
-                    <option value="처리중">처리중</option>
-                    <option value="처리완료">처리완료</option>
-                  </select>
-                </td>
+        <div className="b2b-table-wrap">
+          <table className="b2b-data-table b2b-data-table--complaint">
+            <thead>
+              <tr>
+                <th>번호</th>
+                <th>회원 ID(전화번호)</th>
+                <th>제목</th>
+                <th>내용</th>
+                <th>접수일자</th>
+                <th className="b2b-data-table__center">현재상태</th>
+                <th className="b2b-data-table__center">상태 변경</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {complaints.map((item) => (
+                <tr key={item.complaintId}>
+                  <td className="b2b-data-table__number">{item.complaintId}</td>
+                  <td className="b2b-data-table__number">{item.username}</td>
+                  <td className="b2b-data-table__title">{item.title}</td>
+                  <td className="b2b-data-table__content">{item.content}</td>
+                  <td className="b2b-data-table__date">{item.createAt}</td>
+                  <td className="b2b-data-table__center">
+                    <strong className={`b2b-status-badge ${complaintStatusClass(item.status)}`}>
+                      {item.status}
+                    </strong>
+                  </td>
+                  <td className="b2b-data-table__center">
+                    <select
+                      className="b2b-table-select"
+                      value={item.status}
+                      onChange={(e) => handleStatusChange(item.complaintId, e.target.value)}
+                      aria-label={`${item.title} 처리 상태 변경`}
+                    >
+                      <option value="처리대기">처리대기</option>
+                      <option value="처리중">처리중</option>
+                      <option value="처리완료">처리완료</option>
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-    </div>
+    </section>
   );
 }
 

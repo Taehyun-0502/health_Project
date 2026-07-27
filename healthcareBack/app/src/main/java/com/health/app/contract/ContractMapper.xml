@@ -91,7 +91,7 @@
                   or d.receiver_name like concat('%', #{keyword}, '%'))
          </if>
      </where>
-     order by d.issue_date desc, d.data_id desc
+     order by d.data_id desc
     </select>
 
     <!-- 로그인 권한별 계약 유저 리스트 페이징 조회 SQL (GET /contract/list, LIMIT/OFFSET 적용)
@@ -141,7 +141,7 @@
                   or d.receiver_name like concat('%', #{dto.keyword}, '%'))
          </if>
      </where>
-     order by d.issue_date desc, d.data_id desc
+     order by d.data_id desc
      limit #{pager.pageSize} offset #{pager.offset}
     </select>
 

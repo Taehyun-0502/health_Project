@@ -1,12 +1,49 @@
 .item-page-container {
   min-height: 80vh;
-  margin: 24px;
+  /* 상단 여백(20px)은 sticky 페이지 헤더의 padding-top(12)과 합쳐 안착 시 20px를 유지하도록
+     래퍼에서 8px만 남기고 헤더로 옮겼다. */
+  padding: 8px 24px var(--ai-fab-clearance);
   color: var(--gray-700);
 }
 
 .item-content-area {
   width: min(100%, 1080px);
   margin: 0 auto;
+}
+
+/* 페이지 헤더 (제목 + 안내 문구 + 주요 액션) — 스크롤 시 상단 고정(sticky), 본문(1080) 정렬에 맞춤 */
+.item-list-head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  width: min(100%, 1080px);
+  margin: 0 auto 16px;
+  padding: 12px 0;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+}
+.item-list-head__title {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: 700;
+  color: var(--gray-900);
+}
+.item-list-head__desc {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  color: var(--gray-600);
+}
+
+.item-list-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .item-tab-content {
@@ -31,6 +68,13 @@
   border-radius: 12px;
   background: var(--white);
   box-shadow: var(--shadow-card);
+}
+
+.item-card.item-card--list {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .item-card-title {
@@ -80,7 +124,6 @@
 
 .item-secondary-btn,
 .item-row-action,
-.item-export-btn,
 .item-page-btn {
   border: 1px solid var(--gray-300);
   border-radius: 8px;
@@ -92,12 +135,15 @@
 }
 
 .item-secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 8px 16px;
 }
 
 .item-secondary-btn:hover,
 .item-row-action:hover,
-.item-export-btn:hover,
 .item-page-btn:hover:not(:disabled) {
   border-color: var(--gray-400);
   background: var(--gray-100);
@@ -114,16 +160,6 @@
   flex: 1;
 }
 
-.item-search-bar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.item-search-input {
-  flex: 1;
-}
-
 .item-search-input,
 .item-sort-select,
 .item-input,
@@ -136,7 +172,7 @@
   color: var(--gray-700);
   background: var(--white);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-body);
   outline: none;
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
@@ -162,15 +198,10 @@
   cursor: pointer;
 }
 
-.item-export-btn {
-  padding: 12px 18px;
-  white-space: nowrap;
-}
-
 .item-table-wrapper {
   overflow-x: auto;
   border: 1px solid var(--gray-200);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--white);
 }
 
@@ -182,19 +213,19 @@
 }
 
 .item-table th {
-  padding: 11px 16px;
+  padding: 11px 14px;
   border-bottom: 1px solid var(--gray-200);
   color: var(--gray-400);
   background: var(--gray-50);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 600;
 }
 
 .item-table td {
-  padding: 13px 16px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--gray-200);
-  color: var(--gray-700);
-  font-size: 14px;
+  color: var(--gray-900);
+  font-size: var(--text-body);
   vertical-align: middle;
 }
 
@@ -283,7 +314,7 @@
 }
 
 .item-status-badge {
-  padding: 3px 8px;
+  padding: 3px 9px;
 }
 
 .item-status-badge.is-purchase {
@@ -317,7 +348,7 @@
   background: var(--gray-100);
 }
 
-/* 카테고리 칩 필터(좌) + 물품 등록 버튼(우) */
+/* 카테고리 칩 필터(좌) + 검색·정렬(우) */
 .item-filter-bar {
   display: flex;
   align-items: center;
@@ -325,6 +356,17 @@
   gap: 12px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+}
+
+.item-filter-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.item-filter-bar__right .item-search-input {
+  width: 240px;
 }
 
 .item-chip-group {
@@ -336,8 +378,8 @@
 .item-chip {
   padding: 8px 16px;
   font: inherit;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--text-sm);
+  font-weight: 600;
   color: var(--gray-600);
   background: var(--gray-100);
   border: none;
@@ -348,6 +390,7 @@
 
 .item-chip:hover {
   background: var(--gray-200);
+  color: var(--gray-900);
 }
 
 .item-chip--active,
@@ -359,7 +402,7 @@
 .item-register-btn {
   padding: 10px 18px;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 600;
   color: var(--white);
   background: var(--accent-strong);
@@ -462,7 +505,7 @@
 
 .item-form-group label {
   color: var(--gray-700);
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 600;
 }
 
@@ -596,7 +639,7 @@
 .item-suggestion {
   padding: 4px 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--gray-700);
   background: var(--gray-100);
   font: inherit;
@@ -616,18 +659,24 @@
 
 @media (max-width: 768px) {
   .item-page-container {
-    margin: 16px;
+    padding: 16px;
   }
 
   .item-card {
     padding: 22px 18px;
   }
 
-  .item-search-bar,
+  .item-list-head,
+  .item-filter-bar,
+  .item-filter-bar__right,
   .item-section-header,
   .item-form-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .item-filter-bar__right .item-search-input {
+    width: 100%;
   }
 
   .item-form-grid {

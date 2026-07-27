@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import './B2bSubpages.css';
 
 // B2C 일반 회원용 계정 설정 수정 컴포넌트 (Plain 버전)
 function B2cAccount() {
@@ -55,62 +56,68 @@ function B2cAccount() {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
-      <h3>내 계정 설정 (B2B)</h3>
-      <p style={{ fontSize: '13px', color: 'var(--gray-500)' }}>회원님의 임시 비밀번호와 이메일을 수정할 수 있습니다.</p>
+    <section className="b2b-subpage b2b-subpage--account" aria-labelledby="b2b-account-title">
+      <header className="b2b-subpage__header">
+        <h2 id="b2b-account-title">내 계정 설정 (B2B)</h2>
+        <p>회원님의 임시 비밀번호와 이메일을 수정할 수 있습니다.</p>
+      </header>
 
-      {message && <div style={{ color: 'red', fontSize: '13px', marginBottom: '10px' }}>{message}</div>}
+      {message && <div className="b2b-form-message" role="alert">{message}</div>}
 
-      <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '15px' }}>
-        <div>
-          <label style={{ display: 'block', fontSize: '14px', marginBottom: '4px' }}>아이디 (전화번호)</label>
-          <input 
-            type="text" 
-            value={user.username || ''} 
-            disabled 
-            style={{ width: '100%', padding: '8px', backgroundColor: 'var(--gray-100)', border: '1px solid var(--gray-300)', borderRadius: '4px' }} 
+      <form onSubmit={handleUpdate} className="b2b-account-form">
+        <div className="b2b-form-field">
+          <label htmlFor="b2b-account-username">아이디 (전화번호)</label>
+          <input
+            id="b2b-account-username"
+            type="text"
+            value={user.username || ''}
+            disabled
+            className="b2b-form-input"
           />
         </div>
 
-        <div>
-          <label style={{ display: 'block', fontSize: '14px', marginBottom: '4px' }}>이메일 주소</label>
-          <input 
-            type="email" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
-            style={{ width: '100%', padding: '8px', border: '1px solid var(--gray-300)', borderRadius: '4px' }} 
+        <div className="b2b-form-field">
+          <label htmlFor="b2b-account-email">이메일 주소</label>
+          <input
+            id="b2b-account-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="b2b-form-input"
           />
         </div>
 
-        <div>
-          <label style={{ display: 'block', fontSize: '14px', marginBottom: '4px' }}>새 비밀번호 입력</label>
-          <input 
-            type="password" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-            required 
+        <div className="b2b-form-field">
+          <label htmlFor="b2b-account-password">새 비밀번호 입력</label>
+          <input
+            id="b2b-account-password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
             placeholder="변경할 새 비밀번호"
-            style={{ width: '100%', padding: '8px', border: '1px solid var(--gray-300)', borderRadius: '4px' }} 
+            className="b2b-form-input"
           />
         </div>
 
-        <div>
-          <label style={{ display: 'block', fontSize: '14px', marginBottom: '4px' }}>새 비밀번호 확인</label>
-          <input 
-            type="password" 
-            value={passwordCheck} 
-            onChange={(e) => setPasswordCheck(e.target.value)} 
-            required 
+        <div className="b2b-form-field">
+          <label htmlFor="b2b-account-password-check">새 비밀번호 확인</label>
+          <input
+            id="b2b-account-password-check"
+            type="password"
+            value={passwordCheck}
+            onChange={(e) => setPasswordCheck(e.target.value)}
+            required
             placeholder="변경할 새 비밀번호 재입력"
-            style={{ width: '100%', padding: '8px', border: '1px solid var(--gray-300)', borderRadius: '4px' }} 
+            className="b2b-form-input"
           />
         </div>
 
-        <button type="submit" style={{ padding: '10px', backgroundColor: 'var(--info-solid)', color: 'var(--white)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}>
+        <button type="submit" className="b2b-form-submit">
           수정 완료
         </button>
       </form>
-    </div>
+    </section>
   );
 }
 

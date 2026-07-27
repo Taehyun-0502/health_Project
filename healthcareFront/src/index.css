@@ -68,6 +68,13 @@
   --text-body: 15px;
   --text-sm: 13px;
   --text-xs: 12px;
+  --text-2xs: 11px; /* 초소형 — 배지·캡션 최소 크기 */
+
+  /* AI 플로팅 입력바(fab) 하단 여백 — B2B 페이지 래퍼 padding-bottom에 사용.
+     fab bottom offset(24) + fab 높이(50: 버튼 34 + 상하 패딩 14 + 보더 2) + 16 여백 = 90.
+     끝까지 스크롤 시 페이지네이션 하단이 fab 상단보다 16px 위에 오도록 한다.
+     (브라우저 실측: fab bottom=876·top=826·height=50 @ 1440×900) */
+  --ai-fab-clearance: 90px;
 
   /* 이전 화면 호환 별칭: 값은 신규 토큰을 참조한다. */
   --bg-primary: var(--gray-50);
@@ -121,6 +128,25 @@ h6 { line-height: 1.5; }
   flex-direction: column;
 }
 
+/* 공용 SVG 방향 파생 — 동일 path를 회전해 방향별 중복 정의를 막는다. */
+.ui-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+.ui-icon--left {
+  transform: rotate(180deg);
+}
+
+.ui-icon--up {
+  transform: rotate(-90deg);
+}
+
+.ui-icon--down {
+  transform: rotate(90deg);
+}
+
 /* 프리미엄 레이아웃 컨테이너 */
 .container {
   width: 100%;
@@ -166,7 +192,7 @@ h6 { line-height: 1.5; }
 .nav-link {
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 500;
   padding: 8px 16px;
   border-radius: 8px;
@@ -214,7 +240,7 @@ h6 { line-height: 1.5; }
 }
 
 .form-label {
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: 0.2px;
@@ -223,10 +249,10 @@ h6 { line-height: 1.5; }
 .form-input {
   width: 100%;
   padding: 12px 16px;
-  font-size: 14px;
+  font-size: var(--text-body);
   background-color: var(--white);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 12px;
   color: var(--text-primary);
   outline: none;
   transition: all 0.2s ease;
@@ -249,7 +275,7 @@ h6 { line-height: 1.5; }
   color: var(--white);
   background: var(--primary-gradient);
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.25s ease;
   box-shadow: var(--shadow-md);
@@ -257,7 +283,7 @@ h6 { line-height: 1.5; }
 
 .btn-premium:hover {
   transform: translateY(-1.5px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   filter: brightness(1.05);
 }
 
@@ -268,7 +294,7 @@ h6 { line-height: 1.5; }
 /* 유틸리티 및 컴포넌트 */
 .gradient-title {
   font-size: 40px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -1px;
   background: var(--primary-gradient);
   -webkit-background-clip: text;

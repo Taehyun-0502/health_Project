@@ -1,8 +1,9 @@
 /* B2B Home — 디자인 시스템 v1.0 (프로토타입: 인사말 + 2×2 메인 카드 + 기타 메뉴 그리드)
    본문 컨테이너 max 1080px 중앙 정렬 */
 
+/* 물품 페이지 기준 좌측 정렬선(297px): 래퍼 최대폭 = 본문 1080 + 좌우 패딩 24*2 = 1128 */
 .admin-home {
-  width: min(100%, 1080px);
+  width: min(100%, 1128px);
   margin: 0 auto;
   padding: 32px 24px 80px;
 }
@@ -18,7 +19,7 @@
 .admin-home__header > p {
   margin-top: 6px;
   color: var(--gray-600);
-  font-size: 14px;
+  font-size: var(--text-body);
 }
 
 /* 메인 2×2 카드 */
@@ -119,7 +120,7 @@
   gap: 11px;
   padding: 14px 15px;
   border: 1px solid var(--gray-200);
-  border-radius: 10px;
+  border-radius: 12px;
   color: inherit;
   background: var(--white);
   text-decoration: none;
@@ -138,15 +139,15 @@
   flex: 0 0 auto;
   width: 34px;
   height: 34px;
-  border-radius: 9px;
+  border-radius: 8px;
   color: var(--accent-text);
   background: var(--accent-bg);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 700;
 }
 
 .admin-home__extra-card .admin-home__copy strong {
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 500;
 }
 

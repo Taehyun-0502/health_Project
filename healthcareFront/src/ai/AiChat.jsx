@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import NavIcon from '../components/uiIcons.jsx';
 import './AiPanel.css';
 
 // AI 비서 채팅 본문 (2026-07-21 기획서: 우측 통합 드로어의 'AI' 탭으로 편입)
@@ -322,7 +323,11 @@ function AiChat({ onNavigate }) {
           }
           if (m.role === 'error') {
             // 크레딧 소진/오류 안내 - 경고 톤 카드로 일반 답변과 시각 구분
-            return <div key={i} className="ai-bubble ai-bubble-warn">⏱ {m.content}</div>;
+            return (
+              <div key={i} className="ai-bubble ai-bubble-warn">
+                <NavIcon id="clock" size={15} className="ui-icon" /> {m.content}
+              </div>
+            );
           }
           return (
             <div key={i} className="ai-bubble ai-bubble-assistant">
@@ -337,7 +342,7 @@ function AiChat({ onNavigate }) {
                       className="ai-link-btn"
                       onClick={() => goLink(link.to)}
                     >
-                      {link.label} →
+                      {link.label} <NavIcon id="arrow" size={15} className="ui-icon" />
                     </button>
                   ))}
                 </div>
@@ -375,7 +380,7 @@ function AiChat({ onNavigate }) {
       </div>
 
       {/* 테넌트 격리 신뢰 문구 (2026-07-22: 입력바 아래로 위치 이동) */}
-      <div className="ai-trust">🔒 이 대화는 우리 지점 데이터만 조회해요</div>
+      <div className="ai-trust"><NavIcon id="lock" size={14} className="ui-icon" /> 이 대화는 우리 지점 데이터만 조회해요</div>
 
       {/* conversationId는 후속 질문 연결에 사용 (표시용 아님) */}
       <span hidden>{conversationId ?? ''}</span>

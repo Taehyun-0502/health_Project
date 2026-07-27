@@ -33,21 +33,21 @@
 
 .b2b-lnb__brand-copy strong {
   font-size: 19px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
 .b2b-lnb__brand-copy small {
   margin-top: 3px;
   color: var(--gray-400);
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 600;
   letter-spacing: 0.22em;
 }
 
 .b2b-profile__copy small {
   color: var(--gray-400);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 .b2b-lnb__nav {
@@ -75,7 +75,7 @@
   border-radius: 8px;
   color: var(--gray-600);
   text-decoration: none;
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 600;
   transition: color 0.16s ease, background-color 0.16s ease;
 }
@@ -101,34 +101,6 @@
   color: inherit;
 }
 
-.b2b-lnb__subnav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 4px 0 4px 32px;
-  padding-left: 12px;
-  border-left: 1px solid var(--gray-200);
-}
-
-.b2b-lnb__sublink {
-  padding: 7px 8px;
-  border-radius: 6px;
-  color: var(--gray-600);
-  text-decoration: none;
-  font-size: var(--text-sm);
-}
-
-.b2b-lnb__sublink:hover {
-  color: var(--gray-900);
-  background: var(--gray-100);
-}
-
-.b2b-lnb__sublink.is-active {
-  color: var(--accent-text);
-  background: var(--accent-bg);
-  font-weight: 600;
-}
-
 /* 하단 프로필 카드 — 프로토타입: 보더 카드 + 오렌지 원형 아바타 */
 .b2b-profile {
   position: relative;
@@ -142,7 +114,7 @@
   min-width: 0;
   padding: 11px 10px;
   border: 1px solid var(--gray-200);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--gray-50);
   cursor: pointer;
   list-style: none;
@@ -169,7 +141,7 @@
   border-radius: 50%;
   color: var(--white);
   background: var(--accent);
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 700;
 }
 
@@ -192,23 +164,19 @@
 
 .b2b-profile__chevron {
   color: var(--gray-400);
-  transition: transform 0.16s ease;
-}
-
-.b2b-profile[open] .b2b-profile__chevron {
-  transform: rotate(180deg);
 }
 
 .b2b-profile__menu {
   position: absolute;
-  right: 0;
-  bottom: 68px;
-  left: 0;
+  right: auto;
+  bottom: 0;
+  left: calc(100% + 24px);
+  width: 200px;
   display: grid;
   gap: 4px;
   padding: 8px;
   border: 1px solid var(--gray-200);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--white);
   box-shadow: var(--shadow-md);
 }
@@ -218,7 +186,7 @@
   width: 100%;
   padding: 10px 12px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 8px;
   color: var(--gray-700);
   background: transparent;
   text-align: left;
@@ -257,11 +225,14 @@
     padding: 0 10px;
   }
 
-  .b2b-lnb__subnav {
-    margin-left: 24px;
-  }
-
   .b2b-profile {
     margin-top: 14px;
+  }
+
+  .b2b-profile__menu {
+    right: 0;
+    bottom: 68px;
+    left: 0;
+    width: auto;
   }
 }

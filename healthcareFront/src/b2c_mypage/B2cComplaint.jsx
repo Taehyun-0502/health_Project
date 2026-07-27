@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import './B2cPages.css';
 
 // B2C 일반 회원 건의사항 컴포넌트 (디자인 제외 Plain 버전)
 function B2cComplaint() {
@@ -73,57 +74,51 @@ function B2cComplaint() {
   };
 
   return (
-    <div style={{ padding: '16px 16px 32px' }}>
-      <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--gray-900)' }}>건의사항 접수함</h3>
+    <div className="b2c-page">
+      <header className="b2c-page__header">
+        <h2 className="b2c-page__title">건의사항 접수함</h2>
+      </header>
 
       {/* 건의사항 작성 폼 */}
-      <form ref={suggestFormRef} onSubmit={handleSuggestSubmit} style={{ marginBottom: '30px' }}>
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-600)', marginBottom: '6px' }}>건의 제목: </label>
-          <input type="text" name="title" required style={{ width: '100%', boxSizing: 'border-box', padding: '12px', border: '1px solid var(--gray-300)', borderRadius: '10px' }} />
+      <form ref={suggestFormRef} onSubmit={handleSuggestSubmit} className="b2c-form">
+        <div className="b2c-form__group">
+          <label className="b2c-form__label">건의 제목: </label>
+          <input type="text" name="title" required className="b2c-form__input" />
         </div>
-        <div style={{ marginTop: '12px' }}>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--gray-600)', marginBottom: '6px' }}>건의 내용: </label>
-          <textarea name="content" required style={{ width: '100%', boxSizing: 'border-box', height: '100px', padding: '12px', border: '1px solid var(--gray-300)', borderRadius: '10px', fontFamily: 'inherit' }}></textarea>
+        <div className="b2c-form__group">
+          <label className="b2c-form__label">건의 내용: </label>
+          <textarea name="content" required className="b2c-form__textarea"></textarea>
         </div>
-        <button type="submit" style={{ marginTop: '12px', width: '100%', minHeight: '48px', padding: '12px', backgroundColor: 'var(--b2c-accent)', color: 'var(--white)', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}>건의사항 보내기</button>
+        <button type="submit" className="b2c-button">건의사항 보내기</button>
       </form>
 
-      <hr style={{ border: 'none', borderTop: '1px solid var(--gray-200)', margin: '24px 0' }} />
+      <hr className="b2c-page__divider" />
 
       {/* 건의 처리결과 화면 목록 */}
-      <h4 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--gray-900)' }}>내가 접수한 건의 내역</h4>
+      <h3 className="b2c-page__section-title">내가 접수한 건의 내역</h3>
       {suggestions.length === 0 ? (
-        <p style={{ color: 'var(--gray-400)', fontSize: '14px' }}>접수된 건의 내역이 없습니다.</p>
+        <p className="b2c-empty">접수된 건의 내역이 없습니다.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '13px' }}>
+        <table className="b2c-data-table">
           <thead>
-            <tr style={{ backgroundColor: 'var(--gray-100)', color: 'var(--gray-600)', borderBottom: '2px solid var(--gray-200)' }}>
-              <th style={{ padding: '10px', fontWeight: '600' }}>번호</th>
-              <th style={{ padding: '10px', fontWeight: '600' }}>제목</th>
-              <th style={{ padding: '10px', fontWeight: '600' }}>상태</th>
-              <th style={{ padding: '10px', fontWeight: '600' }}>접수일자</th>
+            <tr>
+              <th>번호</th>
+              <th>제목</th>
+              <th>상태</th>
+              <th>접수일자</th>
             </tr>
           </thead>
           <tbody>
             {suggestions.map((item) => (
-              <tr key={item.complaintId} style={{ borderBottom: '1px solid var(--gray-200)', textAlign: 'center' }}>
-                <td style={{ padding: '10px' }}>{item.complaintId}</td>
-                <td style={{ padding: '10px' }}>{item.title}</td>
-                <td style={{ padding: '10px' }}>
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '3px 10px',
-                    borderRadius: '999px',
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    backgroundColor: item.status === '처리완료' ? 'var(--success-bg)' : 'var(--warning-bg)',
-                    color: item.status === '처리완료' ? 'var(--success)' : 'var(--warning)'
-                  }}>
+              <tr key={item.complaintId}>
+                <td data-label="번호">{item.complaintId}</td>
+                <td data-label="제목" className="b2c-data-table__primary">{item.title}</td>
+                <td data-label="상태">
+                  <span className={`b2c-status ${item.status === '처리완료' ? 'b2c-status--success' : 'b2c-status--warning'}`}>
                     {item.status}
                   </span>
                 </td>
-                <td style={{ padding: '10px', color: 'var(--gray-600)' }}>{item.createAt}</td>
+                <td data-label="접수일자" className="b2c-data-table__muted">{item.createAt}</td>
               </tr>
             ))}
           </tbody>

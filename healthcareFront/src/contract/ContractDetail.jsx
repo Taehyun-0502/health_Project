@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import NavIcon from '../components/uiIcons.jsx';
+import './Contract.css';
 
 // 계약 유형은 contract FK로 판별 (1=제휴, 2=임금, 3=이용권, 4=PT, 5=PT 체험)
 // 유형별 라벨 (헬스장_계약서_서명폼.html TYPES 참고)
@@ -95,16 +97,16 @@ function ContractBody({ d }) {
 function Activation({ d }) {
   if (d.contract === 3)
     return (
-      <ul>
-        <li>✓ 이용권 활성화 (ACTIVE)</li>
+      <ul className="contract-activation">
+        <li><NavIcon id="check" size={15} className="ui-icon" /> 이용권 활성화 (ACTIVE)</li>
         <li>이용 기간: {d.startDate ?? '-'} ~ {d.endDate ?? '-'}</li>
         <li>이용 금액: {money(d.amount)}만원</li>
       </ul>
     );
   if (d.contract === 4 || d.contract === 5)
     return (
-      <ul>
-        <li>✓ {d.contract === 5 ? 'PT 체험' : 'PT'} 잔여 횟수 지급</li>
+      <ul className="contract-activation">
+        <li><NavIcon id="check" size={15} className="ui-icon" /> {d.contract === 5 ? 'PT 체험' : 'PT'} 잔여 횟수 지급</li>
         <li>지급 횟수: {d.quantity ?? '-'}회</li>
         <li>잔여 횟수: {d.remainingCount ?? '-'}회 (결제 완료·활성화 시 자동 생성)</li>
         <li>유효기간: {d.startDate ?? '-'} ~ {d.endDate ?? '-'}</li>
@@ -112,15 +114,15 @@ function Activation({ d }) {
     );
   if (d.contract === 2)
     return (
-      <ul>
-        <li>✓ 트레이너 정산 정보 등록</li>
+      <ul className="contract-activation">
+        <li><NavIcon id="check" size={15} className="ui-icon" /> 트레이너 정산 정보 등록</li>
         <li>월 기본급: {money(d.amount)}만원</li>
         <li>인센티브 비율: {d.contractRate ?? '-'}%</li>
       </ul>
     );
   return (
-    <ul>
-      <li>✓ 제휴 계약 발효</li>
+    <ul className="contract-activation">
+      <li><NavIcon id="check" size={15} className="ui-icon" /> 제휴 계약 발효</li>
       <li>가맹점: {d.gymName ?? '-'}</li>
       <li>수수료율: {d.contractRate ?? '-'}%</li>
     </ul>
@@ -281,10 +283,11 @@ function ContractDetail() {
 
   if (!detail) {
     return (
-      <div>
-        <h1>계약서 상세</h1>
-        <p>{message || '불러오는 중...'}</p>
-        <button onClick={() => navigate('/fitb/contractpage')}>리스트로 돌아가기</button>
+      <div className="contract-detail-page">
+        <h1 className="contract-page-title">계약서 상세</h1>
+        <div className="contract-empty">
+          <p>{message || '불러오는 중...'}</p>
+        </div>
       </div>
     );
   }
@@ -292,33 +295,140 @@ function ContractDetail() {
   const info = TYPE_INFO[detail.contract] ?? { title: '계약서', senderLabel: '발행자', receiverLabel: '수신자' };
 
   return (
-    <div>
+    <div className="contract-detail-page">
       {/* PDF 보관(인쇄) 시 계약서 본문만 출력되도록 나머지 영역 숨김 처리 */}
       <style>{'@media print { .no-print { display: none; } }'}</style>
 
       <div className="no-print">
-        <button onClick={() => navigate('/fitb/contractpage')}>← 리스트로</button>
-        <p>{message}</p>
+        {message && <p className="contract-message">{message}</p>}
+      </div>
 
-        {/* 상태 흐름 표시 - 전 유형 통합: DRAFT › ISSUED › SIGNED › ACTIVE › TERMINATED (EXPIRED 미사용) */}
-        <p>
-          상태: <b>{detail.status}</b>
-          {' '}
-          (
-          {['DRAFT', 'ISSUED', 'SIGNED', 'ACTIVE', 'TERMINATED'].map((s, i) => (
-            <span key={s}>
-              {i > 0 && ' › '}
-              {s === detail.status ? <b>[{s}]</b> : s}
-            </span>
-          ))}
-          )
+      {/* 계약서 본문 (읽기 전용, 인쇄 출력 대상) */}
+      <div className="contract-doc">
+        <h1 className="contract-doc__title">{info.title}</h1>
+        <p className="contract-doc__intro">
+          {detail.contract === 1 ? info.senderLabel : detail.gymName ?? info.senderLabel}
+          (이하 "발행자")과 {detail.receiverName ?? '수신자'}(이하 "수신자")은 아래와 같이 계약을 체결한다.
         </p>
+        <ContractBody d={detail} />
+        <p className="contract-doc__issue">계약 발행일: {detail.issueDate ?? '-'}</p>
 
-        {/* 갱신·연계 이력 테이블 (유형 | 금액 | 발행일) - PT 체험은 갱신이 아니라 연계 이력으로 표시 */}
-        {history.length > 0 && (
-          <div>
-            <h3>갱신·연계 이력</h3>
-            <table border="1">
+        {/* 서명란 */}
+        <table className="contract-sign-table">
+          <thead>
+            <tr>
+              <th>{info.senderLabel}</th>
+              <th>{info.receiverLabel}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                {detail.contract === 1 ? '관리자(플랫폼)' : detail.gymName ?? '-'} (인)
+                <br />전자서명 완료 · {detail.issueDate ?? '-'}
+              </td>
+              <td>
+                {detail.receiverName ?? '-'} (인)
+                <br />
+                {detail.signedAt
+                  ? `전자서명 완료 · ${detail.signedAt.replace('T', ' ')}`
+                  : '서명 대기 중'}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* 제휴 계약(1)은 ADMIN이 발행자라 서명 대상이 아님 - 서명 영역 대신 읽기 전용 안내 표시 */}
+      {detail.status === 'ISSUED' && detail.contract === 1 && isAdmin && (
+        <p className="no-print contract-note">수신자(사장님) 서명 대기 중입니다.</p>
+      )}
+
+      {/* status에 따른 서명 영역 분기 (제휴 계약(1)은 ADMIN에게 미노출) */}
+      {detail.status === 'ISSUED' && !(detail.contract === 1 && isAdmin) && (
+        <div className="no-print contract-sign-panel">
+          <h2 className="contract-sign-panel__title">수신자 서명</h2>
+          <p className="contract-sign-panel__desc">아래 동의 항목을 확인하고 서명하시면 계약이 체결됩니다. 모바일에서는 손가락으로 서명할 수 있습니다.</p>
+
+          <div className="contract-field">
+            <label className="contract-field__label">서명자 성명</label>
+            <input className="contract-input" value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="성명" />
+          </div>
+
+          {/* 동의 항목 (서명폼.html consentBox 참고) */}
+          <div className="contract-consent">
+            <label>
+              <input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} />
+              위 계약서의 모든 조항을 확인하였으며 그 내용에 동의합니다. (필수)
+            </label>
+            {needRefund && (
+              <label>
+                <input type="checkbox" checked={agreeRefund} onChange={(e) => setAgreeRefund(e.target.checked)} />
+                환불 규정을 확인하였으며 이에 동의합니다. (필수)
+              </label>
+            )}
+            <label>
+              <input type="checkbox" checked={agreeSign} onChange={(e) => setAgreeSign(e.target.checked)} />
+              전자적 방식으로 서명함에 동의합니다. (필수)
+            </label>
+          </div>
+
+          {/* 서명 패드 */}
+          <div className="contract-signpad-wrap">
+            <p className="contract-signpad-wrap__label">서명란 (마우스·손가락으로 서명하세요)</p>
+            <canvas
+              ref={canvasRef}
+              className="contract-signpad"
+              width={400}
+              height={150}
+              style={{ touchAction: 'none' }}
+              onPointerDown={padDown}
+              onPointerMove={padMove}
+              onPointerUp={padUp}
+              onPointerLeave={padUp}
+            />
+            <div className="contract-signpad-actions">
+              <button type="button" className="contract-btn-secondary contract-btn-sm" onClick={padClear}>지우기</button>
+            </div>
+          </div>
+
+          <button type="button" className="contract-btn-primary" onClick={handleSign} disabled={!canSign}>
+            서명하고 계약 체결
+          </button>
+        </div>
+      )}
+
+      {(detail.status === 'SIGNED' || detail.status === 'ACTIVE') && (
+        <div className="no-print contract-done">
+          <h2 className="contract-done__title">계약 체결 완료</h2>
+          <p className="contract-done__meta">서명일시: {detail.signedAt?.replace('T', ' ') ?? '-'}</p>
+          {/* 이용권·PT·PT 체험은 결제 완료 후 ACTIVE - SIGNED 상태면 결제 대기 안내 */}
+          {detail.status === 'SIGNED' && (detail.contract === 3 || detail.contract === 4 || detail.contract === 5) && (
+            <p className="contract-done__pay">
+              결제 대기 중입니다.
+              <button type="button" className="contract-btn-primary contract-btn-sm" onClick={() => navigate(`/fitb/payment/${detail.dataId}`)}>
+                결제 페이지로 이동
+              </button>
+            </p>
+          )}
+          <Activation d={detail} />
+
+          {/* 서명 완료된 계약서 보관 - 브라우저 인쇄로 서명본을 PDF 파일로 저장 */}
+          <button type="button" className="contract-btn-secondary" onClick={() => window.print()}>
+            서명본 PDF로 보관 / 인쇄
+          </button>
+        </div>
+      )}
+
+      {detail.status === 'DRAFT' && <p className="no-print contract-note">아직 발행되지 않은 초안(DRAFT) 상태로, 서명할 수 없습니다.</p>}
+      {detail.status === 'TERMINATED' && <p className="no-print contract-note">종료(TERMINATED)된 계약서입니다.</p>}
+
+      {/* 갱신·연계 이력 테이블 (유형 | 금액 | 발행일) - PT 체험은 갱신이 아니라 연계 이력으로 표시. 페이지 최하단 배치 */}
+      {history.length > 0 && (
+        <div className="no-print contract-history">
+          <h3 className="contract-history__title">갱신·연계 이력</h3>
+          <div className="contract-table-card">
+            <table className="contract-table">
               <thead>
                 <tr>
                   <th>구분</th>
@@ -331,145 +441,20 @@ function ContractDetail() {
               <tbody>
                 {history.map(({ kind, row }) => (
                   <tr key={row.dataId}>
-                    <td>{kind}</td>
+                    <td className="contract-table__muted">{kind}</td>
                     <td>{HISTORY_LABEL[row.contract] ?? row.contract}</td>
                     <td>{row.contract === 1 ? (row.contractRate != null ? `${row.contractRate}%` : '') : row.amount}</td>
-                    <td>{row.issueDate}</td>
+                    <td className="contract-table__muted">{row.issueDate}</td>
                     <td>
-                      <button onClick={() => navigate(`/fitb/contract/${row.dataId}`)}>#{row.dataId}</button>
+                      <button className="contract-table__id" onClick={() => navigate(`/fitb/contract/${row.dataId}`)}>#{row.dataId}</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
-
-      {/* 계약서 본문 (읽기 전용) */}
-      <hr />
-      <h1>{info.title}</h1>
-      <p>
-        {detail.contract === 1 ? info.senderLabel : detail.gymName ?? info.senderLabel}
-        (이하 "발행자")과 {detail.receiverName ?? '수신자'}(이하 "수신자")은 아래와 같이 계약을 체결한다.
-      </p>
-      <ContractBody d={detail} />
-      <p>계약 발행일: {detail.issueDate ?? '-'}</p>
-
-      {/* 서명란 */}
-      <table border="1">
-        <thead>
-          <tr>
-            <th>{info.senderLabel}</th>
-            <th>{info.receiverLabel}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              {detail.contract === 1 ? '관리자(플랫폼)' : detail.gymName ?? '-'} (인)
-              <br />전자서명 완료 · {detail.issueDate ?? '-'}
-            </td>
-            <td>
-              {detail.receiverName ?? '-'} (인)
-              <br />
-              {detail.signedAt
-                ? `전자서명 완료 · ${detail.signedAt.replace('T', ' ')}`
-                : '서명 대기 중'}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <hr className="no-print" />
-
-      {/* 제휴 계약(1)은 ADMIN이 발행자라 서명 대상이 아님 - 서명 영역 대신 읽기 전용 안내 표시 */}
-      {detail.status === 'ISSUED' && detail.contract === 1 && isAdmin && (
-        <p className="no-print">수신자(사장님) 서명 대기 중입니다.</p>
-      )}
-
-      {/* status에 따른 서명 영역 분기 (제휴 계약(1)은 ADMIN에게 미노출) */}
-      {detail.status === 'ISSUED' && !(detail.contract === 1 && isAdmin) && (
-        <div className="no-print">
-          <h2>수신자 서명</h2>
-          <p>아래 동의 항목을 확인하고 서명하시면 계약이 체결됩니다. 모바일에서는 손가락으로 서명할 수 있습니다.</p>
-
-          <div>
-            <label>서명자 성명: </label>
-            <input value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="성명" />
-          </div>
-
-          {/* 동의 항목 (서명폼.html consentBox 참고) */}
-          <div>
-            <div>
-              <label>
-                <input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} />
-                위 계약서의 모든 조항을 확인하였으며 그 내용에 동의합니다. (필수)
-              </label>
-            </div>
-            {needRefund && (
-              <div>
-                <label>
-                  <input type="checkbox" checked={agreeRefund} onChange={(e) => setAgreeRefund(e.target.checked)} />
-                  환불 규정을 확인하였으며 이에 동의합니다. (필수)
-                </label>
-              </div>
-            )}
-            <div>
-              <label>
-                <input type="checkbox" checked={agreeSign} onChange={(e) => setAgreeSign(e.target.checked)} />
-                전자적 방식으로 서명함에 동의합니다. (필수)
-              </label>
-            </div>
-          </div>
-
-          {/* 서명 패드 */}
-          <div>
-            <p>서명란 (마우스·손가락으로 서명하세요)</p>
-            <canvas
-              ref={canvasRef}
-              width={400}
-              height={150}
-              style={{ border: '1px solid black', touchAction: 'none' }}
-              onPointerDown={padDown}
-              onPointerMove={padMove}
-              onPointerUp={padUp}
-              onPointerLeave={padUp}
-            />
-            <div>
-              <button type="button" onClick={padClear}>지우기</button>
-            </div>
-          </div>
-
-          <button type="button" onClick={handleSign} disabled={!canSign}>
-            서명하고 계약 체결
-          </button>
         </div>
       )}
-
-      {(detail.status === 'SIGNED' || detail.status === 'ACTIVE') && (
-        <div className="no-print">
-          <h2>계약 체결 완료</h2>
-          <p>서명일시: {detail.signedAt?.replace('T', ' ') ?? '-'}</p>
-          {/* 이용권·PT·PT 체험은 결제 완료 후 ACTIVE - SIGNED 상태면 결제 대기 안내 */}
-          {detail.status === 'SIGNED' && (detail.contract === 3 || detail.contract === 4 || detail.contract === 5) && (
-            <p>
-              결제 대기 중입니다.{' '}
-              <button type="button" onClick={() => navigate(`/fitb/payment/${detail.dataId}`)}>
-                결제 페이지로 이동
-              </button>
-            </p>
-          )}
-          <Activation d={detail} />
-
-          {/* 서명 완료된 계약서 보관 - 브라우저 인쇄로 서명본을 PDF 파일로 저장 */}
-          <button type="button" onClick={() => window.print()}>
-            서명본 PDF로 보관 / 인쇄
-          </button>
-        </div>
-      )}
-
-      {detail.status === 'DRAFT' && <p className="no-print">아직 발행되지 않은 초안(DRAFT) 상태로, 서명할 수 없습니다.</p>}
-      {detail.status === 'TERMINATED' && <p className="no-print">종료(TERMINATED)된 계약서입니다.</p>}
     </div>
   );
 }

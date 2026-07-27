@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import './Itempage.css';
 import { useSearchParams } from 'react-router-dom';
+import NavIcon from '../components/uiIcons.jsx';
 import Pagination from './Pagination';
+import useHeaderAction from '../hooks/useHeaderAction.js';
 
 // 카테고리 칩 필터 목록 (Figma 고정 칩 + 기타). value=''는 전체
 const ITEM_CATEGORY_CHIPS = [
@@ -211,6 +213,11 @@ function Itempage() {
       alert('내보내기 중 오류가 발생했습니다.');
     }
   };
+
+  // 목록 화면(카테고리/검색/정렬만 있는 plain list 뷰)에서만 CSV 내보내기 버튼을 상단 헤더에 노출한다.
+  // 등록 폼·상세·수정 화면에서는 헤더에 버튼이 뜨지 않는다.
+  const isPlainListView = activeTab === 'list' && !selectedItem && !editingItem;
+  useHeaderAction(isPlainListView ? { label: 'CSV 내보내기', onClick: handleExportCsv } : null);
 
   // 백엔드로부터 특정 물품의 상세 구매 이력 조회 API 호출
   const handleItemClick = async (item) => {
@@ -502,6 +509,21 @@ function Itempage() {
   // gymId/검색어/페이지 조건은 이미 서버에서 반영되어 items에 현재 페이지 분량만 담겨 오므로 그대로 사용
   return (
     <div className="item-page-container">
+      {/* 페이지 헤더 (제목 + 안내 문구 + 주요 액션) — 리포트 페이지와 동일 시각 규격 */}
+      <header className="item-list-head">
+        <div className="item-list-head__main">
+          <h2 className="item-list-head__title">물품</h2>
+          <p className="item-list-head__desc">센터 물품의 재고, 사용 현황과 교체 일정을 관리합니다.</p>
+        </div>
+        {isPlainListView && (
+          <div className="item-list-head__actions">
+            <button type="button" className="item-register-btn" onClick={() => setActiveTab('form')}>
+              + 물품 등록
+            </button>
+          </div>
+        )}
+      </header>
+
       {/* 카테고리 자동완성 후보 목록: 등록/수정 폼 둘 다 list="item-category-options"로 참조하므로 탭 전환과 무관하게 항상 렌더링되는 위치에 둠 */}
       <datalist id="item-category-options">
         {existingCategories.map((category) => (
@@ -624,8 +646,8 @@ function Itempage() {
                 </form>
               </div>
             ) : !selectedItem ? (
-              <div className="item-card">
-                {/* 카테고리 칩 필터(좌) + 물품 등록 버튼(우) */}
+              <div className="item-card item-card--list">
+                {/* 카테고리 칩 필터(좌) + 검색·정렬(우) */}
                 <div className="item-filter-bar">
                   <div className="item-chip-group" role="tablist" aria-label="카테고리 필터">
                     {ITEM_CATEGORY_CHIPS.map((chip) => (
@@ -641,30 +663,22 @@ function Itempage() {
                       </button>
                     ))}
                   </div>
-                  <button type="button" className="item-register-btn" onClick={() => setActiveTab('form')}>
-                    + 물품 등록
-                  </button>
-                </div>
-
-                {/* 검색 바 + 정렬 옵션 + CSV 내보내기 버튼 */}
-                <div className="item-search-bar">
-                  <input
-                    type="text"
-                    className="item-search-input"
-                    placeholder="물품명 또는 카테고리로 검색..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  <select className="item-sort-select" value={sortOption} onChange={handleSortChange}>
-                    <option value="">기본순 (이름순)</option>
-                    <option value="count_desc">수량 많은순</option>
-                    <option value="count_asc">수량 적은순</option>
-                    <option value="price_desc">가격 높은순</option>
-                    <option value="price_asc">가격 낮은순</option>
-                  </select>
-                  <button type="button" className="item-export-btn" onClick={handleExportCsv}>
-                    CSV 내보내기
-                  </button>
+                  <div className="item-filter-bar__right">
+                    <input
+                      type="text"
+                      className="item-search-input"
+                      placeholder="물품명 또는 카테고리로 검색..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <select className="item-sort-select" value={sortOption} onChange={handleSortChange}>
+                      <option value="">기본순 (이름순)</option>
+                      <option value="count_desc">수량 많은순</option>
+                      <option value="count_asc">수량 적은순</option>
+                      <option value="price_desc">가격 높은순</option>
+                      <option value="price_asc">가격 낮은순</option>
+                    </select>
+                  </div>
                 </div>
 
                 {/* 테이블 목록 (카테고리, 물품명, 구매일, 단가, 수량, 유통기한) */}
@@ -753,7 +767,7 @@ function Itempage() {
                     onClick={() => setSelectedItem(null)}
                     className="item-secondary-btn"
                   >
-                    ← 목록으로 돌아가기
+                    <NavIcon id="arrow" size={16} className="ui-icon ui-icon--left" /> 목록으로 돌아가기
                   </button>
                 </div>
 
@@ -788,7 +802,7 @@ function Itempage() {
                 {/* 상세 내역 필터바 영역 */}
                 <div className="item-detail-toolbar">
                   <h3>
-                    📦 등록 및 관리 내역 리스트 ({detailList.length}건)
+                    <NavIcon id="item" size={18} className="ui-icon" /> 등록 및 관리 내역 리스트 ({detailList.length}건)
                   </h3>
 
                   {/* 월별 필터 셀렉트 */}
@@ -912,7 +926,7 @@ function Itempage() {
                     {existingItemNames.length > 0 && (
                       <div className="item-suggestions">
                         <div className="item-suggestions__label">
-                          💡 내가 등록한 전체 물품 목록 (클릭 시 자동 입력):
+                          <NavIcon id="lightbulb" size={16} className="ui-icon" /> 내가 등록한 전체 물품 목록 (클릭 시 자동 입력):
                         </div>
                         <div className="item-suggestions__list">
                           {existingItemNames.map((name) => {

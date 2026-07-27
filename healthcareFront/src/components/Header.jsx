@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getB2bPageTitle } from '../config/uiNavigation.js';
+import { getB2bPageTitle, isB2bDetailPage } from '../config/uiNavigation.js';
 import useLogout from '../hooks/useLogout.js';
+import NavIcon from './uiIcons.jsx';
 import './Header.css';
 
 function Header({ variant = 'portal' }) {
@@ -12,7 +13,24 @@ function Header({ variant = 'portal' }) {
   const [alarms, setAlarms] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [headerAction, setHeaderAction] = useState(null);
   const isB2b = variant === 'b2b';
+
+  // 페이지가 useHeaderAction 훅으로 등록하는 액션 버튼(CSV 내보내기 등)을 구독한다.
+  // 드로어(b2b-drawer-open)·AI(ai-ask)와 동일하게 window CustomEvent로 통신 - 전역 컴포넌트인
+  // Header는 페이지로부터 props를 직접 받을 수 없다. id가 다르면 clear를 무시해 경합을 막는다.
+  useEffect(() => {
+    const onSet = (event) => setHeaderAction(event.detail);
+    const onClear = (event) => {
+      setHeaderAction((previous) => (previous && previous.id === event.detail.id ? null : previous));
+    };
+    window.addEventListener('b2b-header-action-set', onSet);
+    window.addEventListener('b2b-header-action-clear', onClear);
+    return () => {
+      window.removeEventListener('b2b-header-action-set', onSet);
+      window.removeEventListener('b2b-header-action-clear', onClear);
+    };
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -138,7 +156,19 @@ function Header({ variant = 'portal' }) {
     <header className={`portal-header${isB2b ? ' portal-header--b2b' : ''}`}>
       <div className="portal-header__identity">
         {isB2b ? (
-          <h1>{getB2bPageTitle(location.pathname)}</h1>
+          <>
+            {isB2bDetailPage(location.pathname) && (
+              <button
+                type="button"
+                className="portal-header__back"
+                onClick={() => navigate(-1)}
+                aria-label="뒤로 가기"
+              >
+                <NavIcon id="chevron" size={18} fallback="‹" />
+              </button>
+            )}
+            <h1>{getB2bPageTitle(location.pathname)}</h1>
+          </>
         ) : (
           <>
             <h1>{user.role === 'admin' || user.role === 'owner' ? '사장님 관리 포털' : '회원 포털'}</h1>
@@ -148,6 +178,18 @@ function Header({ variant = 'portal' }) {
       </div>
 
       <div className="portal-header__actions">
+        {/* 페이지별 액션(현재는 CSV 내보내기) - 알림 종 왼쪽에 노출, 없는 페이지에선 렌더되지 않음 */}
+        {isB2b && headerAction && (
+          <button
+            type="button"
+            className="portal-header__export"
+            onClick={headerAction.onClick}
+            disabled={headerAction.disabled}
+          >
+            {headerAction.label}
+          </button>
+        )}
+
         <div className="portal-notification">
           <button
             type="button"
@@ -156,7 +198,7 @@ function Header({ variant = 'portal' }) {
             aria-label={`알림 ${unreadCount}개`}
             aria-expanded={showDropdown}
           >
-            <span aria-hidden="true">🔔</span>
+            <NavIcon id="bell" size={20} />
             {unreadCount > 0 && <span className="portal-notification__count">{unreadCount}</span>}
           </button>
 

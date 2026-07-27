@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import NavIcon from '../components/uiIcons.jsx';
+import './Attendance.css';
 
 // 헬스장 입구 공용 태블릿(키오스크)용 출석 페이지 - 로그인 없이 접근
 // 1화면: 헬스장 출석 / PT 출석 버튼 -> 2화면: 계정(전화번호+비밀번호) 입력 -> 3화면: 완료 안내
@@ -57,82 +59,78 @@ function Attendance() {
     }
   };
 
-  const bigButtonStyle = {
-    width: '260px',
-    height: '160px',
-    fontSize: '24px',
-    fontWeight: 'bold',
-    border: 'none',
-    borderRadius: '16px',
-    cursor: 'pointer',
-    color: 'var(--white)',
-  };
-
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 20px', textAlign: 'center' }}>
-      <h2 style={{ marginBottom: '8px' }}>🏋️ 출석 체크</h2>
-      <p style={{ color: 'var(--gray-500)', marginBottom: '40px' }}>출석 유형을 선택한 뒤 본인 계정으로 확인해 주세요.</p>
+    <main className="attendance-kiosk">
+      <header className="attendance-kiosk__header">
+        <h1 className="attendance-kiosk__title">
+          <NavIcon id="dumbbell" size={24} className="ui-icon" /> 출석 체크
+        </h1>
+        <p className="attendance-kiosk__description">출석 유형을 선택한 뒤 본인 계정으로 확인해 주세요.</p>
+      </header>
 
       {/* 3화면: 출석 완료 안내 */}
       {result ? (
-        <div style={{ padding: '40px 20px', border: '2px solid var(--tier-good)', borderRadius: '16px', backgroundColor: 'var(--success-bg)' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
-          <h2 style={{ margin: '0 0 12px 0', color: 'var(--success)' }}>{result.memberName}님 출석 완료!</h2>
+        <section className="attendance-kiosk__result">
+          <div className="attendance-kiosk__result-icon" aria-hidden="true"><NavIcon id="check" size={40} /></div>
+          <h2 className="attendance-kiosk__result-title">{result.memberName}님 출석 완료!</h2>
           {result.inoutType === 2 ? (
-            <p style={{ color: 'var(--gray-700)', fontSize: '15px' }}>
+            <p className="attendance-kiosk__result-copy">
               PT 출석이 접수되었습니다.<br />
               담당 트레이너 확인 후 잔여 횟수가 차감됩니다. (현재 잔여 {result.remainingCount}회)
             </p>
           ) : (
-            <p style={{ color: 'var(--gray-700)', fontSize: '15px' }}>오늘도 좋은 운동 되세요!</p>
+            <p className="attendance-kiosk__result-copy">오늘도 좋은 운동 되세요!</p>
           )}
-          <button onClick={handleReset} style={{ marginTop: '20px', padding: '10px 30px', fontSize: '15px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '8px', backgroundColor: 'var(--white)' }}>
+          <button onClick={handleReset} className="attendance-kiosk__reset">
             확인
           </button>
-        </div>
+        </section>
       ) : mode === null ? (
         /* 1화면: 출석 유형 선택 버튼 2개 */
-        <div style={{ display: 'flex', gap: '30px', justifyContent: 'center' }}>
-          <button onClick={() => setMode('gym')} style={{ ...bigButtonStyle, backgroundColor: 'var(--gym)' }}>
-            💪<br />헬스장 출석
+        <section className="attendance-kiosk__chooser" aria-label="출석 유형 선택">
+          <button onClick={() => setMode('gym')} className="attendance-kiosk__type-button attendance-kiosk__type-button--gym">
+            <span className="attendance-kiosk__type-icon" aria-hidden="true"><NavIcon id="dumbbell" size={32} /></span>
+            <span className="attendance-kiosk__type-label">헬스장 출석</span>
           </button>
-          <button onClick={() => setMode('pt')} style={{ ...bigButtonStyle, backgroundColor: 'var(--pt)' }}>
-            🤝<br />PT 출석
+          <button onClick={() => setMode('pt')} className="attendance-kiosk__type-button attendance-kiosk__type-button--pt">
+            <span className="attendance-kiosk__type-icon" aria-hidden="true"><NavIcon id="handshake" size={32} /></span>
+            <span className="attendance-kiosk__type-label">PT 출석</span>
           </button>
-        </div>
+        </section>
       ) : (
         /* 2화면: 계정 입력 폼 (로그인 형식 본인 확인) */
-        <div style={{ maxWidth: '360px', margin: '0 auto', padding: '30px', border: '1px solid var(--gray-200)', borderRadius: '16px', textAlign: 'left' }}>
-          <h3 style={{ marginTop: 0, textAlign: 'center', color: mode === 'gym' ? 'var(--gym)' : 'var(--pt)' }}>
-            {mode === 'gym' ? '💪 헬스장 출석' : '🤝 PT 출석'}
-          </h3>
+        <section className={`attendance-kiosk__card attendance-kiosk__card--${mode}`}>
+          <h2 className="attendance-kiosk__card-title">
+            <NavIcon id={mode === 'gym' ? 'dumbbell' : 'handshake'} size={20} className="ui-icon" />
+            {' '}{mode === 'gym' ? '헬스장 출석' : 'PT 출석'}
+          </h2>
           {mode === 'pt' && (
-            <p style={{ fontSize: '12px', color: 'var(--gray-500)', textAlign: 'center' }}>
+            <p className="attendance-kiosk__note">
               접수 후 담당 트레이너가 확인하면 잔여 횟수가 1회 차감됩니다.
             </p>
           )}
-          <form ref={formRef} onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '13px', marginBottom: '4px' }}>전화번호 (아이디)</label>
+          <form ref={formRef} onSubmit={handleSubmit} className="attendance-kiosk__form">
+            <div className="attendance-kiosk__field">
+              <label className="attendance-kiosk__label">전화번호 (아이디)</label>
               <input type="tel" name="username" required placeholder="예: 01012345678" autoComplete="off"
-                style={{ width: '100%', padding: '10px', fontSize: '16px', boxSizing: 'border-box' }} />
+                className="attendance-kiosk__input" />
             </div>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', marginBottom: '4px' }}>비밀번호</label>
+            <div className="attendance-kiosk__field">
+              <label className="attendance-kiosk__label">비밀번호</label>
               <input type="password" name="password" required autoComplete="off"
-                style={{ width: '100%', padding: '10px', fontSize: '16px', boxSizing: 'border-box' }} />
+                className="attendance-kiosk__input" />
             </div>
             <button type="submit" disabled={loading}
-              style={{ width: '100%', padding: '12px', fontSize: '16px', fontWeight: 'bold', color: 'var(--white)', border: 'none', borderRadius: '8px', cursor: 'pointer', backgroundColor: mode === 'gym' ? 'var(--gym)' : 'var(--pt)' }}>
+              className={`attendance-kiosk__submit attendance-kiosk__submit--${mode}`}>
               {loading ? '처리 중...' : '출석하기'}
             </button>
           </form>
-          <button onClick={handleReset} style={{ width: '100%', marginTop: '10px', padding: '10px', fontSize: '14px', cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: '8px', backgroundColor: 'var(--white)' }}>
-            ← 처음으로
+          <button onClick={handleReset} className="attendance-kiosk__reset">
+            <NavIcon id="arrow" size={18} className="ui-icon ui-icon--left" /> 처음으로
           </button>
-        </div>
+        </section>
       )}
-    </div>
+    </main>
   );
 }
 
