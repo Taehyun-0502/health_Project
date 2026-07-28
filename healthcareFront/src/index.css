@@ -1,4 +1,5 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css');
+@import url('./components/Button.css');
 
 :root {
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
@@ -62,13 +63,76 @@
   --b2c-lime-bg: #f7fee7;
   --b2c-lime-line: #d9f99d;
 
-  --text-h1: 24px;
-  --text-h2: 20px;
-  --text-h3: 17px;
-  --text-body: 15px;
-  --text-sm: 13px;
-  --text-xs: 12px;
-  --text-2xs: 11px; /* 초소형 — 배지·캡션 최소 크기 */
+  /* 타이포 스케일 — Apple HIG(iOS Dynamic Type) 기준으로 개편(2026-07-28).
+     크기는 역할 이름으로 부르고(h1/h2/h3 같은 문서 제목 계층 표기는 폐기), 굵기는 2단만 쓴다:
+     기본 400 · 강조는 headline 자리에서만 600. 종전 4단(400/500/600/700)은 폐기. */
+  --text-large-title: 34px; /* Large Title — 키오스크·랜딩 히어로 (미사용 시 예약) */
+  --text-title1: 28px;      /* Title 1 — 정산 히어로 수치·리포트 KPI */
+  --text-title2: 22px;      /* Title 2 — 페이지 제목·주요 수치 */
+  --text-title3: 20px;      /* Title 3 — 화면 헤더 제목 */
+  --text-headline: 17px;    /* Headline — 카드·모달 제목 (유일하게 600을 쓰는 자리) */
+  --text-body: 17px;        /* Body — 긴 본문 (PC 관리 화면은 대개 subhead를 쓴다) */
+  --text-callout: 16px;     /* Callout — 강조 문단 */
+  --text-subhead: 15px;     /* Subheadline — 목록 행·기본 본문 */
+  --text-footnote: 13px;    /* Footnote — 설명·버튼·입력 (실무 최다) */
+  --text-caption1: 12px;    /* Caption 1 — 보조 라벨 */
+  --text-caption2: 11px;    /* Caption 2 — 배지·최소 캡션 */
+
+  /* 강조 조합 토큰(2026-07-28 신설) — 크기 + 굵기를 한 번에 묶은 `font` 단축 속성.
+     정산 요약 레일·패널 제목처럼 "subhead 15px + 600"이 반복되는 자리에 쓴다.
+       사용: font: var(--text-subhead-strong);
+     ⚠️ `font` 단축 속성은 font-style·font-variant(=font-variant-numeric)를 초기값으로 되돌린다.
+        숫자 정렬이 필요한 요소는 이 선언 "뒤에" font-variant-numeric을 다시 적어야 한다.
+     ⚠️ 굵기만 따로 토큰화하지 않는다는 결정(--weight-* 원복)은 그대로 유효하다 — 이건 크기+굵기 조합이다. */
+  --text-subhead-strong: 600 var(--text-subhead) / 1.5 var(--font-family);
+
+  /* 라운드 스케일 6단(2026-07-28 토큰 승격) — 작은 것부터 r1~r6.
+     값은 기존 확정 스케일 그대로이며 새 값을 만들지 않는다. 종전 px 직접 기입은 폐기.
+     원형(아바타·도트)은 토큰이 없고 `border-radius: 50%`를 그대로 쓴다. */
+  --r1: 4px;   /* 소형 — 소형 입력·버튼·배지·차트 막대 모서리·말풍선 꼬리 */
+  --r2: 8px;   /* 표준 — 버튼·입력·범례 점 */
+  --r3: 12px;  /* 카드 — 카드·위젯 */
+  --r4: 16px;  /* 대형 — 드로어·모달 */
+  --r5: 24px;  /* 히어로 — 대형 히어로·AI 입력바 */
+  --r6: 999px; /* pill — 칩·배지·스크롤바 썸·리사이즈 핸들 */
+
+  /* 간격(패딩·갭·마진) 스케일(2026-07-28 토큰 승격) — 작은 것부터 p1~p10.
+     8px 그리드 + 4px 보조 단위. 64를 넘는 여백은 아래 --space-80만 쓴다. */
+  --p1: 4px;
+  --p2: 8px;
+  --p3: 12px;
+  --p4: 16px;
+  --p5: 20px;
+  --p6: 24px;
+  --p7: 32px;
+  --p8: 40px;
+  --p9: 48px;
+  --p10: 64px;
+
+  /* 1~3px 미세 스케일(2026-07-28 용도 확장) — 두 가지 쓰임을 함께 담당한다.
+     ① 보더 굵기: border / border-top·bottom·left·right / border-width.
+        신규 코드는 `border: 1px solid ...`처럼 px를 직접 쓰지 않고 이 토큰을 참조한다.
+     ② 1~3px 미세 여백 보정: 보더 두께 상쇄 등 간격 스케일(--p*) 밖의 시각 보정.
+     종전 "보더 자체의 굵기(border-width)에는 쓰지 않는다"는 규칙은 폐기. */
+  --bordered1: 1px;
+  --bordered2: 2px;
+  --bordered3: 3px;
+
+  /* 모달 딤 — 모든 팝업 오버레이의 배경. gray-900(#171717) 45%. */
+  --overlay-dim: rgba(23, 23, 23, 0.45);
+
+  /* 대형 여백 — 간격 스케일(4~64)의 확장 단계(2026-07-28 신설).
+     고정 요소(상단 유틸바·하단 탭바·AI 입력바)를 피하는 여백과 안내 블록의 중앙 배치에 쓴다.
+     64를 넘는 여백은 이 토큰만 사용하고 새 숫자를 만들지 않는다. */
+  --space-80: 80px;
+
+  /* transition 속도 3단(2026-07-28 확정) — 그 밖의 값은 쓰지 않는다.
+     fast=색 전환·칩/탭/링크·표 행 hover·버튼 press · base=카드 hover·입력 포커스·버튼 전반
+     · slow=테마 전환·레이아웃급 변화. 데이터가 차오르는 연출(정산 손익 진행바 0.6s)만 예외. */
+  --duration-fast: 0.15s;
+  --duration-base: 0.2s;
+  --duration-slow: 0.3s;
+  --duration-chart: 0.6s; /* 데이터가 차오르는 연출(진행바) 전용 — hover 스케일과 목적이 다르다 */
 
   /* AI 플로팅 입력바(fab) 하단 여백 — B2B 페이지 래퍼 padding-bottom에 사용.
      fab bottom offset(24) + fab 높이(50: 버튼 34 + 상하 패딩 14 + 보더 2) + 16 여백 = 90.
@@ -121,7 +185,7 @@ body {
   min-height: 100vh;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color var(--duration-slow) ease, color var(--duration-slow) ease;
 }
 
 /* 디자인 시스템 행간 — h1 1.3 · h2 1.4 · 그 외 1.5 (토스 TDS 참고 규격) */
@@ -162,78 +226,19 @@ h6 { line-height: 1.5; }
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--p6);
 }
 
 /* 모던 내비게이션 바 */
-.navbar {
-  border-bottom: 1px solid var(--border-color);
-  backdrop-filter: blur(12px);
-  background-color: rgba(255, 255, 255, 0.02);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  transition: all 0.3s ease;
-}
-
-.navbar-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 70px;
-}
-
-.logo-text {
-  font-size: 22px;
-  font-weight: 700;
-  background: var(--primary-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-decoration: none;
-  letter-spacing: -0.5px;
-}
-
-.nav-links {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.nav-link {
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: var(--text-body);
-  font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.nav-link:hover {
-  color: var(--text-primary);
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.nav-link-btn {
-  background: var(--primary-gradient);
-  color: var(--white) !important;
-  font-weight: 600;
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-link-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
 
 /* 글래스모피즘 카드 공통 */
 .card-premium {
   background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border: var(--bordered1) solid var(--border-color);
+  border-radius: var(--r3);
   box-shadow: var(--shadow-card);
-  padding: 40px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: var(--p8);
+  transition: transform var(--duration-slow) ease, box-shadow var(--duration-slow) ease;
 }
 
 .card-premium:hover {
@@ -244,13 +249,13 @@ h6 { line-height: 1.5; }
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--p1);
   text-align: left;
   width: 100%;
 }
 
 .form-label {
-  font-size: var(--text-sm);
+  font-size: var(--text-footnote);
   font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: 0.2px;
@@ -258,19 +263,18 @@ h6 { line-height: 1.5; }
 
 .form-input {
   width: 100%;
-  padding: 12px 16px;
-  font-size: var(--text-body);
+  padding: var(--p3) var(--p4);
+  font-size: var(--text-subhead);
   background-color: var(--white);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border: var(--bordered1) solid var(--border-color);
+  border-radius: var(--r2);
   color: var(--text-primary);
   outline: none;
-  transition: all 0.2s ease;
+  transition: all var(--duration-base) ease;
 }
 
 .form-input:focus {
   border-color: var(--primary-accent);
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14);
 }
 
 /* 공용 select — 네이티브 드롭다운 화살표를 디자인 시스템 chevron(아래 방향)으로 통일한다.
@@ -293,50 +297,18 @@ select::-ms-expand {
 
 /* index.css 공용 클래스 .form-input을 쓰는 select(정산 화면 등)의 화살표 여백 */
 select.form-input {
-  padding-right: 40px;
+  padding-right: var(--p8);
 }
 
 /* 프리미엄 버튼 공통 */
-.btn-premium {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  padding: 14px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--white);
-  background: var(--primary-gradient);
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: var(--shadow-md);
-}
 
+/* 주요 버튼 규칙: 배경색은 그대로 두고 hover에서 그림자로만 반응한다.
+   기본 상태의 상시 그림자와 밝기 변화(brightness)는 2026-07-28 제거. */
 .btn-premium:hover {
-  transform: translateY(-1.5px);
-  box-shadow: var(--shadow-md);
-  filter: brightness(1.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-premium:active {
   transform: translateY(0.5px);
 }
 
-/* 유틸리티 및 컴포넌트 */
-.gradient-title {
-  font-size: 40px;
-  font-weight: 700;
-  letter-spacing: -1px;
-  background: var(--primary-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 12px;
-}
-
-.sub-title {
-  color: var(--text-secondary);
-  font-size: 16px;
-  margin-bottom: 30px;
-}

@@ -5,7 +5,7 @@
 .b2b-management-page {
   width: min(100%, 1128px);
   margin: 0 auto;
-  padding: 20px 24px var(--ai-fab-clearance);
+  padding: var(--p5) var(--p6) var(--ai-fab-clearance);
 }
 
 /* 페이지 헤더 (제목 + 안내 문구 + 주요 액션) — 일반 흐름 요소(고정하지 않음). */
@@ -13,21 +13,21 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--p4);
   flex-wrap: wrap;
-  margin: 0 0 16px;
-  padding: 0 0 12px;
-  border-bottom: 1px solid var(--gray-200);
+  margin: 0 0 var(--p4);
+  padding: 0 0 var(--p3);
+  border-bottom: var(--bordered1) solid var(--gray-200);
 }
 .b2b-management-page__title {
   margin: 0;
-  font-size: var(--text-h2);
-  font-weight: 700;
+  font-size: var(--text-large-title);
+  font-weight: 600;
   color: var(--gray-900);
 }
 .b2b-management-page__desc {
-  margin: 4px 0 0;
-  font-size: var(--text-sm);
+  margin: var(--p1) 0 0;
+  font-size: var(--text-subhead);
   color: var(--gray-600);
 }
 
@@ -37,15 +37,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--p2);
   height: 38px;
-  padding: 0 16px;
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
+  padding: 0 var(--p4);
+  border: var(--bordered1) solid var(--gray-300);
+  border-radius: var(--r2);
   color: var(--gray-700);
   background: var(--white);
   font: inherit;
-  font-size: var(--text-sm);
+  font-size: var(--text-footnote);
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -69,13 +69,13 @@
 
 .b2b-management-page__action--primary:hover:not(:disabled) {
   background: var(--accent-strong);
-  box-shadow: 0 2px 8px rgba(200, 79, 0, 0.28);
+  box-shadow: var(--shadow-sm);
 }
 
 .b2b-management-page__empty {
-  padding: 32px;
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
+  padding: var(--p7);
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r3);
   color: var(--gray-600);
   background: var(--white);
   text-align: center;

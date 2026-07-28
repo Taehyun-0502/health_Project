@@ -15,6 +15,85 @@ const formatLocalDate = (date) => {
 };
 const formatLocalMonth = (date) => formatLocalDate(date).slice(0, 7);
 
+// 결제 항목명에서 계약서 ID 접두사("[계약 #123] ")를 화면·내보내기에서만 숨긴다.
+// 원본은 백엔드가 만들어 h_payment.pay_name에 저장하므로 DB·API는 무변경(표시 계층 처리).
+const stripContractRef = (name) => String(name ?? '').replace(/^\[계약\s*#\d+\]\s*/, '');
+
+// 월 선택기 — 리포트(Report.jsx PeriodPicker/MonthGrid)와 동일한 동작·모양.
+// 달력 아이콘 + 현재값 + 셰브런 버튼을 누르면 연도 이동(‹ ›) + 12개월 그리드 팝업이 열린다.
+// 값은 기존 그대로 'ALL' 또는 'YYYY-MM' — 상위 상태·조회 파라미터는 무변경.
+function MonthPicker({ value, months, onPick }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const initYear = Number(
+    (value !== 'ALL' ? value : months[0]?.value || String(new Date().getFullYear())).slice(0, 4),
+  );
+  const [year, setYear] = useState(initYear);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const pick = (v) => { onPick(v); setOpen(false); };
+  // 선택 가능한 달만 활성화 (상위가 내려준 filterMonths 기준)
+  const selectable = new Set(months.map((m) => m.value));
+  const label = value === 'ALL' ? '전체' : `${value.slice(0, 4)}년 ${Number(value.slice(5, 7))}월`;
+
+  return (
+    <div className="settle-monthpick" ref={ref}>
+      <button
+        type="button"
+        className="settle-monthpick__ctl"
+        aria-expanded={open}
+        title="월 선택"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="settle-monthpick__cal" aria-hidden="true"><NavIcon id="calendar" size={16} /></span>
+        <span className="settle-monthpick__val">{label}</span>
+        <span className="settle-monthpick__chev" aria-hidden="true">
+          <NavIcon id="chevron" size={14} className="ui-icon ui-icon--down" />
+        </span>
+      </button>
+      {open && (
+        <div className="settle-monthpick__pop">
+          <div className="settle-monthpick__head">
+            <button type="button" onClick={() => setYear((y) => y - 1)} aria-label="이전 해">‹</button>
+            <span>{year}년</span>
+            <button type="button" onClick={() => setYear((y) => y + 1)} aria-label="다음 해">›</button>
+          </div>
+          <div className="settle-monthpick__grid">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+              const ym = `${year}-${String(m).padStart(2, '0')}`;
+              const has = selectable.has(ym);
+              return (
+                <button
+                  key={ym}
+                  type="button"
+                  className={`settle-monthpick__cell${has ? ' has-data' : ''}${value === ym ? ' is-sel' : ''}`}
+                  disabled={!has}
+                  onClick={() => pick(ym)}
+                >
+                  {m}월
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            className={`settle-monthpick__all${value === 'ALL' ? ' is-sel' : ''}`}
+            onClick={() => pick('ALL')}
+          >
+            전체 기간
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Settlepage() {
   const navigate = useNavigate();
 
@@ -260,19 +339,24 @@ function Settlepage() {
     const summary = ownerSummary || {};
     const salesTotal = summary.salesTotal || 0;
     const expenseTotal = summary.expenseTotal || 0;
+    // 날짜 기준이 '전체'일 때는 제목을 두지 않는다(종전 '전체 요약' 표기는 폐기).
+    // 특정 월을 고른 경우에만 어느 달의 수치인지 밝힌다.
     const railTitle = !summaryMonth
-      ? '전체 요약'
+      ? null
       : (summaryMonth === currentMonthKey ? '이번 달 요약' : `${summaryMonth} 요약`);
 
     return (
       <aside className="settle-summary-rail">
-        <div className="settle-summary-rail__title">{railTitle}</div>
+        {railTitle && <div className="settle-summary-rail__title">{railTitle}</div>}
         <div className="summary-hero">
           <div className="summary-hero__label">순이익</div>
-          <div className="summary-hero__value">{formatWon(salesTotal - expenseTotal)}</div>
+          {/* 순이익은 부호에 따라 색이 갈린다 (+ success / - danger) */}
+          <div className={`summary-hero__value ${salesTotal - expenseTotal < 0 ? 'is-loss' : 'is-profit'}`}>
+            {formatWon(salesTotal - expenseTotal)}
+          </div>
           <div className="summary-hero__sub">
             <span><span className="summary-hero__sub-key">매출</span> <b className="summary-hero__sub-sales">{formatManwon(salesTotal)}</b></span>
-            <span><span className="summary-hero__sub-key">지출</span> <b>{formatManwon(expenseTotal)}</b></span>
+            <span><span className="summary-hero__sub-key">지출</span> <b className="summary-hero__sub-expense">{formatManwon(expenseTotal)}</b></span>
           </div>
         </div>
         <div className="summary-card">
@@ -612,14 +696,16 @@ function Settlepage() {
       (total, commission) => total + Number(commission.commission || 0),
       0,
     );
-    const railTitle = !summaryMonth ? '전체 지출 요약' : `${summaryMonth} 지출 요약`;
+    // 매출 요약 레일과 같은 규칙 — 날짜 기준이 '전체'면 제목을 두지 않는다
+    const railTitle = !summaryMonth ? null : `${summaryMonth} 지출 요약`;
 
     return (
       <aside className="settle-summary-rail">
-        <div className="settle-summary-rail__title">{railTitle}</div>
-        <div className="summary-hero summary-hero--expense">
+        {railTitle && <div className="settle-summary-rail__title">{railTitle}</div>}
+        <div className="summary-hero">
           <div className="summary-hero__label">현재 필터 지출</div>
-          <div className="summary-hero__value">{formatWon(expenseTotalAmount)}</div>
+          {/* 지출이므로 값은 항상 danger (매출 레일의 순이익 부호 규칙과 같은 축) */}
+          <div className="summary-hero__value is-loss">{formatWon(expenseTotalAmount)}</div>
           <div className="summary-hero__sub summary-hero__sub--single">
             <span><span className="summary-hero__sub-key">등록 건수</span> <b>{expenseTotalCount}건</b></span>
           </div>
@@ -798,7 +884,7 @@ function Settlepage() {
       const rows = allPays.map((p) => [
         p.payId ?? '',
         p.username ?? '',
-        p.payName,
+        stripContractRef(p.payName),
         p.payPrice,
         p.couponId ? p.couponName : '미사용',
         p.couponId ? p.discountAmount : 0,
@@ -904,7 +990,7 @@ function Settlepage() {
             이 페이지는 <strong>관리자(ADMIN)</strong> 또는 <strong>사장님(OWNER)</strong> 권한이 있는 사용자만 접근할 수 있습니다.<br />
             로그인을 진행해 주세요.
           </p>
-          <button className="btn-premium btn-back-login" onClick={() => navigate('/login')}>
+          <button className="btn btn--primary btn-back-login" onClick={() => navigate('/login')}>
             로그인 화면으로 이동
           </button>
         </div>
@@ -940,7 +1026,7 @@ function Settlepage() {
           {activeRole === 'OWNER' && ownerTab === 'expenses' && (
             <button
               type="button"
-              className="btn-premium expense-confirm-open"
+              className="btn btn--primary expense-confirm-open"
               ref={expenseDrawerTriggerRef}
               onClick={() => setExpenseDrawerOpen(true)}
             >
@@ -1058,9 +1144,9 @@ function Settlepage() {
               <tbody>
                 {commissions.map(c => (
                     <tr key={c.settlementId}>
-                      <td>#{c.settlementId}</td>
+                      <td>{c.settlementId}</td>
                       <td>
-                        <strong>{c.gymName || `사업장 ID: ${c.gymId}`}</strong>
+                        {c.gymName || `사업장 ID: ${c.gymId}`}
                       </td>
                       <td>{getYearMonth(c.settleMonth)}</td>
                       <td className="cell-amount">{formatWon(c.commission)}</td>
@@ -1075,8 +1161,34 @@ function Settlepage() {
                     </tr>
                   ))}
                 {commissions.length === 0 && (
-                  <tr>
-                    <td colSpan="8" className="no-data-row">조건에 해당하는 정산 내역이 없어요.</td>
+                  <tr className="settle-table__empty-row">
+                    <td colSpan="8" className="settle-table__empty">
+                      <p className="settle-empty__msg">
+                        {token ? '조건에 해당하는 정산 내역이 없어요.' : '로그인하면 정산 내역을 볼 수 있어요.'}
+                      </p>
+                      {/* 커미션은 월별 집계로 만들어지므로 상단 수동 집계 카드로 안내한다 */}
+                      <div className="settle-empty__grid">
+                        {token ? (
+                          <button
+                            type="button"
+                            className="settle-empty__card"
+                            onClick={() => document.querySelector('.generate-commission-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                          >
+                            <span className="settle-empty__card-label">커미션 집계하기</span>
+                            <span className="settle-empty__card-desc">월을 골라 커미션을 집계해요</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="settle-empty__card"
+                            onClick={() => navigate('/login')}
+                          >
+                            <span className="settle-empty__card-label">로그인</span>
+                            <span className="settle-empty__card-desc">로그인 후 이용할 수 있어요</span>
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -1106,21 +1218,19 @@ function Settlepage() {
               >
                 <NavIcon id="wallet" size={16} className="ui-icon" /> 지출 관리
               </button>
+
+              {/* 날짜 기준 — 리포트와 같은 월 선택기, 위치는 탭 옆 */}
+              {ownerTab !== 'pnl' && (
+                <MonthPicker
+                  value={ownerMonthFilter}
+                  months={filterMonths}
+                  onPick={setOwnerMonthFilter}
+                />
+              )}
             </div>
 
             {ownerTab !== 'pnl' && (
               <div className="settle-tabs-row__right">
-                <select
-                  className="select-premium"
-                  value={ownerMonthFilter}
-                  onChange={(e) => setOwnerMonthFilter(e.target.value)}
-                >
-                  <option value="ALL">날짜 기준: 전체</option>
-                  {filterMonths.map(m => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </select>
-
                 <input
                   type="text"
                   className="input-search-premium"
@@ -1167,21 +1277,25 @@ function Settlepage() {
                         className="row-clickable"
                         onClick={() =>
                           window.dispatchEvent(new CustomEvent('b2b-drawer-open', {
-                            detail: { kind: 'settle', id: p.payId ?? p.dataId ?? index, title: p.payName ?? p.username ?? '매출', data: p },
+                            detail: { kind: 'settle', id: p.payId ?? p.dataId ?? index, title: stripContractRef(p.payName) || p.username || '매출', data: p },
                           }))
                         }
                       >
-                        <td>{p.payId ? `#${p.payId}` : `임시 (계약 #${p.dataId})`}</td>
+                        <td>{p.payId ? p.payId : `임시 (계약 ${p.dataId})`}</td>
                         <td>{p.username ?? '-'}</td>
-                        <td><strong>{p.payName}</strong></td>
+                        <td>{stripContractRef(p.payName)}</td>
                         <td className="cell-amount">{formatWon(p.payPrice)}</td>
+                        {/* 쿠폰 사용 여부 — 회원 관리(.owner-mgmt__badge--coupon)와 동일한 배지 규격 */}
                         <td>
                           {p.couponId ? (
-                            <span className="pay-coupon-used">
-                              {p.couponName} (-{formatWon(p.discountAmount)})
+                            <span className="pay-coupon">
+                              <span className="settle-badge settle-badge--coupon">사용</span>
+                              <span className="pay-coupon-name">
+                                {p.couponName} (-{formatWon(p.discountAmount)})
+                              </span>
                             </span>
                           ) : (
-                            <span className="pay-coupon-unused">미사용</span>
+                            <span className="settle-badge settle-badge--muted">미사용</span>
                           )}
                         </td>
                         <td>{p.installment === 0 ? '일시불' : `${p.installment}개월 할부`}</td>
@@ -1197,8 +1311,35 @@ function Settlepage() {
                       </tr>
                     ))}
                     {pays.length === 0 && (
-                      <tr>
-                        <td colSpan="8" className="no-data-row">조건에 해당하는 매출 내역이 없어요.</td>
+                      <tr className="settle-table__empty-row">
+                        <td colSpan="8" className="settle-table__empty">
+                          <p className="settle-empty__msg">
+                            {token ? '조건에 해당하는 매출 내역이 없어요.' : '로그인하면 매출 내역을 볼 수 있어요.'}
+                          </p>
+                          {/* 매출은 이 화면에서 직접 등록하지 않고 계약 → 결제로 만들어지므로
+                              빈 상태 카드는 계약 페이지로 보낸다(미로그인은 로그인 카드). */}
+                          <div className="settle-empty__grid">
+                            {token ? (
+                              <button
+                                type="button"
+                                className="settle-empty__card"
+                                onClick={() => navigate('/fitb/contractpage')}
+                              >
+                                <span className="settle-empty__card-label">계약서 보러가기</span>
+                                <span className="settle-empty__card-desc">계약을 결제하면 매출로 잡혀요</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="settle-empty__card"
+                                onClick={() => navigate('/login')}
+                              >
+                                <span className="settle-empty__card-label">로그인</span>
+                                <span className="settle-empty__card-desc">로그인 후 이용할 수 있어요</span>
+                              </button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     )}
                   </tbody>
@@ -1229,8 +1370,8 @@ function Settlepage() {
                   <ul className="unpaid-contract-ul">
                     {pagedUnpaidContracts.map((c) => (
                       <li key={c.dataId} className="unpaid-contract-li">
-                        <span>[{c.contract === 3 ? '이용권' : 'PT'}] {c.receiverName} (₩{c.amount?.toLocaleString()}) - #{c.dataId}</span>
-                        <Link to={`/fitb/payment/${c.dataId}`} className="btn-premium">쿠폰 적용 결제하기</Link>
+                        <span>[{c.contract === 3 ? '이용권' : 'PT'}] {c.receiverName} (₩{c.amount?.toLocaleString()}) - {c.dataId}</span>
+                        <Link to={`/fitb/payment/${c.dataId}`} className="btn btn--primary">쿠폰 적용 결제하기</Link>
                       </li>
                     ))}
                     {pagedUnpaidContracts.length === 0 && (
@@ -1277,8 +1418,8 @@ function Settlepage() {
                             }))
                           }
                         >
-                          <td>#{e.expenseId}</td>
-                          <td><strong>{e.expenseName}</strong></td>
+                          <td>{e.expenseId}</td>
+                          <td>{e.expenseName}</td>
                            <td className="cell-amount is-danger">
                              {(() => {
                                if (e.expenseRate > 0) {
@@ -1312,8 +1453,33 @@ function Settlepage() {
                         </tr>
                       ))}
                     {expenses.length === 0 && (
-                      <tr>
-                        <td colSpan="6" className="no-data-row">등록된 지출 비용 데이터가 없어요.</td>
+                      <tr className="settle-table__empty-row">
+                        <td colSpan="6" className="settle-table__empty">
+                          <p className="settle-empty__msg">
+                            {token ? '등록된 지출 비용 데이터가 없어요.' : '로그인하면 지출 내역을 볼 수 있어요.'}
+                          </p>
+                          <div className="settle-empty__grid">
+                            {token ? (
+                              <button
+                                type="button"
+                                className="settle-empty__card"
+                                onClick={() => setExpenseDrawerOpen(true)}
+                              >
+                                <span className="settle-empty__card-label">+ 지출 등록</span>
+                                <span className="settle-empty__card-desc">임금·커미션 등 지출을 등록해요</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="settle-empty__card"
+                                onClick={() => navigate('/login')}
+                              >
+                                <span className="settle-empty__card-label">로그인</span>
+                                <span className="settle-empty__card-desc">로그인 후 이용할 수 있어요</span>
+                              </button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     )}
                   </tbody>
@@ -1373,7 +1539,7 @@ function Settlepage() {
                       >
                         <div className="expense-item-head">
                           <span className="expense-item-badge is-commission">월별 커미션</span>
-                          <span className="expense-item-id">정산 #{c.settlementId}</span>
+                          <span className="expense-item-id">정산 {c.settlementId}</span>
                         </div>
                         <div className="expense-item-target">{c.settleMonth?.slice(0, 7)} 매출 커미션</div>
                         <div className="expense-item-foot">
@@ -1391,7 +1557,7 @@ function Settlepage() {
                         >
                           <div className="expense-item-head">
                             <span className="expense-item-badge is-wage">임금 계약</span>
-                            <span className="expense-item-id">#{c.dataId}</span>
+                            <span className="expense-item-id">{c.dataId}</span>
                           </div>
                           <div className="expense-item-target">
                             지출 대상: {c.receiverName} 트레이너
@@ -1494,7 +1660,7 @@ function Settlepage() {
 
                     {selectedExpenseContractId && (
                       <div className="expense-linked-banner">
-                        <span>연동 계약서 ID: <strong>#{selectedExpenseContractId}</strong></span>
+                        <span>연동 계약서 ID: <strong>{selectedExpenseContractId}</strong></span>
                         <button
                           type="button"
                           className="btn-unlink"
@@ -1512,7 +1678,7 @@ function Settlepage() {
 
                     {selectedSettlementId && (
                       <div className="expense-linked-banner">
-                        <span>연동 커미션 정산 ID: <strong>#{selectedSettlementId}</strong></span>
+                        <span>연동 커미션 정산 ID: <strong>{selectedSettlementId}</strong></span>
                         <button
                           type="button"
                           className="btn-unlink"
@@ -1529,7 +1695,7 @@ function Settlepage() {
                     )}
 
                     <div className="btn-submit-container">
-                      <button type="submit" className="btn-premium btn-submit-premium" disabled={expenseSubmitting}>
+                      <button type="submit" className="btn btn--primary btn-submit-premium" disabled={expenseSubmitting}>
                         {expenseSubmitting ? '등록 중...' : '지출 등록하기'}
                       </button>
                     </div>

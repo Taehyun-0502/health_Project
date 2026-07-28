@@ -5,43 +5,43 @@
 .promotion-page {
   width: min(100%, 1128px);
   margin: 0 auto;
-  padding: 20px 24px var(--ai-fab-clearance);
+  padding: var(--p5) var(--p6) var(--ai-fab-clearance);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--p6);
   text-align: left;
 }
 
 .promotion-card {
-  padding: 24px;
+  padding: var(--p6);
   background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r3);
   box-shadow: var(--shadow-card);
 }
 
 .promotion-section-head {
-  margin-bottom: 20px;
+  margin-bottom: var(--p5);
 }
 
 .promotion-section-head--list {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--p4);
 }
 
 .promotion-section-title {
   margin: 0;
   color: var(--gray-900);
-  font-size: var(--text-h3);
-  font-weight: 700;
+  font-size: var(--text-headline);
+  font-weight: 600;
 }
 
 .promotion-section-desc {
-  margin: 4px 0 0;
+  margin: var(--p1) 0 0;
   color: var(--gray-600);
-  font-size: var(--text-sm);
+  font-size: var(--text-footnote);
 }
 
 .promotion-count {
@@ -49,12 +49,12 @@
   display: inline-flex;
   align-items: center;
   height: 24px;
-  padding: 0 12px;
+  padding: 0 var(--p3);
   color: var(--gray-600);
   background: var(--gray-100);
-  border: 1px solid var(--gray-200);
-  border-radius: 999px;
-  font-size: var(--text-xs);
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r6);
+  font-size: var(--text-caption1);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -63,19 +63,19 @@
 .promotion-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--p3);
 }
 
 .promotion-stat {
   min-width: 0;
-  padding: 16px;
+  padding: var(--p4);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--p2);
   color: var(--gray-900);
   background: var(--gray-50);
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r3);
 }
 
 .promotion-stat--waiting {
@@ -98,14 +98,14 @@
 
 .promotion-stat__label {
   color: inherit;
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   font-weight: 600;
 }
 
 .promotion-stat__value {
   color: inherit;
-  font-size: var(--text-h2);
-  font-weight: 700;
+  font-size: var(--text-title3);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -114,7 +114,7 @@
   display: grid;
   grid-template-columns: minmax(240px, 2fr) repeat(3, minmax(144px, 1fr)) auto;
   align-items: end;
-  gap: 16px;
+  gap: var(--p4);
 }
 
 .promotion-field {
@@ -124,22 +124,22 @@
 .promotion-label,
 .promotion-send-label {
   display: block;
-  margin: 0 0 8px;
+  margin: 0 0 var(--p2);
   color: var(--gray-700);
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   font-weight: 600;
 }
 
 .promotion-input {
   width: 100%;
   height: 40px;
-  padding: 0 12px;
+  padding: 0 var(--p3);
   color: var(--gray-900);
   background-color: var(--white);
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
+  border: var(--bordered1) solid var(--gray-300);
+  border-radius: var(--r2);
   font: inherit;
-  font-size: var(--text-sm);
+  font-size: var(--text-footnote);
 }
 
 .promotion-input::placeholder {
@@ -159,37 +159,25 @@
 
 .promotion-select {
   cursor: pointer;
-  padding-right: 40px;
+  padding-right: var(--p8);
 }
 
 /* ===== 버튼 ===== */
-.promotion-button {
-  min-height: 40px;
-  padding: 0 16px;
-  border-radius: 8px;
-  font: inherit;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
 
 .promotion-button--primary,
 .promotion-button--table {
   color: var(--white);
   background: var(--accent-strong);
-  border: 1px solid var(--accent-strong);
 }
 
 .promotion-button--primary:hover,
 .promotion-button--table:hover {
-  box-shadow: 0 2px 8px rgba(200, 79, 0, 0.28);
+  box-shadow: var(--shadow-sm);
 }
 
 .promotion-button--secondary {
   color: var(--gray-700);
   background: var(--white);
-  border: 1px solid var(--gray-300);
 }
 
 .promotion-button--secondary:hover {
@@ -197,13 +185,8 @@
 }
 
 .promotion-button--risk {
-  min-height: 32px;
-  padding: 0 12px;
   color: var(--accent-text);
   background: var(--white);
-  border: 1px solid var(--accent);
-  border-radius: 4px;
-  font-size: var(--text-xs);
 }
 
 .promotion-button--risk:hover {
@@ -212,9 +195,9 @@
 
 .promotion-button--table {
   min-height: 32px;
-  padding: 0 12px;
-  border-radius: 4px;
-  font-size: var(--text-xs);
+  padding: 0 var(--p3);
+  border-radius: var(--r1);
+  font-size: var(--text-caption1);
 }
 
 .promotion-button:focus-visible,
@@ -226,18 +209,18 @@
 
 /* ===== 카드형 테이블 ===== */
 .promotion-empty {
-  padding: 32px;
+  padding: var(--p7);
   color: var(--gray-400);
-  border: 1px dashed var(--gray-300);
-  border-radius: 12px;
-  font-size: var(--text-body);
+  border: var(--bordered1) dashed var(--gray-300);
+  border-radius: var(--r3);
+  font-size: var(--text-subhead);
   text-align: center;
 }
 
 .promotion-table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r3);
 }
 
 .promotion-table {
@@ -246,22 +229,22 @@
   border-collapse: collapse;
   color: var(--gray-900);
   background: var(--white);
-  font-size: var(--text-body);
+  font-size: var(--text-subhead);
 }
 
 .promotion-table th {
-  padding: 12px 16px;
-  color: var(--gray-400);
+  padding: var(--p3) var(--p4);
+  color: var(--gray-900);
   background: var(--gray-50);
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   font-weight: 600;
   text-align: left;
   white-space: nowrap;
 }
 
 .promotion-table td {
-  padding: 12px 16px;
-  border-top: 1px solid var(--gray-200);
+  padding: var(--p3) var(--p4);
+  border-top: var(--bordered1) solid var(--gray-100);
   vertical-align: middle;
 }
 
@@ -272,7 +255,7 @@
 .promotion-table__name,
 .promotion-table__percent,
 .promotion-table__number {
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -295,10 +278,10 @@
 .promotion-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 9px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font-size: var(--text-xs);
+  padding: var(--bordered3) var(--p2);
+  border: var(--bordered1) solid transparent;
+  border-radius: var(--r6);
+  font-size: var(--text-caption1);
   font-weight: 600;
   line-height: 1.5;
   white-space: nowrap;
@@ -325,82 +308,82 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  padding: 32px;
+  padding: var(--p7);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(23, 23, 23, 0.45);
+  background: var(--overlay-dim);
 }
 
 .promotion-modal {
   width: min(640px, 100%);
   max-height: calc(100vh - 64px);
-  padding: 24px;
+  padding: var(--p6);
   overflow-y: auto;
   color: var(--gray-900);
   background: var(--white);
-  border-radius: 16px;
+  border-radius: var(--r4);
   box-shadow: var(--shadow-md);
 }
 
 .promotion-modal__head {
-  margin-bottom: 16px;
+  margin-bottom: var(--p4);
 }
 
 .promotion-modal__title {
   margin: 0;
-  font-size: var(--text-h3);
-  font-weight: 700;
+  font-size: var(--text-headline);
+  font-weight: 600;
 }
 
 .promotion-modal__desc {
-  margin: 4px 0 0;
+  margin: var(--p1) 0 0;
   color: var(--gray-500);
-  font-size: var(--text-sm);
+  font-size: var(--text-footnote);
 }
 
 .promotion-selected-coupon {
-  margin: 0 0 20px;
-  padding: 12px 16px;
+  margin: 0 0 var(--p5);
+  padding: var(--p3) var(--p4);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--p3);
   color: var(--gray-600);
   background: var(--accent-bg);
-  border: 1px solid var(--accent-soft);
-  border-radius: 8px;
-  font-size: var(--text-sm);
+  border: var(--bordered1) solid var(--accent-soft);
+  border-radius: var(--r2);
+  font-size: var(--text-footnote);
 }
 
 .promotion-selected-coupon strong {
   color: var(--accent-text);
-  font-weight: 700;
+  font-weight: 600;
   text-align: right;
 }
 
 .promotion-send-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--p5);
 }
 
 .promotion-member-tools {
-  padding-bottom: 12px;
-  margin-bottom: 12px;
+  padding-bottom: var(--p3);
+  margin-bottom: var(--p3);
   display: flex;
   align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid var(--gray-200);
+  gap: var(--p3);
+  border-bottom: var(--bordered1) solid var(--gray-200);
 }
 
 .promotion-check,
 .promotion-member {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--p2);
   color: var(--gray-700);
-  font-size: var(--text-sm);
+  font-size: var(--text-footnote);
   cursor: pointer;
 }
 
@@ -423,20 +406,20 @@
 
 .promotion-member-list {
   max-height: 240px;
-  padding: 8px;
+  padding: var(--p2);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--p1);
   overflow-y: auto;
   background: var(--gray-50);
-  border: 1px solid var(--gray-200);
-  border-radius: 8px;
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r2);
 }
 
 .promotion-member {
   min-height: 40px;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: var(--p2) var(--p3);
+  border-radius: var(--r2);
 }
 
 .promotion-member:hover {
@@ -446,17 +429,17 @@
 .promotion-modal__actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  padding-top: 4px;
+  gap: var(--p2);
+  padding-top: var(--p1);
 }
 
 @media (max-width: 768px) {
   .promotion-page {
-    padding: 16px 16px 64px;
+    padding: var(--p4) var(--p4) var(--p10);
   }
 
   .promotion-card {
-    padding: 20px;
+    padding: var(--p5);
   }
 
   .promotion-stats {
@@ -473,7 +456,7 @@
   }
 
   .promotion-modal-back {
-    padding: 16px;
+    padding: var(--p4);
   }
 
   .promotion-modal {

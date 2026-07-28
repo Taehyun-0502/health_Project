@@ -221,6 +221,11 @@ const ICON_PATHS = {
       <path d="M12 11v5M12 8h.01" />
     </>
   ),
+  grip: (
+    <>
+      <path d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01" />
+    </>
+  ),
   "external-link": (
     <>
       <path d="M14 4h6v6" />
