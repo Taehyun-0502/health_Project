@@ -4,24 +4,18 @@
 .settle-container {
   max-width: 1128px;
   margin: 0 auto;
-  /* 상단 여백(20px)은 sticky 페이지 헤더의 padding-top(12)과 합쳐 안착 시 20px를 유지하도록
-     래퍼에서 8px만 남기고 헤더로 옮겼다. */
-  padding: 8px 24px var(--ai-fab-clearance);
+  padding: 20px 24px var(--ai-fab-clearance);
 }
 
-/* 페이지 헤더 (제목 + 안내 문구 + 주요 액션) — 스크롤 시 상단 고정(sticky). */
+/* 페이지 헤더 (제목 + 안내 문구 + 주요 액션) — 일반 흐름 요소(고정하지 않음). */
 .settle-list-head {
-  position: sticky;
-  top: 0;
-  z-index: 20;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
   margin: 0 0 16px;
-  padding: 12px 0;
-  background: var(--gray-50);
+  padding: 0 0 12px;
   border-bottom: 1px solid var(--gray-200);
 }
 .settle-list-head__title {
@@ -308,8 +302,12 @@
   flex-wrap: wrap;
 }
 
+/* 필터 컨트롤 공통 높이 38px(앱 표준 select 규격) — 셀렉트/월 입력/검색 입력이
+   같은 행에서 한 라인에 정렬되도록 패딩 파생 높이(36~38px 편차)를 고정 높이로 통일한다.
+   화살표는 네이티브 유지(계약 .contract-select·물품 .item-select와 동일). */
 .select-premium {
-  padding: 9px 12px;
+  height: 38px;
+  padding: 0 40px 0 12px;
   font-size: var(--text-sm);
   background-color: var(--white);
   border: 1px solid var(--gray-300);
@@ -325,7 +323,8 @@
 }
 
 .input-search-premium {
-  padding: 9px 12px;
+  height: 38px;
+  padding: 0 12px;
   font-size: var(--text-sm);
   background-color: var(--white);
   border: 1px solid var(--gray-300);
@@ -376,37 +375,41 @@
   background: var(--accent-bg);
 }
 
-/* Table Design — 카드형 테이블 */
+/* Table Design — 카드형 테이블 (계약 리스트 .contract-table 규격에 정합) */
 .settle-table-container {
   overflow-x: auto;
-  border-radius: 12px;
   border: 1px solid var(--gray-200);
+  border-radius: 12px;
   background: var(--white);
 }
 
 .settle-table {
   width: 100%;
   border-collapse: collapse;
-  text-align: left;
   font-size: var(--text-body);
 }
 
 .settle-table th {
+  padding: 12px 16px;
   background: var(--gray-50);
-  padding: 11px 14px;
+  color: var(--gray-400);
   font-size: var(--text-xs);
   font-weight: 600;
-  color: var(--gray-400);
-  border-bottom: 1px solid var(--gray-200);
+  text-align: left;
   white-space: nowrap;
 }
 
 .settle-table td {
-  padding: 14px 16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--gray-200);
   color: var(--gray-900);
-  border-bottom: 1px solid var(--gray-200);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+.settle-table th:first-child,
+.settle-table td:first-child {
+  padding-left: 16px;
 }
 
 .settle-table tbody tr {
@@ -414,11 +417,7 @@
 }
 
 .settle-table tbody tr:hover {
-  background-color: var(--gray-50);
-}
-
-.settle-table tbody tr:last-child td {
-  border-bottom: none;
+  background: var(--gray-50);
 }
 
 .no-data-row {
@@ -729,8 +728,8 @@
 .btn-action.btn-sm { padding: 6px 12px; font-size: var(--text-xs); }
 .btn-action.btn-xs { padding: 4px 10px; font-size: var(--text-xs); }
 
-/* 테이블 컨테이너 하단 여백 */
-.settle-table-container.is-spaced { margin-bottom: 30px; }
+/* 테이블 컨테이너 하단 여백 (패딩 스케일 32px) */
+.settle-table-container.is-spaced { margin-bottom: 32px; }
 
 /* 클릭 가능한 행 (우측 드로어 오픈) */
 .settle-table .row-clickable { cursor: pointer; }
@@ -901,8 +900,9 @@
   flex-direction: column;
   gap: 14px;
   position: sticky;
-  /* sticky 페이지 헤더(약 77px) 아래로 물려 겹치지 않게 한다(헤더 z20 > 레일 z auto). */
-  top: 88px;
+  /* 페이지 헤더는 더 이상 고정되지 않으므로 헤더를 피할 필요가 없다. 고정된 유틸바(60px)만
+     피하도록 유틸바 높이 + 16px 여백에 안착시킨다. */
+  top: calc(var(--b2b-utilbar-h) + 16px);
 }
 
 .settle-summary-rail__title {

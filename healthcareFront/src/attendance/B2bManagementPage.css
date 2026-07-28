@@ -5,24 +5,18 @@
 .b2b-management-page {
   width: min(100%, 1128px);
   margin: 0 auto;
-  /* 상단 여백(20px)은 sticky 페이지 헤더의 padding-top(12)과 합쳐 안착 시 20px를 유지하도록
-     래퍼에서 8px만 남기고 헤더로 옮겼다. */
-  padding: 8px 24px var(--ai-fab-clearance);
+  padding: 20px 24px var(--ai-fab-clearance);
 }
 
-/* 페이지 헤더 (제목 + 안내 문구 + 주요 액션) — 스크롤 시 상단 고정(sticky). */
+/* 페이지 헤더 (제목 + 안내 문구 + 주요 액션) — 일반 흐름 요소(고정하지 않음). */
 .b2b-management-page__head {
-  position: sticky;
-  top: 0;
-  z-index: 20;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
   margin: 0 0 16px;
-  padding: 12px 0;
-  background: var(--gray-50);
+  padding: 0 0 12px;
   border-bottom: 1px solid var(--gray-200);
 }
 .b2b-management-page__title {

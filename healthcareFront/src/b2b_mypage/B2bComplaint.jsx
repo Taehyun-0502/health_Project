@@ -65,7 +65,7 @@ function B2bComplaint() {
         <h2 id="b2b-complaint-title">회원 건의사항 접수 현황</h2>
       </header>
       {complaints.length === 0 ? (
-        <p className="b2b-subpage__empty">접수된 건의 내역이 없습니다.</p>
+        <p className="b2b-subpage__empty">접수된 건의 내역이 없어요.</p>
       ) : (
         <div className="b2b-table-wrap">
           <table className="b2b-data-table b2b-data-table--complaint">

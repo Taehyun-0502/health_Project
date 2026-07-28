@@ -206,7 +206,7 @@ function Header({ variant = 'portal' }) {
             <section className="portal-notification__menu" aria-label="최근 알림">
               <h2>최근 알림</h2>
               {alarms.length === 0 ? (
-                <p className="portal-notification__empty">새로운 알림이 없습니다.</p>
+                <p className="portal-notification__empty">새로운 알림이 없어요.</p>
               ) : (
                 <ul>
                   {alarms.map((alarm, index) => (

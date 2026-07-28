@@ -140,7 +140,7 @@ function ContractTabContent({ id, onOpenPage }) {
   const amountText = detail
     ? (detail.contract === 1
       ? (detail.contractRate != null ? `${detail.contractRate}%` : '-')
-      : (detail.amount != null ? `${detail.amount}만원` : '-'))
+      : (detail.amount != null ? `${Number(detail.amount).toLocaleString('ko-KR')}원` : '-'))
     : '';
 
   return (
@@ -190,7 +190,7 @@ function DataTabContent({ kind, data }) {
   return (
     <div className="b2b-drawer__fields">
       {rows.length === 0 ? (
-        <p className="b2b-drawer__message">표시할 데이터가 없습니다.</p>
+        <p className="b2b-drawer__message">표시할 데이터가 없어요.</p>
       ) : (
         <dl className="b2b-drawer__list">
           {rows.map((row) => (

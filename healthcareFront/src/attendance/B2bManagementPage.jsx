@@ -36,7 +36,7 @@ function B2bManagementPage() {
       {role === 'owner' && <OwnerManagement onGoPromotion={() => navigate('/fitb/promotion')} />}
       {role === 'admin' && <AdminManagement />}
       {!B2B_ROLES.includes(role) && (
-        <p className="b2b-management-page__empty">이 역할에서 사용할 수 있는 관리 화면이 없습니다.</p>
+        <p className="b2b-management-page__empty">이 역할에서 사용할 수 있는 관리 화면이 없어요.</p>
       )}
     </section>
   );

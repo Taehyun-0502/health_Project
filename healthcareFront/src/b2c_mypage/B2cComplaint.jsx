@@ -97,7 +97,7 @@ function B2cComplaint() {
       {/* 건의 처리결과 화면 목록 */}
       <h3 className="b2c-page__section-title">내가 접수한 건의 내역</h3>
       {suggestions.length === 0 ? (
-        <p className="b2c-empty">접수된 건의 내역이 없습니다.</p>
+        <p className="b2c-empty">접수된 건의 내역이 없어요.</p>
       ) : (
         <table className="b2c-data-table">
           <thead>

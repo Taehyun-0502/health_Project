@@ -104,7 +104,7 @@
 }
 
 .att-confirm__table th {
-  padding: 11px 14px;
+  padding: 12px 16px;
   text-align: center;
   font-size: var(--text-xs);
   font-weight: 600;
@@ -113,7 +113,7 @@
 }
 
 .att-confirm__table td {
-  padding: 14px 16px;
+  padding: 12px 16px;
   text-align: center;
   border-top: 1px solid var(--gray-200);
   color: var(--gray-900);
@@ -644,7 +644,12 @@
   border: 1px solid var(--gray-300);
   border-radius: 8px;
   font-family: inherit;
-  background: var(--white);
+  background-color: var(--white);
+}
+
+/* select에만 화살표 폭만큼 오른쪽 여백(텍스트 입력엔 미적용) */
+select.att-confirm__input {
+  padding-right: 36px;
 }
 
 .att-confirm__input:focus {

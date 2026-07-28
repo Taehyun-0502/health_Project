@@ -57,7 +57,7 @@ function B2bNotification() {
         <h2 id="b2b-notification-title">알림 내역</h2>
       </header>
       {alarms.length === 0 ? (
-        <p className="b2b-subpage__empty">새로운 알림 소식이 없습니다.</p>
+        <p className="b2b-subpage__empty">새로운 알림 소식이 없어요.</p>
       ) : (
         <div className="b2b-table-wrap">
           <table className="b2b-data-table b2b-data-table--notification">

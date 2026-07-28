@@ -6,26 +6,19 @@
 .contract-layout {
   width: min(100%, 1128px);
   margin: 0 auto;
-  /* 상단 여백(20px)은 sticky 페이지 헤더의 padding-top(12)과 합쳐 안착 시 20px를 유지하도록
-     래퍼에서 8px만 남기고 헤더로 옮겼다. */
-  padding: 8px 24px var(--ai-fab-clearance);
+  padding: 20px 24px var(--ai-fab-clearance);
 }
 
-/* 페이지 헤더 (제목 + 안내 문구) — 스크롤 시 상단 고정(sticky).
-   배경으로 아래 콘텐츠 비침을 막고, 하단 경계선으로 테이블과 구분한다.
-   z-index는 드로어(900)·AI 입력바(890)보다 낮고 본문보다 높다. */
+/* 페이지 헤더 (제목 + 안내 문구) — 일반 흐름 요소(고정하지 않음).
+   하단 경계선으로 테이블과 구분한다. */
 .contract-list-head {
-  position: sticky;
-  top: 0;
-  z-index: 20;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
   margin: 0 0 16px;
-  padding: 12px 0;
-  background: var(--gray-50);
+  padding: 0 0 12px;
   border-bottom: 1px solid var(--gray-200);
 }
 .contract-list-head__title {
@@ -105,14 +98,10 @@
   color: var(--white);
 }
 
-/* 급여(Salary) 탭 — 지출 리스트 읽기 전용 화면. 페이지 헤더는 스크롤 시 상단 고정(sticky). */
+/* 급여(Salary) 탭 — 지출 리스트 읽기 전용 화면. 페이지 헤더는 일반 흐름 요소(고정하지 않음). */
 .salary-page__head {
-  position: sticky;
-  top: 0;
-  z-index: 20;
   margin: 0 0 16px;
-  padding: 12px 0;
-  background: var(--gray-50);
+  padding: 0 0 12px;
   border-bottom: 1px solid var(--gray-200);
 }
 
@@ -139,10 +128,10 @@
 
 .salary-page__select {
   height: 38px;
-  padding: 0 12px;
+  padding: 0 40px 0 12px;
   border: 1px solid var(--gray-300);
   border-radius: 8px;
-  background: var(--white);
+  background-color: var(--white);
   color: var(--gray-900);
   font: inherit;
   font-size: var(--text-sm);
@@ -393,7 +382,7 @@
 }
 
 .contract-table th {
-  padding: 11px 14px;
+  padding: 12px 16px;
   background: var(--gray-50);
   color: var(--gray-400);
   font-size: var(--text-xs);
@@ -403,7 +392,7 @@
 }
 
 .contract-table td {
-  padding: 14px 16px;
+  padding: 12px 16px;
   border-top: 1px solid var(--gray-200);
   color: var(--gray-900);
   white-space: nowrap;
@@ -578,10 +567,10 @@
 .contract-select {
   width: 100%;
   height: 40px;
-  padding: 0 12px;
+  padding: 0 40px 0 12px;
   border: 1px solid var(--gray-300);
   border-radius: 8px;
-  background: var(--white);
+  background-color: var(--white);
   color: var(--gray-900);
   font: inherit;
   font-size: var(--text-body);

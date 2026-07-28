@@ -41,7 +41,7 @@ function MemberMain() {
         {/* 세련된 마이페이지 꿀팁/안내 콜아웃 박스 */}
         <aside className="b2c-home__callout">
           <p>
-            ℹ️ 회원님의 상세 <strong>이용권 기간, 입·퇴실 기록, 보유 쿠폰 및 건의사항</strong>은 하단 <strong>[탭바]</strong> 메뉴에서 간편하게 통합 조회하실 수 있습니다.
+            <NavIcon id="info" size={16} className="ui-icon" /> 회원님의 상세 <strong>이용권 기간, 입·퇴실 기록, 보유 쿠폰 및 건의사항</strong>은 하단 <strong>[탭바]</strong> 메뉴에서 간편하게 통합 조회하실 수 있습니다.
           </p>
         </aside>
       </section>

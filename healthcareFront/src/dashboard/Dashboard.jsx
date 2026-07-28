@@ -12,7 +12,7 @@ const WIDGET_LABEL = {
   expiringSubscription: '다가오는 구독 만료',
   monthlyRevenue: '월별 총 매출',
   monthlyExpense: '월별 총 지출',
-  gymNps: '체육관 만족도',
+  gymNps: '체육관 불만도',
   gymChurn: '헬스장 이탈율',
   managedMemberCount: '담당 회원 수',
   lowSessionMembers: '세션 소진 임박',
@@ -442,7 +442,7 @@ function Dashboard() {
 
       {/* 활성 위젯 카드 목록 — KPI 4열 / 리스트 2열 / 차트 전폭 (목업 배치) */}
       <div className="dash-grid">
-        {activeWidgets.length === 0 && <p className="dash-empty">표시할 위젯이 없습니다. 위젯 편집에서 켜보세요.</p>}
+        {activeWidgets.length === 0 && <p className="dash-empty">표시할 위젯이 없어요. 위젯 편집에서 켜보세요.</p>}
         {activeWidgets.map((widget) => {
           const layout = layoutOf(widget.widgetKey);
           const series = CHART_SERIES[widget.widgetKey];

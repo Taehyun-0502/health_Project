@@ -229,7 +229,7 @@ function AdminManagement() {
       {membersError && <p className="admin-management__error">{membersError}</p>}
 
       {!membersLoading && !membersError && members.length === 0 ? (
-        <p className="admin-management__empty">이 운동시설에 등록된 회원이 없습니다.</p>
+        <p className="admin-management__empty">이 운동시설에 등록된 회원이 없어요.</p>
       ) : !membersError && (
         <div className="admin-management__table-wrap">
           <table className="admin-management__table">
@@ -295,7 +295,7 @@ function AdminManagement() {
       {error && <p className="admin-management__error">{error}</p>}
 
       {!loading && !error && contracts.length === 0 ? (
-        <p className="admin-management__empty">등록된 제휴 계약이 없습니다.</p>
+        <p className="admin-management__empty">등록된 제휴 계약이 없어요.</p>
       ) : !error && (
         <div className="admin-management__table-wrap">
           <table className="admin-management__table">
@@ -353,7 +353,7 @@ function AdminManagement() {
       {jobError && <p className="admin-management__error">{jobError}</p>}
 
       {!jobLoading && !jobError && jobSeekers.length === 0 ? (
-        <p className="admin-management__empty">현재 구직 중인 트레이너가 없습니다.</p>
+        <p className="admin-management__empty">현재 구직 중인 트레이너가 없어요.</p>
       ) : !jobError && (
         <div className="admin-management__table-wrap">
           <table className="admin-management__table">

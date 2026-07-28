@@ -1076,7 +1076,7 @@ function Settlepage() {
                   ))}
                 {commissions.length === 0 && (
                   <tr>
-                    <td colSpan="8" className="no-data-row">조건에 해당하는 정산 내역이 없습니다.</td>
+                    <td colSpan="8" className="no-data-row">조건에 해당하는 정산 내역이 없어요.</td>
                   </tr>
                 )}
               </tbody>
@@ -1198,7 +1198,7 @@ function Settlepage() {
                     ))}
                     {pays.length === 0 && (
                       <tr>
-                        <td colSpan="8" className="no-data-row">조건에 해당하는 매출 내역이 없습니다.</td>
+                        <td colSpan="8" className="no-data-row">조건에 해당하는 매출 내역이 없어요.</td>
                       </tr>
                     )}
                   </tbody>
@@ -1234,7 +1234,7 @@ function Settlepage() {
                       </li>
                     ))}
                     {pagedUnpaidContracts.length === 0 && (
-                      <li className="no-data-row">선택한 유형의 미결제 계약이 없습니다.</li>
+                      <li className="no-data-row">선택한 유형의 미결제 계약이 없어요.</li>
                     )}
                   </ul>
                   <Pagination pager={unpaidContractPager} onPageChange={setUnpaidContractPage} />
@@ -1313,7 +1313,7 @@ function Settlepage() {
                       ))}
                     {expenses.length === 0 && (
                       <tr>
-                        <td colSpan="6" className="no-data-row">등록된 지출 비용 데이터가 없습니다.</td>
+                        <td colSpan="6" className="no-data-row">등록된 지출 비용 데이터가 없어요.</td>
                       </tr>
                     )}
                   </tbody>
@@ -1415,7 +1415,7 @@ function Settlepage() {
                       ))}
                     {unpaidCommissions.length === 0 && unpaidExpenses.length === 0 && (
                       <div className="expense-empty">
-                        지출 대기 중인 계약서가 없습니다.
+                        지출 대기 중인 계약서가 없어요.
                       </div>
                     )}
                   </div>

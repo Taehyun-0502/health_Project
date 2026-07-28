@@ -50,7 +50,7 @@ function ContractBody({ d }) {
         <h3>제1조 (목적 및 근로 내용)</h3>
         <p>본 계약은 {gym}(이하 "사업주")과 {rcv}(이하 "트레이너")이 트레이너의 회원 트레이닝 등 근로 제공에 관하여 체결한다.</p>
         <h3>제2조 (임금)</h3>
-        <p>월 기본급은 {money(d.amount)}만원으로 하며, 매월 지정일에 지급한다.</p>
+        <p>월 기본급은 {money(d.amount)}원으로 하며, 매월 지정일에 지급한다.</p>
         <h3>제3조 (인센티브)</h3>
         <p>PT 매출 등에 대한 정산(인센티브) 비율은 {d.contractRate ?? '-'}%로 한다.</p>
         <h3>제4조 (근무시간)</h3>
@@ -67,7 +67,7 @@ function ContractBody({ d }) {
         <h3>제1조 (이용권 내용)</h3>
         <p>{gym}(이하 "센터")은 {rcv}(생년월일: {d.birthDate ?? '-'}, 이하 "회원")에게 헬스장 이용권을 제공하며, 이용 기간은 {d.startDate ?? '-'}부터 {d.endDate ?? '-'}까지로 한다.</p>
         <h3>제2조 (이용 요금)</h3>
-        <p>이용 요금은 {money(d.amount)}만원으로 한다.</p>
+        <p>이용 요금은 {money(d.amount)}원으로 한다.</p>
         <h3>제3조 (환불 규정)</h3>
         <p>중도 해지 시 환불액은 「방문판매 등에 관한 법률」 및 센터 환불 규정에 따라 이용 개시일과 잔여 기간을 기준으로 산정한다.</p>
         <h3>제4조 (이용자 준수사항)</h3>
@@ -80,7 +80,7 @@ function ContractBody({ d }) {
   return (
     <div>
       <h3>제1조 ({d.contract === 5 ? 'PT 체험' : 'PT'} 이용 내용)</h3>
-      <p>{gym}(이하 "센터")은 {rcv}(생년월일: {d.birthDate ?? '-'}, 이하 "회원")에게 {d.contract === 5 ? '체험용 개인 트레이닝(PT 체험)' : '개인 트레이닝(PT)'}을 제공한다. 총 {d.quantity ?? '-'}회, 총 이용금액 {money(d.amount)}만원으로 한다.</p>
+      <p>{gym}(이하 "센터")은 {rcv}(생년월일: {d.birthDate ?? '-'}, 이하 "회원")에게 {d.contract === 5 ? '체험용 개인 트레이닝(PT 체험)' : '개인 트레이닝(PT)'}을 제공한다. 총 {d.quantity ?? '-'}회, 총 이용금액 {money(d.amount)}원으로 한다.</p>
       <h3>제2조 (유효기간)</h3>
       <p>유효기간은 {d.startDate ?? '-'}부터 {d.endDate ?? '-'}까지로 하며, 기간 경과 시 잔여 횟수는 소멸될 수 있다.</p>
       <h3>제3조 (예약 및 취소)</h3>
@@ -100,7 +100,7 @@ function Activation({ d }) {
       <ul className="contract-activation">
         <li><NavIcon id="check" size={15} className="ui-icon" /> 이용권 활성화 (ACTIVE)</li>
         <li>이용 기간: {d.startDate ?? '-'} ~ {d.endDate ?? '-'}</li>
-        <li>이용 금액: {money(d.amount)}만원</li>
+        <li>이용 금액: {money(d.amount)}원</li>
       </ul>
     );
   if (d.contract === 4 || d.contract === 5)
@@ -116,7 +116,7 @@ function Activation({ d }) {
     return (
       <ul className="contract-activation">
         <li><NavIcon id="check" size={15} className="ui-icon" /> 트레이너 정산 정보 등록</li>
-        <li>월 기본급: {money(d.amount)}만원</li>
+        <li>월 기본급: {money(d.amount)}원</li>
         <li>인센티브 비율: {d.contractRate ?? '-'}%</li>
       </ul>
     );
@@ -433,7 +433,7 @@ function ContractDetail() {
                 <tr>
                   <th>구분</th>
                   <th>유형</th>
-                  <th>금액(만원)</th>
+                  <th>금액(원)</th>
                   <th>발행일</th>
                   <th>이동</th>
                 </tr>
@@ -443,7 +443,7 @@ function ContractDetail() {
                   <tr key={row.dataId}>
                     <td className="contract-table__muted">{kind}</td>
                     <td>{HISTORY_LABEL[row.contract] ?? row.contract}</td>
-                    <td>{row.contract === 1 ? (row.contractRate != null ? `${row.contractRate}%` : '') : row.amount}</td>
+                    <td>{row.contract === 1 ? (row.contractRate != null ? `${row.contractRate}%` : '') : money(row.amount)}</td>
                     <td className="contract-table__muted">{row.issueDate}</td>
                     <td>
                       <button className="contract-table__id" onClick={() => navigate(`/fitb/contract/${row.dataId}`)}>#{row.dataId}</button>

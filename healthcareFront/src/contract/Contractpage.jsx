@@ -265,7 +265,7 @@ function Contractpage() {
               <th>계약 유형</th>
               <th>이름</th>
               <th>상태</th>
-              <th>금액(만원)</th>
+              <th>금액(원)</th>
               <th>시작일</th>
               <th>종료일</th>
               <th>발행일</th>
@@ -288,7 +288,7 @@ function Contractpage() {
                 <td className="contract-table__name">{item.member?.name ?? item.receiverName}</td>
                 <td><span className={badgeClass(item.status)}>{item.status}</span></td>
                 {/* 제휴(1)는 amount가 없어 수수료율(contractRate)을 % 표시 */}
-                <td>{item.contract === 1 ? (item.contractRate != null ? `${item.contractRate}%` : '') : item.amount}</td>
+                <td>{item.contract === 1 ? (item.contractRate != null ? `${item.contractRate}%` : '') : (item.amount == null ? '' : Number(item.amount).toLocaleString('ko-KR'))}</td>
                 <td className="contract-table__muted">{item.startDate}</td>
                 <td className="contract-table__muted">{item.endDate}</td>
                 <td className="contract-table__muted">{item.issueDate}</td>

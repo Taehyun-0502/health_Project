@@ -215,6 +215,19 @@ const ICON_PATHS = {
       <circle cx="12" cy="12" r="1" />
     </>
   ),
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 8h.01" />
+    </>
+  ),
+  "external-link": (
+    <>
+      <path d="M14 4h6v6" />
+      <path d="M20 4l-8 8" />
+      <path d="M18 13v6a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h6" />
+    </>
+  ),
 };
 
 export function NavIcon({ id, size = 19, fallback = null, className }) {

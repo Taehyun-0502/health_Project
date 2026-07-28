@@ -76,6 +76,11 @@
      (브라우저 실측: fab bottom=876·top=826·height=50 @ 1440×900) */
   --ai-fab-clearance: 90px;
 
+  /* B2B 상단 유틸리티 바 높이 — 스크롤 시 sticky 고정된 유틸바 아래로 페이지 헤더·정산
+     요약 레일의 sticky top을 맞추는 기준. 유틸바 min-height 60 + border-bottom 1px가
+     box에 포함돼 실측 60px(브라우저 실측 @1440×900). 유틸바 높이가 바뀌면 이 토큰만 고친다. */
+  --b2b-utilbar-h: 60px;
+
   /* 이전 화면 호환 별칭: 값은 신규 토큰을 참조한다. */
   --bg-primary: var(--gray-50);
   --bg-card: var(--white);
@@ -90,6 +95,11 @@
   --shadow-md: 0 8px 24px rgba(23, 23, 23, 0.08);
   --shadow-lg: 0 12px 30px rgba(23, 23, 23, 0.1);
   --glass-effect: none;
+
+  /* 공용 select 드롭다운 화살표 — uiIcons.jsx chevron path(M9 6l6 6-6 6)를 90° 회전해
+     아래 방향으로 만든 인라인 data URI. stroke는 --gray-500(#7a7a7a) 고정색으로 인코딩한다
+     (currentColor는 data URI에서 상속되지 않음). 표현 전용 — 아래 select 규칙이 참조한다. */
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%237a7a7a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg transform='rotate(90 12 12)'%3E%3Cpath d='M9 6l6 6-6 6'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 * {
@@ -261,6 +271,29 @@ h6 { line-height: 1.5; }
 .form-input:focus {
   border-color: var(--primary-accent);
   box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14);
+}
+
+/* 공용 select — 네이티브 드롭다운 화살표를 디자인 시스템 chevron(아래 방향)으로 통일한다.
+   여기 한 곳에서만 정의하고 모든 <select>가 상속한다. 각 화면 select 클래스는 흰 배경을
+   background(shorthand)가 아닌 background-color로 두어 이 background-image를 덮지 않게 하고,
+   화살표 폭만큼 오른쪽 패딩만 확보하면 된다(select.클래스 { padding-right }). */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: var(--select-arrow);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+/* index.css 공용 클래스 .form-input을 쓰는 select(정산 화면 등)의 화살표 여백 */
+select.form-input {
+  padding-right: 40px;
 }
 
 /* 프리미엄 버튼 공통 */
