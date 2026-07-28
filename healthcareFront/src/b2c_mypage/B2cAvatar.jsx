@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import './B2cPages.css';
 
 // 아바타 색상 팔레트
 const colors = {
   skinLight: '#ffd6b5',
   skinDark: '#e5a97a',
-  outline: '#404040', /* gray-700 토큰값 — canvas는 var() 미지원 */
-  pants: '#a3e635', /* b2c-lime 토큰값 — canvas는 var() 미지원 */
-  hair: '#171717', /* gray-900 토큰값 — canvas는 var() 미지원 */
-  shoes: '#ffffff' /* white 토큰값 — canvas는 var() 미지원 */
+  outline: '#3e2723',
+  pants: '#a3e635',
+  hair: '#2c3e50',
+  shoes: '#ffffff',
+  bar: '#94a3b8',        // 은색 바벨 봉
+  plate: '#22c55e',      // 진한 초록색 원판
+  plateLine: '#15803d'   // 원판 내부 줄무늬선
 };
 
 // 레벨별 메시지 데이터
@@ -25,7 +27,7 @@ function B2cAvatar() {
   const canvasRef = useRef(null);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // 백엔드 실제 출석 테이블 데이터 개수(List Size)를 가져와 days에 세팅
+  // 백엔드 실제 출석 데이터 가져와 최근 30일 데이터 세팅
   useEffect(() => {
     const fetchCheckinData = async () => {
       const token = localStorage.getItem('accessToken');
@@ -42,8 +44,6 @@ function B2cAvatar() {
         });
         if (response.ok) {
           const data = await response.json();
-          
-          // 아바타 성장은 오직 최근 30일 이내의 출석 기록만 집계
           const today = new Date();
           const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
           
@@ -74,7 +74,7 @@ function B2cAvatar() {
     }
   }
 
-  // 캔버스 그리기 로직 (days 상태가 변할 때마다 실행)
+  // 캔버스 그리기 로직 (바벨을 아바타 뒤쪽 레이어로 배치)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -87,9 +87,9 @@ function B2cAvatar() {
 
     // 캔버스 중앙 기준점
     const cx = 300;
-    const shoulderY = 220; 
-    const waistY = 360;    
-    const crotchY = 400;   
+    const shoulderY = 230; 
+    const waistY = 365;    
+    const crotchY = 405;   
 
     // 부위별 수치 정밀 계산
     const chestW = 70 + (factor * 110); 
@@ -104,20 +104,20 @@ function B2cAvatar() {
     const calfThick = 18 + (factor * 25);
     const neckThick = 20 + (factor * 25);
 
-    // 뼈대 위치 계산 (만세 자세)
+    // 뼈대 위치 계산
     const lsx = cx - chestW/2; 
     const lsy = shoulderY;
-    const lex = lsx - 50 - (factor * 35); 
-    const ley = lsy - 15 - (factor * 20);
-    const lwx = lex + 15 + (factor * 15); 
-    const lwy = ley - 45 - (factor * 25);
+    const lex = lsx - 55 - (factor * 35); 
+    const ley = lsy - 10 - (factor * 15);
+    const lwx = lex + 20 + (factor * 15); 
+    const lwy = ley - 55 - (factor * 25);
 
     const rsx = cx + chestW/2;
     const rsy = shoulderY;
-    const rex = rsx + 50 + (factor * 35);
-    const rey = rsy - 15 - (factor * 20);
-    const rwx = rex - 15 - (factor * 15);
-    const rwy = rey - 45 - (factor * 25);
+    const rex = rsx + 55 + (factor * 35);
+    const rey = rsy - 10 - (factor * 15);
+    const rwx = rex - 20 - (factor * 15);
+    const rwy = rey - 55 - (factor * 25);
 
     const lhx = cx - waistW/2 + 10; 
     const lhy = crotchY - 10;
@@ -150,11 +150,72 @@ function B2cAvatar() {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // 바닥 그림자
+    // 1. 바닥 그림자
     ctx.fillStyle = 'rgba(0,0,0,0.1)';
     ctx.beginPath();
     ctx.ellipse(cx, lay + 20, 70 + factor*30, 15, 0, 0, Math.PI*2);
     ctx.fill();
+
+    // ================= [아바타 뒤쪽 레이어] 바벨 & 무게 원판 렌더링 =================
+    const barY = (lwy + rwy) / 2;
+    const numPlates = 1 + Math.floor(factor * 3); 
+    const plateWidth = 14;
+    const plateHeight = 75 + (factor * 20); 
+
+    const leftPlateStartX = lwx - 45;  
+    const rightPlateStartX = rwx + 45; 
+
+    const totalPlateSpan = numPlates * (plateWidth + 5);
+    const barMinX = leftPlateStartX - totalPlateSpan - 25;
+    const barMaxX = rightPlateStartX + totalPlateSpan + 25;
+
+    // 1) 은색 바벨 봉 (아바타 뒤편에 안착)
+    ctx.lineWidth = 13;
+    ctx.strokeStyle = colors.bar;
+    ctx.beginPath();
+    ctx.moveTo(barMinX, barY);
+    ctx.lineTo(barMaxX, barY);
+    ctx.stroke();
+    
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = colors.outline;
+    ctx.stroke();
+
+    // 2) 초록 원판 (아바타 뒤편에 꽂힘)
+    const drawPlates = (side) => {
+      const isLeft = side === 'left';
+      const startX = isLeft ? leftPlateStartX : rightPlateStartX;
+      const dir = isLeft ? -1 : 1;
+
+      for (let i = 0; i < numPlates; i++) {
+        const px = startX + (dir * i * (plateWidth + 5));
+        
+        ctx.fillStyle = colors.plate;
+        ctx.strokeStyle = colors.outline;
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.roundRect(px - plateWidth/2, barY - plateHeight/2, plateWidth, plateHeight, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = colors.plateLine;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(px, barY - plateHeight/2 + 6);
+        ctx.lineTo(px, barY + plateHeight/2 - 6);
+        ctx.stroke();
+      }
+
+      const clipX = startX + (dir * (numPlates * (plateWidth + 5) - 5));
+      ctx.fillStyle = colors.outline;
+      ctx.beginPath();
+      ctx.arc(clipX, barY, 7, 0, Math.PI*2);
+      ctx.fill();
+    };
+
+    drawPlates('left');
+    drawPlates('right');
+    // ======================================================================================
 
     const drawSegments = (segments, isOutline) => {
         segments.forEach(seg => {
@@ -176,7 +237,7 @@ function B2cAvatar() {
         ctx.closePath();
     };
 
-    // 1. 다리
+    // 2. 아바타 다리
     drawSegments(legSegments, true); 
     drawSegments(legSegments, false); 
 
@@ -187,7 +248,7 @@ function B2cAvatar() {
     ctx.beginPath(); ctx.ellipse(lax - 10 - factor*5, lay + 10, 25 + factor*5, 14 + factor*3, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(rax + 10 + factor*5, ray + 10, 25 + factor*5, 14 + factor*3, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 
-    // 2. 상체
+    // 3. 아바타 상체 & 팔 (바벨보다 앞으로 오게 하여 아바타 뒤에 바벨이 놓임)
     ctx.strokeStyle = colors.outline;
     ctx.lineWidth = neckThick + 8;
     ctx.beginPath(); ctx.moveTo(cx, shoulderY); ctx.lineTo(cx, shoulderY - 40); ctx.stroke();
@@ -225,7 +286,7 @@ function B2cAvatar() {
     ctx.lineWidth = 4; 
     ctx.stroke();
 
-    // 3. 디테일 근육 선
+    // 4. 아바타 디테일 근육 선
     ctx.strokeStyle = colors.skinDark;
     ctx.lineCap = 'round';
     
@@ -254,7 +315,7 @@ function B2cAvatar() {
         ctx.globalAlpha = 1.0;
     }
 
-    // 4. 바지
+    // 5. 아바타 바지
     ctx.fillStyle = colors.pants;
     ctx.strokeStyle = colors.outline;
     ctx.lineWidth = 6;
@@ -269,7 +330,7 @@ function B2cAvatar() {
     ctx.fill();
     ctx.stroke();
 
-    // 5. 머리와 얼굴
+    // 6. 아바타 머리와 얼굴
     const headY = shoulderY - 65 - (factor * 5); 
     const headRadius = 38;
 
@@ -278,11 +339,11 @@ function B2cAvatar() {
     ctx.lineWidth = 6;
     ctx.beginPath(); ctx.arc(cx, headY, headRadius, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 
-    ctx.fillStyle = '#171717'; /* gray-900 토큰값 — canvas는 var() 미지원 */
+    ctx.fillStyle = '#000';
     ctx.beginPath(); ctx.arc(cx - 12, headY - 5, 4, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(cx + 12, headY - 5, 4, 0, Math.PI*2); ctx.fill();
 
-    ctx.strokeStyle = '#171717'; /* gray-900 토큰값 — canvas는 var() 미지원 */
+    ctx.strokeStyle = '#000';
     ctx.lineWidth = 3;
     ctx.beginPath(); 
     if(factor < 0.2) {
@@ -301,13 +362,37 @@ function B2cAvatar() {
   }, [days]);
 
   return (
-    <div className="b2c-avatar">
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0 auto' }}>
       
       {/* 캔버스 (미니룸 캐릭터) 영역 */}
-      <div className="b2c-avatar__room">
+      <div 
+        style={{ 
+          position: 'relative',
+          width: '300px',
+          height: '300px',
+          border: '1px solid var(--gray-200)',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background: 'linear-gradient(to bottom, var(--b2c-lime-bg) 65%, #d2b48c 65%)',
+          boxShadow: '0 1px 3px rgba(23,23,23,.06)'
+        }}
+      >
         {/* 배경 점선 패턴 */}
-        <div className="b2c-avatar__pattern" />
-        <canvas ref={canvasRef} width="600" height="600" className="b2c-avatar__canvas" />
+        <div 
+          style={{ 
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: '35%',
+            backgroundImage: 'radial-gradient(var(--b2c-lime-line) 1px, transparent 1px)',
+            backgroundSize: '15px 15px' 
+          }}
+        />
+        <canvas ref={canvasRef} width="600" height="600" style={{ width: '300px', height: '300px', zIndex: 10 }} />
       </div>
 
       {/* 시연용 실시간 아바타 성장 조절 슬라이더 */}
@@ -334,23 +419,30 @@ function B2cAvatar() {
         />
       </div>
 
-      {/* 하단 정보 영역 (수동 출석하기 버튼 배제) */}
-      <div className="b2c-avatar__info">
+      {/* 하단 정보 영역 */}
+      <div style={{ marginTop: '10px', width: '300px', textAlign: 'center' }}>
         {isLoading ? (
-          <div className="b2c-avatar__loading">
+          <div style={{ color: 'var(--gray-400)', fontSize: '14px', padding: '10px' }}>
             출석 데이터를 불러오는 중...
           </div>
         ) : (
-          <div className="b2c-avatar__status">
-            <div className="b2c-avatar__summary">
-              <span className="b2c-avatar__days">
-                출석: <strong>{days}</strong>일
+          <div style={{ padding: '12px', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid var(--gray-200)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '14px', color: 'var(--gray-500)' }}>
+                출석: <strong style={{ fontSize: '18px', color: 'var(--b2c-accent)' }}>{days}</strong>일
               </span>
-              <span className="b2c-avatar__level">
+              <span style={{
+                fontSize: '11px',
+                backgroundColor: 'var(--b2c-accent)',
+                color: '#fff',
+                padding: '2px 10px',
+                borderRadius: '999px',
+                fontWeight: 'bold'
+              }}>
                 {currentLevel.title}
               </span>
             </div>
-            <div className="b2c-avatar__message">
+            <div style={{ fontSize: '13px', color: 'var(--b2c-accent)', fontWeight: 'bold', minHeight: '20px', marginTop: '6px' }}>
               {currentLevel.msg}
             </div>
           </div>
