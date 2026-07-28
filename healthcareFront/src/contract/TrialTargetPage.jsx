@@ -59,7 +59,7 @@ function TrialTargetPage() {
           <tbody>
             {targets.length === 0 ? (
               <tr>
-                <td colSpan={7} className="contract-table__muted">발행 가능한 체험권 대상이 없습니다.</td>
+                <td colSpan={7} className="contract-table__muted">발행 가능한 체험권 대상이 없어요.</td>
               </tr>
             ) : (
               targets.map((target) => (

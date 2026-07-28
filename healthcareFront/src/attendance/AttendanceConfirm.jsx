@@ -281,7 +281,7 @@ function AttendanceConfirm() {
 
       {/* 담당 회원 현황 - 유효 PT 계약별 총/사용/잔여, 잔여 적은 순 (섹션 제목은 칩 라벨과 중복이라 제거) */}
       {memberStatus.length === 0 ? (
-        <p className="att-confirm__empty">담당 중인 유효 PT 계약이 없습니다.</p>
+        <p className="att-confirm__empty">담당 중인 유효 PT 계약이 없어요.</p>
       ) : (
         <div className="att-confirm__table-wrap">
           <table className="att-confirm__table">
@@ -400,7 +400,7 @@ function AttendanceConfirm() {
           <div className="att-confirm__drill-section">
             <h5 className="att-confirm__drill-h att-confirm__drill-h--upcoming">예정 일정 ({drill.upcoming.length}건)</h5>
             {drill.upcoming.length === 0 ? (
-              <p className="att-confirm__drill-line--empty">예정된 일정이 없습니다. 캘린더에서 다음 수업을 잡아주세요.</p>
+              <p className="att-confirm__drill-line--empty">예정된 일정이 없어요. 캘린더에서 다음 수업을 잡아주세요.</p>
             ) : (
               drill.upcoming.map((schedule) => (
                 <p key={schedule.scheduleId} className="att-confirm__drill-line">
@@ -428,7 +428,7 @@ function AttendanceConfirm() {
           <div className="att-confirm__drill-section">
             <h5 className="att-confirm__drill-h att-confirm__drill-h--history">수업 이력 (최근 {Math.min(drill.sessions.length, 10)}건 / 총 {drill.sessions.length}건)</h5>
             {drill.sessions.length === 0 ? (
-              <p className="att-confirm__drill-line--empty">아직 진행한 수업이 없습니다.</p>
+              <p className="att-confirm__drill-line--empty">아직 진행한 수업이 없어요.</p>
             ) : (
               drill.sessions.slice(0, 10).map((session) => (
                 <p key={session.id} className="att-confirm__drill-line">
@@ -449,7 +449,7 @@ function AttendanceConfirm() {
       <div role="tabpanel">
 
       {pendingList.length === 0 ? (
-        <p className="att-confirm__empty">확인 대기 중인 PT 출석이 없습니다.</p>
+        <p className="att-confirm__empty">확인 대기 중인 PT 출석이 없어요.</p>
       ) : (
         <div className="att-confirm__table-wrap">
           <table className="att-confirm__table">
@@ -629,7 +629,7 @@ function AttendanceConfirm() {
           )}
 
           {selected.items.length === 0 && selected.walkIns.length === 0 && (
-            <p className="att-confirm__day-empty">이 날짜에는 수업/일정이 없습니다.</p>
+            <p className="att-confirm__day-empty">이 날짜에는 수업/일정이 없어요.</p>
           )}
 
           {/* 일정 등록 폼 */}

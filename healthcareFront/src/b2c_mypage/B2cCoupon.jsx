@@ -64,7 +64,7 @@ function B2cCoupon() {
       </header>
 
       {coupons.length === 0 ? (
-        <p className="b2c-empty">보유 중인 혜택 쿠폰이 없습니다.</p>
+        <p className="b2c-empty">보유 중인 혜택 쿠폰이 없어요.</p>
       ) : (
         <>
           <table className="b2c-data-table">

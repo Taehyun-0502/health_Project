@@ -238,7 +238,7 @@ function VisitTimePanel({ gymId, mode, period, statKey }) {
       {loading ? (
         <p className="cs-loading">불러오는 중…</p>
       ) : total === 0 ? (
-        <p className="cs-empty">방문 기록이 없습니다.</p>
+        <p className="cs-empty">방문 기록이 없어요.</p>
       ) : (
         <>
           <p className="cs-hint cs-hint--spaced">
@@ -294,7 +294,7 @@ function EquipmentPanel({ gymId }) {
       {loading ? (
         <p className="cs-loading">불러오는 중…</p>
       ) : sorted.length === 0 ? (
-        <p className="cs-empty">등록된 기구가 없습니다.</p>
+        <p className="cs-empty">등록된 기구가 없어요.</p>
       ) : (
         <div className="cs-side-body">
           <table>
@@ -348,7 +348,7 @@ function ManagerPanel({ gymId, mode, period, statKey }) {
       {loading ? (
         <p className="cs-loading">불러오는 중…</p>
       ) : managers.length === 0 ? (
-        <p className="cs-empty">배정된 담당자가 없습니다.</p>
+        <p className="cs-empty">배정된 담당자가 없어요.</p>
       ) : (
         <>
           <p className="cs-hint cs-hint--spaced">
@@ -395,7 +395,7 @@ function ServiceCenterPanel() {
       {loading ? (
         <p className="cs-loading">불러오는 중…</p>
       ) : centers.length === 0 ? (
-        <p className="cs-empty">등록된 서비스센터가 없습니다.</p>
+        <p className="cs-empty">등록된 서비스센터가 없어요.</p>
       ) : (
         <div className="cs-side-body cs-center-list">
           {centers.map((c) => (
@@ -416,7 +416,7 @@ function ServiceCenterPanel() {
                   <NavIcon id="clock" size={14} className="ui-icon" /> {c.operatingHours}
                 </div>
               )}
-              {c.url && (<a href={c.url} target="_blank" rel="noreferrer">홈페이지 바로가기 ↗</a>)}
+              {c.url && (<a href={c.url} target="_blank" rel="noreferrer">홈페이지 바로가기 <NavIcon id="external-link" size={14} className="ui-icon" /></a>)}
             </div>
           ))}
         </div>
@@ -625,12 +625,12 @@ function FactorDetail({ statKey, members, loading, gymId, mode, period }) {
               ))}
             </select>
             {couponTypes.filter((c) => c.category === '체험권').length === 0 && (
-              <p className="cs-warn-text">등록된 체험권 쿠폰이 없습니다. 프로모션에서 먼저 체험권을 만들어 주세요.</p>
+              <p className="cs-warn-text">등록된 체험권 쿠폰이 없어요. 프로모션에서 먼저 체험권을 만들어 주세요.</p>
             )}
 
             <label className="cs-field-label">대상 회원 ({members.length}명)</label>
             <div className="cs-target-box">
-              {members.length === 0 ? <span className="cs-muted">대상 회원이 없습니다.</span>
+              {members.length === 0 ? <span className="cs-muted">대상 회원이 없어요.</span>
                 : members.map((m) => (
                     <div key={m.username} className="cs-target-row">
                       {m.name} <span className="cs-muted cs-target-id">({m.username})</span>
@@ -764,7 +764,7 @@ function RiskDistBar({ dist }) {
 // 신규 위험군 명단 (우측 레일 본문) — 헤더는 부모 카드에서 렌더
 function RiskMembers({ riskList, loading }) {
   if (loading) return <p className="cs-loading cs-muted cs-pad">명단 불러오는 중…</p>;
-  if (!riskList.length) return <p className="cs-empty cs-muted cs-pad">새로 진입한 위험군 회원이 없습니다.</p>;
+  if (!riskList.length) return <p className="cs-empty cs-muted cs-pad">새로 진입한 위험군 회원이 없어요.</p>;
   return (
     <div className="cs-risklist">
       {riskList.map((m) => {
@@ -926,7 +926,7 @@ function Report() {
   }, [gymId, mode, focusPeriod]);
 
   if (!gymId) {
-    return <div className="cs-wrap"><div className="cs-inner"><p className="cs-empty-state">로그인한 사장님의 헬스장 정보를 찾을 수 없습니다.</p></div></div>;
+    return <div className="cs-wrap"><div className="cs-inner"><p className="cs-empty-state">로그인한 사장님의 헬스장 정보를 찾을 수 없어요.</p></div></div>;
   }
 
   const unit = mode === 'daily' ? '날' : '달';
@@ -966,7 +966,7 @@ function Report() {
         {periodsLoading || (periods.length > 0 && (!openPeriod || loading)) ? (
           <StatsSkeleton />
         ) : periods.length === 0 ? (
-          <p className="cs-empty-state">집계된 통계 데이터가 없습니다. (배치 실행 후 표시됩니다)</p>
+          <p className="cs-empty-state">집계된 통계 데이터가 없어요. (배치 실행 후 표시됩니다)</p>
         ) : (
           <>
             {/* ── 요약: 읽기 전용 KPI 스트립 + 위험도 분포 ── */}
@@ -1014,7 +1014,7 @@ function Report() {
                   </h3>
                   <p className="cs-cardhead-sub">
                     요인을 펼치면 회원 명단과 조치가 함께 나옵니다.
-                    <span className="cs-info" tabIndex={0} data-tip={"위험군(개입·긴급) 회원 대상.\n막대 = 요인 비율 (위험군 대비).\n한 회원이 이탈이유 Top3에 각각 집계되어\n최대 3개 요인에 중복될 수 있습니다."}>ⓘ</span>
+                    <span className="cs-info" tabIndex={0} data-tip={"위험군(개입·긴급) 회원 대상.\n막대 = 요인 비율 (위험군 대비).\n한 회원이 이탈이유 Top3에 각각 집계되어\n최대 3개 요인에 중복될 수 있습니다."}><NavIcon id="info" size={14} className="ui-icon" /></span>
                   </p>
                 </div>
                 {openPeriod

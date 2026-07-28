@@ -181,7 +181,7 @@ function Payment() {
           <section className="pay-card">
             <h2 className="pay-card-title">쿠폰 선택</h2>
             {applicableCoupons.length === 0 ? (
-              <p className="pay-coupon-none">이 계약에 적용 가능한 쿠폰이 없습니다.</p>
+              <p className="pay-coupon-none">이 계약에 적용 가능한 쿠폰이 없어요.</p>
             ) : (
               <div className="pay-coupon-list">
                 <label className={`pay-coupon-option${selectedCouponId === null ? ' is-selected' : ''}`}>

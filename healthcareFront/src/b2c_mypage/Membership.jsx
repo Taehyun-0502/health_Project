@@ -52,7 +52,7 @@ function Membership() {
         <h2 className="b2c-page__title">내 멤버십 정보</h2>
       </header>
       {memberships.length === 0 ? (
-        <p className="b2c-empty">이용 중인 피트니스 회원권(멤버십) 정보가 없습니다.</p>
+        <p className="b2c-empty">이용 중인 피트니스 회원권(멤버십) 정보가 없어요.</p>
       ) : (
         <table className="b2c-data-table">
           <thead>
@@ -72,7 +72,7 @@ function Membership() {
                 <td data-label="계약종류" className="b2c-data-table__accent">{getContractName(item.contract)}</td>
                 <td data-label="시작일" className="b2c-data-table__muted">{item.startDate}</td>
                 <td data-label="만료일" className="b2c-data-table__muted">{item.endDate}</td>
-                <td data-label="결제액" className="b2c-data-table__numeric">{item.amount ? `${item.amount.toLocaleString()}만원` : '0만원'}</td>
+                <td data-label="결제액" className="b2c-data-table__numeric">{item.amount ? `${item.amount.toLocaleString()}원` : '0원'}</td>
                 <td data-label="담당자" className="b2c-data-table__muted">{item.managerId || '미지정'}</td>
               </tr>
             ))}

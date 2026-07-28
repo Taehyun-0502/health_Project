@@ -5,9 +5,7 @@
 .b2b-subpage {
   width: min(100%, 1128px);
   margin: 0 auto;
-  /* 상단 여백(20px)은 sticky 페이지 헤더의 padding-top(12)과 합쳐 안착 시 20px를 유지하도록
-     래퍼에서 8px만 남기고 헤더로 옮겼다. */
-  padding: 8px 24px var(--ai-fab-clearance);
+  padding: 20px 24px var(--ai-fab-clearance);
   color: var(--gray-900);
 }
 
@@ -15,14 +13,10 @@
   width: min(100%, 640px);
 }
 
-/* 페이지 헤더 — 스크롤 시 상단 고정(sticky). */
+/* 페이지 헤더 — 일반 흐름 요소(고정하지 않음). */
 .b2b-subpage__header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
   margin: 0 0 16px;
-  padding: 12px 0;
-  background: var(--gray-50);
+  padding: 0 0 12px;
   border-bottom: 1px solid var(--gray-200);
 }
 
@@ -185,7 +179,7 @@
 }
 
 .b2b-data-table th {
-  padding: 11px 14px;
+  padding: 12px 16px;
   color: var(--gray-400);
   background: var(--gray-50);
   font-size: var(--text-xs);
@@ -195,7 +189,7 @@
 }
 
 .b2b-data-table td {
-  padding: 14px 16px;
+  padding: 12px 16px;
   border-top: 1px solid var(--gray-200);
   vertical-align: middle;
 }
@@ -265,9 +259,9 @@
 
 .b2b-table-select {
   height: 32px;
-  padding: 0 8px;
+  padding: 0 30px 0 8px;
   color: var(--gray-700);
-  background: var(--white);
+  background-color: var(--white);
   border: 1px solid var(--gray-300);
   border-radius: 4px;
   font: inherit;

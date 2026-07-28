@@ -71,7 +71,7 @@ function B2bCoupon() {
   if (!gymId) {
     return (
       <section className="b2b-subpage">
-        <p className="b2b-subpage__empty">로그인한 사장님의 헬스장 정보를 찾을 수 없습니다.</p>
+        <p className="b2b-subpage__empty">로그인한 사장님의 헬스장 정보를 찾을 수 없어요.</p>
       </section>
     );
   }
@@ -144,7 +144,7 @@ function B2bCoupon() {
       {loading ? (
         <p className="b2b-subpage__empty">명단 불러오는 중…</p>
       ) : members.length === 0 ? (
-        <p className="b2b-subpage__empty">회원 데이터가 없습니다. (이탈 예측 배치 실행 후 표시됩니다)</p>
+        <p className="b2b-subpage__empty">회원 데이터가 없어요. (이탈 예측 배치 실행 후 표시됩니다)</p>
       ) : (
         <div className="b2b-table-wrap">
           <table className="b2b-data-table b2b-data-table--coupon">

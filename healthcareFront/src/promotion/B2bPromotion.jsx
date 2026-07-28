@@ -379,7 +379,7 @@ function B2bPromotion() {
           <span className="promotion-count">총 {couponTypes.length}개</span>
         </div>
         {couponTypes.length === 0 ? (
-          <p className="promotion-empty">등록된 쿠폰 종류가 없습니다.</p>
+          <p className="promotion-empty">등록된 쿠폰 종류가 없어요.</p>
         ) : (
           <div className="promotion-table-wrap">
             <table className="promotion-table">

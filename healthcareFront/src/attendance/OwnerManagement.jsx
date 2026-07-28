@@ -189,7 +189,7 @@ function OwnerManagement({ onGoPromotion, gymId }) {
       {activeTab === 'members' && (
         <div role="tabpanel">
           {members.length === 0 ? (
-            <p className="owner-mgmt__empty">이용 중인 회원이 없습니다.</p>
+            <p className="owner-mgmt__empty">이용 중인 회원이 없어요.</p>
           ) : (
             <div className="owner-mgmt__table-wrap">
               <table className="owner-mgmt__table">
@@ -267,7 +267,7 @@ function OwnerManagement({ onGoPromotion, gymId }) {
       {activeTab === 'trainers' && (
       <div role="tabpanel">
         {trainers.length === 0 ? (
-          <p className="owner-mgmt__empty">지점에 소속된 트레이너가 없습니다.</p>
+          <p className="owner-mgmt__empty">지점에 소속된 트레이너가 없어요.</p>
         ) : (
           <div className="owner-mgmt__table-wrap">
             <table className="owner-mgmt__table">
@@ -327,7 +327,7 @@ function OwnerManagement({ onGoPromotion, gymId }) {
       {activeTab === 'rebooks' && (
       <div role="tabpanel">
         {rebooks.length === 0 ? (
-          <p className="owner-mgmt__empty">재등록 임박 회원이 없습니다.</p>
+          <p className="owner-mgmt__empty">재등록 임박 회원이 없어요.</p>
         ) : (
           <div className="owner-mgmt__table-wrap">
             <table className="owner-mgmt__table">

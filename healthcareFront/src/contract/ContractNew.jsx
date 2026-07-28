@@ -318,7 +318,7 @@ function ContractNew() {
           {contract === 2 && (
             <>
               <div className="contract-field">
-                <label className="contract-field__label">월 기본급(만원)</label>
+                <label className="contract-field__label">월 기본급(원)</label>
                 <input className="contract-input" type="number" name="amount" min="0" required />
               </div>
               <div className="contract-field">
@@ -342,7 +342,7 @@ function ContractNew() {
                 <span className="contract-field__hint">→ {isPt ? 'PT 계약(4)으로 발행' : '이용권 계약(3)으로 발행'}</span>
               </div>
               <div className="contract-field">
-                <label className="contract-field__label">{isPt ? '총 이용금액(만원)' : '이용 금액(만원)'}</label>
+                <label className="contract-field__label">{isPt ? '총 이용금액(원)' : '이용 금액(원)'}</label>
                 <input className="contract-input" type="number" name="amount" min="0" required />
               </div>
               {isPt && (
@@ -370,7 +370,7 @@ function ContractNew() {
           {contract === 5 && (
             <>
               <div className="contract-field">
-                <label className="contract-field__label">금액(만원)</label>
+                <label className="contract-field__label">금액(원)</label>
                 <input className="contract-input" type="number" name="amount" min="0" required />
               </div>
               <div className="contract-field">

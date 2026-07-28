@@ -741,7 +741,7 @@ function Itempage() {
                       ) : (
                         <tr>
                           <td colSpan="6" className="item-table__empty">
-                            검색 조건에 맞는 물품이 없거나 현재 사업장에 등록된 물품이 없습니다.
+                            검색 조건에 맞는 물품이 없거나 현재 사업장에 등록된 물품이 없어요.
                           </td>
                         </tr>
                       )}
@@ -891,8 +891,8 @@ function Itempage() {
                 ) : (
                   <div className="item-detail-empty">
                     {selectedMonthFilter === 'all'
-                      ? '등록된 상세 내역이 없습니다.'
-                      : `${selectedMonthFilter.substring(0, 4)}년 ${selectedMonthFilter.substring(5, 7)}월에 등록된 내역이 없습니다.`}
+                      ? '등록된 상세 내역이 없어요.'
+                      : `${selectedMonthFilter.substring(0, 4)}년 ${selectedMonthFilter.substring(5, 7)}월에 등록된 내역이 없어요.`}
                     <div className="item-detail-empty__hint">
                       (상단의 '조회 월 선택'에서 다른 월을 고르거나 전체 내역을 볼 수 있습니다.)
                     </div>

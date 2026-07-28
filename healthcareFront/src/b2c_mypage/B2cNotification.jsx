@@ -57,7 +57,7 @@ function B2cNotification() {
         <h2 className="b2c-page__title">알림 내역</h2>
       </header>
       {alarms.length === 0 ? (
-        <p className="b2c-empty">새로운 알림 소식이 없습니다.</p>
+        <p className="b2c-empty">새로운 알림 소식이 없어요.</p>
       ) : (
         <table className="b2c-data-table">
           <thead>
