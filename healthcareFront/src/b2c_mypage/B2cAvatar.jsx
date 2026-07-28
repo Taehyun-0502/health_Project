@@ -310,6 +310,30 @@ function B2cAvatar() {
         <canvas ref={canvasRef} width="600" height="600" className="b2c-avatar__canvas" />
       </div>
 
+      {/* 시연용 실시간 아바타 성장 조절 슬라이더 */}
+      <div style={{ margin: '15px 0 10px 0', width: '100%', padding: '0 8px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--gray-500)', marginBottom: '6px', fontWeight: '750' }}>
+          <span>슬라이더로 시연 (0일)</span>
+          <span>(30일)</span>
+        </div>
+        <input 
+          type="range" 
+          min="0" 
+          max="30" 
+          value={days} 
+          onChange={(e) => setDays(Number(e.target.value))}
+          style={{
+            width: '100%',
+            height: '6px',
+            borderRadius: '999px',
+            backgroundColor: 'var(--gray-200)',
+            outline: 'none',
+            cursor: 'pointer',
+            accentColor: 'var(--b2c-accent)'
+          }}
+        />
+      </div>
+
       {/* 하단 정보 영역 (수동 출석하기 버튼 배제) */}
       <div className="b2c-avatar__info">
         {isLoading ? (

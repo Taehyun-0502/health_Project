@@ -16,10 +16,14 @@ function B2bLnb() {
   const initial = String(user.name || user.username || 'U').trim().slice(0, 1).toUpperCase();
   const isProfilePage = location.pathname.startsWith('/fitb/b2bmypage');
 
-  // admin 권한일 경우 물품(item) 탭 필터링 제외
+  // 권한별 탭 노출 필터링 적용 (admin 및 trainer 제한)
   const primaryNav = B2B_PRIMARY_NAV.filter((item) => {
-    if (normalizeRole(user.role) === 'admin' && item.id === 'item') {
-      return false;
+    const roleNormalized = normalizeRole(user.role);
+    if (roleNormalized === 'admin') {
+      return !['item', 'dashboard', 'churnlist'].includes(item.id);
+    }
+    if (roleNormalized === 'trainer') {
+      return !['churnlist', 'settle', 'item'].includes(item.id);
     }
     return true;
   });

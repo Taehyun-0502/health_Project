@@ -117,12 +117,22 @@ const ROLE_HOME_ACTIONS = {
 
 export const getB2bHomeActions = (role) => {
   const normRole = normalizeRole(role);
-  const core = normRole === 'admin'
-    ? CORE_HOME_ACTIONS.filter((action) => action.id !== 'item')
-    : CORE_HOME_ACTIONS;
+  
+  let core = CORE_HOME_ACTIONS;
+  if (normRole === 'admin') {
+    core = CORE_HOME_ACTIONS.filter((action) => !['item', 'dashboard'].includes(action.id));
+  } else if (normRole === 'trainer') {
+    core = CORE_HOME_ACTIONS.filter((action) => !['item', 'settle'].includes(action.id));
+  }
+
+  let extra = ROLE_HOME_ACTIONS[normRole] || [];
+  if (normRole === 'trainer') {
+    extra = extra.filter((action) => action.id !== 'promotion');
+  }
+
   return [
     ...core,
-    ...(ROLE_HOME_ACTIONS[normRole] || []),
+    ...extra,
   ];
 };
 
