@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import NavIcon from '../components/uiIcons.jsx';
 import './Contract.css';
 
 // 체험권 계약 대상 목록 페이지 (OWNER 전용, 디자인 제외 Plain 버전)
@@ -24,7 +23,6 @@ function TrialTargetPage() {
         if (response.ok) {
           const result = await response.json();
           setTargets(result);
-          setMessage(`발행 가능한 체험권 대상: ${result.length}건`);
         } else {
           setMessage(`조회 실패(${response.status}): ${await response.text()}`);
         }
@@ -88,12 +86,6 @@ function TrialTargetPage() {
             )}
           </tbody>
         </table>
-      </div>
-
-      <div className="contract-form-actions">
-        <button className="contract-btn-secondary" onClick={() => navigate('/fitb/contractpage')}>
-          <NavIcon id="arrow" size={16} className="ui-icon ui-icon--left" /> 계약서 리스트로
-        </button>
       </div>
     </div>
   );

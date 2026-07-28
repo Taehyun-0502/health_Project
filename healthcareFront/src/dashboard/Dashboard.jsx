@@ -58,6 +58,45 @@ const CHART_SERIES = {
   churnTrend: { label: '위험군', tone: 'blue' },
 };
 
+// 매출·지출은 둘 다 켜져 있으면 한 카드에 월별 묶음 막대로 함께 그린다.
+// 위젯 키·토글 API·h_dashboard_widget은 그대로이고, 편집 모달에서만 한 행으로 묶어 보여준다
+// (한 행 = 두 키를 같은 상태로 함께 켜고 끄며 순서도 함께 이동).
+const REVENUE_EXPENSE_KEYS = ['monthlyRevenue', 'monthlyExpense'];
+const MERGED_REVENUE_EXPENSE_LABEL = '월별 총 매출·지출';
+
+// 편집 모달·순서 이동의 단위 행. 카드에서 하나로 합쳐 그리는 매출·지출은 편집에서도 한 행으로 묶는다.
+// 단, 한쪽만 데이터가 있으면 묶지 않는다 — 묶어서 잠그면 데이터가 있는 쪽까지 켤 수 없게 된다.
+const buildWidgetRows = (list) => {
+  const pair = REVENUE_EXPENSE_KEYS.map((key) => list.find((w) => w.widgetKey === key));
+  const merge = pair.every((w) => w && w.hasData);
+  const rows = [];
+  let mergedDone = false;
+
+  list.forEach((widget) => {
+    if (merge && REVENUE_EXPENSE_KEYS.includes(widget.widgetKey)) {
+      if (mergedDone) return; // 묶음 행은 둘 중 먼저 오는 자리에 한 번만 넣는다
+      mergedDone = true;
+      rows.push({
+        key: REVENUE_EXPENSE_KEYS.join('+'),
+        label: MERGED_REVENUE_EXPENSE_LABEL,
+        widgets: pair,
+        hasData: true,
+        isActive: pair.every((w) => w.isActive),
+      });
+      return;
+    }
+    rows.push({
+      key: widget.widgetKey,
+      label: WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey,
+      widgets: [widget],
+      hasData: widget.hasData,
+      isActive: widget.isActive,
+    });
+  });
+
+  return rows;
+};
+
 // 회원/직원 관리 기존 라우트 (팀원 개편 중 - 현재 401 발생 상태 그대로 유지, merge 후 실제 라우트로 교체)
 const MANAGEMENT_ROUTE = '/fitb/management';
 // 이탈 리포트 페이지 (헬스장 이탈 통계 리포트)
@@ -84,8 +123,11 @@ const AI_QUESTIONS = [
 // 역할별 커스텀 대시보드 (1부: 위젯 조회/토글/순서 변경/데이터 표시)
 // 위젯 편집 모달(팝업) — ESC·바깥 클릭·닫기 버튼으로 닫힌다.
 // 표시 전용 컴포넌트로, 토글·순서 변경은 상위에서 내려준 기존 핸들러(같은 API)를 그대로 호출한다.
-function WidgetEditModal({ widgets, onToggle, onMove, onClose }) {
+function WidgetEditModal({ rows, onToggle, onReorder, onClose }) {
   const boxRef = useRef(null);
+  // 이동 핸들 드래그 상태 (drag=끌고 있는 행, over=놓을 자리 - 시각 표시용)
+  const [dragIndex, setDragIndex] = useState(null);
+  const [overIndex, setOverIndex] = useState(null);
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -97,6 +139,42 @@ function WidgetEditModal({ widgets, onToggle, onMove, onClose }) {
 
   const onBackdropClick = (e) => {
     if (boxRef.current && !boxRef.current.contains(e.target)) onClose();
+  };
+
+  const resetDrag = () => {
+    setDragIndex(null);
+    setOverIndex(null);
+  };
+
+  // 드래그는 핸들에서만 시작하고, 끌리는 미리보기는 행 전체로 보여준다
+  const handleDragStart = (index) => (e) => {
+    setDragIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index)); // Firefox는 데이터가 있어야 드래그가 시작된다
+    const row = e.currentTarget.closest('li');
+    if (row) e.dataTransfer.setDragImage(row, 12, row.offsetHeight / 2);
+  };
+
+  const handleDragOver = (index) => (e) => {
+    if (dragIndex === null) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (index !== overIndex) setOverIndex(index);
+  };
+
+  const handleDrop = (index) => (e) => {
+    if (dragIndex === null) return;
+    e.preventDefault();
+    const from = dragIndex;
+    resetDrag();
+    onReorder(from, index);
+  };
+
+  // 드래그를 쓸 수 없는 환경(키보드 조작)에서도 위/아래로 옮길 수 있게 방향키를 지원한다
+  const handleHandleKeyDown = (index) => (e) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    onReorder(index, index + (e.key === 'ArrowUp' ? -1 : 1));
   };
 
   return (
@@ -111,34 +189,51 @@ function WidgetEditModal({ widgets, onToggle, onMove, onClose }) {
         <p className="dash-modal__desc">대시보드에 표시할 위젯을 켜고 끌 수 있어요</p>
 
         <ul className="dash-modal__list">
-          {widgets.map((widget) => (
-            <li key={widget.widgetKey} className={widget.hasData ? '' : 'locked'}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={widget.isActive}
-                  disabled={!widget.hasData}
-                  onChange={() => onToggle(widget)}
-                />
-                {WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey}
-              </label>
-              {widget.hasData ? (
-                <span className="dash-modal__order">
-                  <button type="button" onClick={() => onMove(widget.widgetKey, -1)} aria-label="위로">
-                    <NavIcon id="chevron" size={16} className="ui-icon ui-icon--up" />
-                  </button>
-                  <button type="button" onClick={() => onMove(widget.widgetKey, 1)} aria-label="아래로">
-                    <NavIcon id="chevron" size={16} className="ui-icon ui-icon--down" />
-                  </button>
+          {rows.map((row, index) => {
+            const rowClass = [
+              row.hasData ? '' : 'locked',
+              dragIndex === index ? 'dragging' : '',
+              overIndex === index && dragIndex !== null && dragIndex !== index ? 'is-over' : '',
+            ].filter(Boolean).join(' ');
+
+            return (
+              <li
+                key={row.key}
+                className={rowClass}
+                onDragOver={handleDragOver(index)}
+                onDrop={handleDrop(index)}
+                onDragEnd={resetDrag}
+              >
+                <span
+                  className={row.hasData ? 'dash-modal__handle' : 'dash-modal__handle is-disabled'}
+                  role="button"
+                  aria-disabled={!row.hasData}
+                  tabIndex={row.hasData ? 0 : -1}
+                  aria-label={`${row.label} 순서 이동 (위·아래 방향키 또는 드래그)`}
+                  draggable={row.hasData}
+                  onDragStart={handleDragStart(index)}
+                  onKeyDown={handleHandleKeyDown(index)}
+                >
+                  <NavIcon id="grip" size={16} />
                 </span>
-              ) : (
-                <span className="dash-badge">데이터 없음</span>
-              )}
-            </li>
-          ))}
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={row.isActive}
+                    disabled={!row.hasData}
+                    onChange={() => onToggle(row.widgets)}
+                  />
+                  {row.label}
+                </label>
+                {!row.hasData && <span className="dash-badge">데이터 없음</span>}
+              </li>
+            );
+          })}
         </ul>
 
-        <p className="dash-modal__hint">데이터가 없는 위젯은 켤 수 없어요. 데이터가 쌓이면 켤 수 있어요.</p>
+        <p className="dash-modal__hint">
+          왼쪽 이동 핸들을 끌어 순서를 바꿀 수 있어요. 데이터가 없는 위젯은 켤 수 없어요.
+        </p>
         <div className="dash-modal__actions">
           <button type="button" className="dash-modal__done" onClick={onClose}>완료</button>
         </div>
@@ -209,39 +304,55 @@ function Dashboard() {
   };
 
   // 위젯 표시 여부 토글 (PUT /dashboard/widgets/toggle)
-  const handleToggle = async (widget) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/dashboard/widgets/toggle`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ widgetKey: widget.widgetKey, isActive: !widget.isActive }),
-      });
+  // 위젯 하나(칩 ✕) 또는 한 행으로 묶인 여러 위젯(편집 모달의 월별 총 매출·지출)을 받는다.
+  // 묶음은 같은 목표 상태로 맞추며, API·요청 형태는 키마다 기존 그대로다.
+  const handleToggle = async (target) => {
+    const targets = Array.isArray(target) ? target : [target];
+    if (targets.length === 0) return;
 
-      if (response.ok) {
-        loadDashboard();
-      } else {
-        // 409: 데이터가 없는 위젯은 켤 수 없음
-        setMessage(await response.text());
+    // 하나라도 꺼져 있으면 전부 켜고, 전부 켜져 있으면 전부 끈다
+    const nextActive = !targets.every((w) => w.isActive);
+    const pending = targets.filter((w) => w.isActive !== nextActive);
+    if (pending.length === 0) return;
+
+    try {
+      for (const widget of pending) {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/dashboard/widgets/toggle`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ widgetKey: widget.widgetKey, isActive: nextActive }),
+        });
+
+        if (!response.ok) {
+          // 409: 데이터가 없는 위젯은 켤 수 없음 — 묶음이면 남은 키는 진행하지 않고 실제 상태를 다시 읽는다
+          setMessage(await response.text());
+          break;
+        }
       }
+      loadDashboard();
     } catch (error) {
       console.error('위젯 토글 오류:', error);
       setMessage('서버와의 통신 중 오류가 발생했습니다.');
     }
   };
 
-  // 위젯 순서 한 칸 위/아래 이동 (PUT /dashboard/widgets/order)
+  // 위젯 순서 이동 (PUT /dashboard/widgets/order) - 편집 모달의 이동 핸들(드래그/방향키)에서 호출
   // 구 위젯 키(h_dashboard_widget에 남아있을 수 있는 memberCount 등)는 알려진 키(visibleWidgets)
-  // 기준으로만 순서를 교환한다 - 죽은 키가 섞여 인덱스가 어긋나는 것을 방지
-  const handleMove = async (widgetKey, direction) => {
-    const index = visibleWidgets.findIndex((w) => w.widgetKey === widgetKey);
-    const target = index + direction;
-    if (index < 0 || target < 0 || target >= visibleWidgets.length) return;
+  // 기준으로만 순서를 재배치한다 - 죽은 키가 섞여 인덱스가 어긋나는 것을 방지
+  // 이동 단위는 편집 모달의 행(widgetRows)이라, 묶음 행은 두 키가 함께 움직인다.
+  const handleReorder = async (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return;
+    if (fromIndex < 0 || fromIndex >= widgetRows.length) return;
+    if (toIndex < 0 || toIndex >= widgetRows.length) return;
 
-    // 두 위젯의 sortOrder를 서로 교환
-    const reordered = [
-      { widgetKey: visibleWidgets[index].widgetKey, sortOrder: visibleWidgets[target].sortOrder },
-      { widgetKey: visibleWidgets[target].widgetKey, sortOrder: visibleWidgets[index].sortOrder },
-    ];
+    // 끌어온 행을 새 자리에 끼워 넣고 키 단위로 펼친 뒤, 기존 sortOrder 값들을 자리 순서대로 다시 부여한다
+    const next = [...widgetRows];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    const slots = visibleWidgets.map((w) => w.sortOrder);
+    const reordered = next
+      .flatMap((row) => row.widgets)
+      .map((widget, i) => ({ widgetKey: widget.widgetKey, sortOrder: slots[i] }));
 
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/dashboard/widgets/order`, {
@@ -259,6 +370,45 @@ function Dashboard() {
       console.error('위젯 순서 변경 오류:', error);
       setMessage('서버와의 통신 중 오류가 발생했습니다.');
     }
+  };
+
+  // 매출·지출 통합 차트 - 같은 달을 한 칸에 묶어 매출/지출 막대를 나란히 그린다
+  // (두 위젯의 원본 응답 [{month,total}]을 월 기준으로 합치고, 축 최대값도 두 계열 공통으로 잡는다)
+  const renderRevenueExpenseChart = () => {
+    const byMonth = new Map();
+    const collect = (rows, field) => {
+      (rows ?? []).forEach((row) => {
+        const merged = byMonth.get(row.month) ?? { month: row.month, revenue: 0, expense: 0 };
+        merged[field] = Number(row.total);
+        byMonth.set(row.month, merged);
+      });
+    };
+    collect(data.monthlyRevenue, 'revenue');
+    collect(data.monthlyExpense, 'expense');
+
+    const rows = [...byMonth.values()].sort((a, b) => a.month.localeCompare(b.month));
+    if (rows.length === 0) return <p className="dash-empty">데이터 없음</p>;
+
+    const max = Math.max(...rows.flatMap((row) => [row.revenue, row.expense])) || 1;
+    const barHeight = (amount) => `${amount > 0 ? Math.max(3, Math.round((amount / max) * 100)) : 0}%`;
+
+    return (
+      <div className="dash-chart">
+        {rows.map((row) => (
+          <div
+            key={row.month}
+            className="dash-bar-col"
+            title={`${row.month} · 매출 ${row.revenue.toLocaleString()} · 지출 ${row.expense.toLocaleString()}`}
+          >
+            <span className="dash-bar-pair">
+              <span className="dash-bar dash-bar--accent" style={{ height: barHeight(row.revenue) }} />
+              <span className="dash-bar dash-bar--gray" style={{ height: barHeight(row.expense) }} />
+            </span>
+            <span className="dash-bar-month">{row.month.slice(5)}월</span>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   // 위젯 데이터 형태별 렌더링 (KPI / 만료 목록 / 월별 차트 / 세션 목록 등)
@@ -279,8 +429,11 @@ function Dashboard() {
       case 'activeMemberCount':
         return (
           <div>
-            <p className="dash-kpi">{value.total}<span> 명</span></p>
-            <p className="dash-sub">이번 달 신규 +{value.newThisMonth}</p>
+            {/* 이번 달 신규는 수치 옆에 붙여 한 줄로 표시한다 */}
+            <p className="dash-kpi">
+              {value.total}<span> 명</span>
+              <span className="dash-kpi__note">이번 달 신규 +{value.newThisMonth}</span>
+            </p>
             <p className="dash-sub">이용권 {value.membership} · PT {value.pt} · 체험 {value.trial}</p>
           </div>
         );
@@ -401,20 +554,30 @@ function Dashboard() {
   // (memberCount·expiringContract·bodyComposition 등)는 여기서 걸러진다.
   const visibleWidgets = widgets.filter((w) => WIDGET_LABEL[w.widgetKey]);
   const activeWidgets = visibleWidgets.filter((w) => w.isActive && w.hasData);
+  // 편집 모달의 행 목록 (매출·지출은 카드와 동일하게 한 행으로 묶임) — 순서 이동 단위이기도 하다
+  const widgetRows = buildWidgetRows(visibleWidgets);
+  // 상단 삭제형 칩도 같은 묶음 규칙을 쓴다 — 카드가 한 장이면 칩도 하나, ✕는 두 키를 함께 끈다
+  const activeChips = buildWidgetRows(activeWidgets);
+
+  // 매출·지출이 둘 다 활성이면 한 카드로 합치고, 그 카드는 둘 중 먼저 오는 위젯 자리에 놓는다
+  const mergeRevenueExpense = REVENUE_EXPENSE_KEYS
+    .every((key) => activeWidgets.some((w) => w.widgetKey === key));
+  const revenueExpenseAnchor = activeWidgets
+    .find((w) => REVENUE_EXPENSE_KEYS.includes(w.widgetKey))?.widgetKey;
 
   return (
     <div className="dash-page">
       {/* 상단 줄: 선택된 위젯 칩(삭제형) + 위젯 편집 버튼 — 칩 ✕는 기존 토글 API를 그대로 사용 */}
       <div className="dash-toolbar">
         <div className="dash-chips">
-          {activeWidgets.map((widget) => (
-            <span key={widget.widgetKey} className="dash-chip">
-              {WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey}
+          {activeChips.map((chip) => (
+            <span key={chip.key} className="dash-chip">
+              {chip.label}
               <button
                 type="button"
                 className="dash-chip__remove"
-                title={`${WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey} 숨기기`}
-                onClick={() => handleToggle(widget)}
+                title={`${chip.label} 숨기기`}
+                onClick={() => handleToggle(chip.widgets)}
               >
                 <NavIcon id="close" size={14} />
               </button>
@@ -427,15 +590,14 @@ function Dashboard() {
         </button>
       </div>
 
-      {!token && <p className="dash-message">로그인이 필요합니다. 먼저 로그인해 주세요.</p>}
       {message && <p className="dash-message">{message}</p>}
 
       {/* 위젯 편집 모달(팝업): 데이터 없는 위젯은 잠금 표시 — 토글·순서 변경 API는 기존 그대로 */}
       {editOpen && (
         <WidgetEditModal
-          widgets={visibleWidgets}
+          rows={widgetRows}
           onToggle={handleToggle}
-          onMove={handleMove}
+          onReorder={handleReorder}
           onClose={() => setEditOpen(false)}
         />
       )}
@@ -444,6 +606,11 @@ function Dashboard() {
       <div className="dash-grid">
         {activeWidgets.length === 0 && <p className="dash-empty">표시할 위젯이 없어요. 위젯 편집에서 켜보세요.</p>}
         {activeWidgets.map((widget) => {
+          // 매출·지출이 함께 켜져 있으면 먼저 오는 쪽 자리에 통합 카드 1장만 그리고 나머지는 건너뛴다
+          const isRevenueExpense = REVENUE_EXPENSE_KEYS.includes(widget.widgetKey);
+          if (isRevenueExpense && mergeRevenueExpense && widget.widgetKey !== revenueExpenseAnchor) return null;
+          const merged = isRevenueExpense && mergeRevenueExpense;
+
           const layout = layoutOf(widget.widgetKey);
           const series = CHART_SERIES[widget.widgetKey];
           // 위젯 클릭 이동 - 편집 모드에서는 이동을 비활성화해 편집 조작과 충돌하지 않게 한다
@@ -456,12 +623,20 @@ function Dashboard() {
           return (
             <CardTag key={widget.widgetKey} {...cardProps}>
               <div className="dash-card__head">
-                <h2>{WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey}</h2>
-                {series && (
-                  <span className={`dash-legend dash-legend--${series.tone}`}>● {series.label}</span>
+                <h2>{merged ? MERGED_REVENUE_EXPENSE_LABEL : (WIDGET_LABEL[widget.widgetKey] ?? widget.widgetKey)}</h2>
+                {merged ? (
+                  <span className="dash-legend-group">
+                    {REVENUE_EXPENSE_KEYS.map((key) => (
+                      <span key={key} className={`dash-legend dash-legend--${CHART_SERIES[key].tone}`}>
+                        ● {CHART_SERIES[key].label}
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  series && <span className={`dash-legend dash-legend--${series.tone}`}>● {series.label}</span>
                 )}
               </div>
-              {renderWidgetData(widget.widgetKey)}
+              {merged ? renderRevenueExpenseChart() : renderWidgetData(widget.widgetKey)}
             </CardTag>
           );
         })}
@@ -495,8 +670,12 @@ function Dashboard() {
                 {briefing.map((item) => (
                   item.bundle ? (
                     // 지출 내역 확인 - 1슬롯 묶음 (커미션·월급 아코디언)
-                    <div key={item.key}>
-                      <button type="button" className="dash-ai-task" onClick={() => setBundleOpen(!bundleOpen)}>
+                    <div key={item.key} className={`dash-ai-task-group ${bundleOpen ? 'is-open' : ''}`}>
+                      <button
+                        type="button"
+                        className={`dash-ai-task ${bundleOpen ? 'is-open' : ''}`}
+                        onClick={() => setBundleOpen(!bundleOpen)}
+                      >
                         <span className="dash-ai-task-label">{item.label}</span>
                         <span className="dash-badge warning">{item.count}건</span>
                         <span className="dash-ai-task-go">

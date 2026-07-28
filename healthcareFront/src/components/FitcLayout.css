@@ -11,13 +11,13 @@
   min-height: calc(100vh - 64px);
   margin: 0 auto;
   /* 하단 고정 탭바(62px)에 콘텐츠가 가리지 않도록 여백 확보 */
-  padding: 12px 0 80px;
+  padding: var(--p3) 0 var(--space-80);
   background: var(--gray-50);
 }
 
 @media (min-width: 481px) {
   .b2c-shell__column {
-    border-left: 1px solid var(--gray-200);
-    border-right: 1px solid var(--gray-200);
+    border-left: var(--bordered1) solid var(--gray-200);
+    border-right: var(--bordered1) solid var(--gray-200);
   }
 }

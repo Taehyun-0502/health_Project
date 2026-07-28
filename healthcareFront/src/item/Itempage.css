@@ -1,6 +1,6 @@
 .item-page-container {
   min-height: 80vh;
-  padding: 20px 24px var(--ai-fab-clearance);
+  padding: var(--p5) var(--p6) var(--ai-fab-clearance);
   color: var(--gray-700);
 }
 
@@ -14,29 +14,29 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--p4);
   flex-wrap: wrap;
   width: min(100%, 1080px);
-  margin: 0 auto 16px;
-  padding: 0 0 12px;
-  border-bottom: 1px solid var(--gray-200);
+  margin: 0 auto var(--p4);
+  padding: 0 0 var(--p3);
+  border-bottom: var(--bordered1) solid var(--gray-200);
 }
 .item-list-head__title {
   margin: 0;
-  font-size: var(--text-h2);
-  font-weight: 700;
+  font-size: var(--text-large-title);
+  font-weight: 600;
   color: var(--gray-900);
 }
 .item-list-head__desc {
-  margin: 4px 0 0;
-  font-size: var(--text-sm);
+  margin: var(--p1) 0 0;
+  font-size: var(--text-subhead);
   color: var(--gray-600);
 }
 
 .item-list-head__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--p2);
   flex-wrap: wrap;
 }
 
@@ -57,9 +57,9 @@
 }
 
 .item-card {
-  padding: 32px;
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
+  padding: var(--p7);
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r3);
   background: var(--white);
   box-shadow: var(--shadow-card);
 }
@@ -72,12 +72,12 @@
 }
 
 .item-card-title {
-  margin-bottom: 24px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--gray-200);
+  margin-bottom: var(--p6);
+  padding-bottom: var(--p3);
+  border-bottom: var(--bordered1) solid var(--gray-200);
   color: var(--gray-900);
-  font-size: var(--text-h1);
-  font-weight: 700;
+  font-size: var(--text-title2);
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
@@ -100,10 +100,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--gray-200);
+  gap: var(--p4);
+  margin-bottom: var(--p6);
+  padding-bottom: var(--p4);
+  border-bottom: var(--bordered1) solid var(--gray-200);
 }
 
 .item-detail-toolbar {
@@ -112,29 +112,17 @@
 
 .item-detail-toolbar h3 {
   color: var(--gray-900);
-  font-size: var(--text-h3);
+  font-size: var(--text-headline);
   font-weight: 600;
 }
 
 .item-secondary-btn,
 .item-row-action,
 .item-page-btn {
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
   color: var(--gray-700);
   background: var(--white);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
 }
 
-.item-secondary-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
-}
 
 .item-secondary-btn:hover,
 .item-row-action:hover,
@@ -145,8 +133,8 @@
 
 .item-form-actions {
   display: flex;
-  gap: 16px;
-  margin-top: 24px;
+  gap: var(--p4);
+  margin-top: var(--p6);
 }
 
 .item-submit-btn--grow,
@@ -160,15 +148,32 @@
 .item-select,
 .item-textarea,
 .item-month-filter select {
-  padding: 12px 16px;
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
+  padding: var(--p3) var(--p4);
+  border: var(--bordered1) solid var(--gray-300);
+  border-radius: var(--r2);
   color: var(--gray-700);
   background-color: var(--white);
   font: inherit;
-  font-size: var(--text-body);
+  font-size: var(--text-subhead);
   outline: none;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+/* placeholder는 다른 화면 입력(.contract-search__box·.promotion-input·.auth-field 등)과 동일 규격 */
+.item-search-input::placeholder,
+.item-input::placeholder,
+.item-textarea::placeholder {
+  color: var(--gray-400);
+}
+
+/* 필터 바의 검색·정렬은 계약 검색(.contract-search__box) 규격을 따른다 — 38px/13px.
+   같은 줄의 카테고리 칩(38px)과 높이를 맞추기 위함이며, 등록 폼 입력(.item-input 등)은
+   위 공용 규칙(48px/15px)을 그대로 쓴다. 화살표 여백(padding-right)은 아래 select 규칙이 덮는다. */
+.item-search-input,
+.item-sort-select {
+  height: 38px;
+  padding: 0 var(--p3);
+  font-size: var(--text-footnote);
 }
 
 .item-search-input:focus,
@@ -178,7 +183,6 @@
 .item-textarea:focus,
 .item-month-filter select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14);
 }
 
 .item-input:disabled {
@@ -192,13 +196,17 @@
 .item-month-filter select {
   cursor: pointer;
   /* 화살표 폭만큼 오른쪽 여백 확보(select만, 텍스트 입력엔 미적용) */
-  padding-right: 40px;
+  padding-right: var(--p8);
 }
 
+/* 목록 영역 높이는 페이지 크기(10건) 기준으로 고정한다 — 데이터가 없거나 10건 미만이어도
+   표가 줄어들지 않아 페이지 이동·필터 전환 때 아래 콘텐츠가 덜컹이지 않는다.
+   실측(1440 뷰포트): thead 42.5px + 행 51px × 10 = 552.5px */
 .item-table-wrapper {
+  min-height: 553px;
   overflow-x: auto;
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r3);
   background: var(--white);
 }
 
@@ -210,27 +218,36 @@
 }
 
 .item-table th {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--gray-200);
-  color: var(--gray-400);
+  padding: var(--p3) var(--p4);
+  color: var(--gray-900);
   background: var(--gray-50);
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   font-weight: 600;
 }
 
 .item-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--gray-200);
+  padding: var(--p3) var(--p4);
+  border-top: var(--bordered1) solid var(--gray-100);
   color: var(--gray-900);
-  font-size: var(--text-body);
+  font-size: var(--text-subhead);
   vertical-align: middle;
 }
 
-.item-table tr:last-child td {
-  border-bottom: 0;
+/* ID 컬럼 — 계약 테이블(.contract-table__id)과 동일한 색 규격 (2026-07-28).
+   ⚠️ .item-table은 목록(첫 칼럼=카테고리)과 상세(첫 칼럼=물품 ID) 두 곳이 공유하므로
+   ID가 첫 칼럼인 상세 테이블에만 --detail 모디파이어로 스코프한다. */
+.item-table--detail td:first-child {
+  color: var(--accent-text);
+  font-weight: 600;
 }
 
-.item-table tbody tr:hover {
+/* 마지막 행 아래 경계 — td가 border-top만 가지므로 바닥선은 따로 그린다 */
+.item-table tbody tr:last-child td {
+  border-bottom: var(--bordered1) solid var(--gray-100);
+}
+
+/* 빈 목록 행은 클릭 대상이 아니므로 hover 강조에서 제외한다 */
+.item-table tbody tr:not(.item-table__empty-row):hover {
   background: var(--gray-50);
 }
 
@@ -271,7 +288,7 @@
 
 .item-table__muted {
   color: var(--gray-600);
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .item-table__quantity {
@@ -282,36 +299,91 @@
   color: var(--danger);
 }
 
+/* 빈 목록 셀 — 고정 높이(래퍼 553px − thead 42.5px)를 채워 안내 문구·카드를 상하 가운데에 둔다.
+   .item-table td가 vertical-align: middle이라 높이만 주면 수직 중앙 정렬된다. */
 .item-table__empty {
-  padding: 32px;
+  height: 510px;
+  padding: var(--p7);
   color: var(--gray-400);
   text-align: center;
+}
+
+.item-empty__msg {
+  margin: 0 0 var(--p5);
+}
+
+/* 빈 목록 안내 카드 — 대시보드 KPI 카드와 같은 규격(min-height 128).
+   데이터가 없을 때만 노출되며(데이터가 있으면 헤더의 + 물품 등록 버튼이 대신한다),
+   안내 문구와 함께 표 안에서 가운데 정렬한다. */
+.item-empty__grid {
+  display: flex;
+  justify-content: center;
+  gap: var(--p4);
+}
+
+.item-empty__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--p1);
+  width: 240px;
+  min-height: 128px;
+  padding: var(--p4) var(--p5);
+  border: var(--bordered1) solid var(--accent-soft);
+  border-radius: var(--r3);
+  background: var(--accent-bg);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.item-empty__card:hover {
+  background: var(--accent-soft);
+}
+
+.item-empty__card-label {
+  font: var(--text-subhead-strong);
+  color: var(--accent-strong);
+}
+
+.item-empty__card-desc {
+  font-size: var(--text-caption1);
+  color: var(--gray-600);
+}
+
+@media (max-width: 768px) {
+  .item-empty__grid {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 .item-category-badge,
 .item-status-badge {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
-  font-size: var(--text-xs);
+  border-radius: var(--r6);
+  font-size: var(--text-caption1);
   font-weight: 600;
 }
 
 .item-category-badge {
-  padding: 4px 9px;
+  padding: var(--p1) var(--p2);
   color: var(--accent-text);
   background: var(--accent-soft);
 }
 
 .item-category-badge--large {
-  margin-right: 12px;
-  padding: 5px 12px;
-  font-size: var(--text-sm);
+  margin-right: var(--p3);
+  padding: var(--p1) var(--p3);
+  font-size: var(--text-footnote);
   vertical-align: middle;
 }
 
 .item-status-badge {
-  padding: 3px 9px;
+  padding: var(--bordered3) var(--p2);
 }
 
 .item-status-badge.is-purchase {
@@ -350,39 +422,39 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--p3);
+  margin-bottom: var(--p4);
   flex-wrap: wrap;
 }
 
 .item-filter-bar__right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--p3);
   flex-wrap: wrap;
 }
 
 .item-filter-bar__right .item-search-input {
-  width: 240px;
+  width: 260px; /* 계약 검색(.contract-search__box)과 동일 폭 */
 }
 
 .item-chip-group {
   display: flex;
-  gap: 8px;
+  gap: var(--p2);
   flex-wrap: wrap;
 }
 
 .item-chip {
-  padding: 8px 16px;
+  padding: var(--p2) var(--p4);
   font: inherit;
-  font-size: var(--text-sm);
+  font-size: var(--text-footnote);
   font-weight: 600;
-  color: var(--gray-600);
-  background: var(--gray-100);
-  border: none;
-  border-radius: 999px;
+  color: var(--gray-400);
+  background: var(--white);
+  border: var(--bordered1) solid var(--gray-300);
+  border-radius: var(--r6);
   cursor: pointer;
-  transition: background 0.16s ease, color 0.16s ease;
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 
 .item-chip:hover {
@@ -393,22 +465,10 @@
 .item-chip--active,
 .item-chip--active:hover {
   color: var(--white);
-  background: var(--black);
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
 }
 
-.item-register-btn {
-  padding: 10px 18px;
-  font: inherit;
-  font-size: var(--text-body);
-  font-weight: 600;
-  color: var(--white);
-  background: var(--accent-strong);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.16s ease;
-}
 
 .item-register-btn:hover {
   background: var(--accent);
@@ -424,9 +484,9 @@
 .item-expiry-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 9px;
-  border-radius: 999px;
-  font-size: var(--text-xs);
+  padding: var(--p1) var(--p2);
+  border-radius: var(--r6);
+  font-size: var(--text-caption1);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -456,20 +516,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-top: 24px;
+  gap: var(--p1);
+  margin-top: var(--p6);
 }
 
 .item-page-btn {
   min-width: 36px;
-  padding: 8px 12px;
-  font-size: var(--text-sm);
+  padding: var(--p2) var(--p3);
+  font-size: var(--text-footnote);
 }
 
 .item-page-btn.active {
-  border-color: var(--black);
+  border-color: var(--accent-strong);
   color: var(--white);
-  background: var(--black);
+  background: var(--accent-strong);
 }
 
 .item-page-btn:disabled {
@@ -480,20 +540,20 @@
 .item-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--p5);
   max-width: 680px;
 }
 
 .item-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: var(--p5);
 }
 
 .item-form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--p2);
 }
 
 .item-form-group.full-width {
@@ -502,8 +562,7 @@
 
 .item-form-group label {
   color: var(--gray-700);
-  font-size: var(--text-body);
-  font-weight: 600;
+  font: var(--text-subhead-strong);
 }
 
 .item-textarea {
@@ -513,48 +572,39 @@
 
 .item-submit-btn {
   align-self: flex-start;
-  padding: 13px 28px;
-  border: 0;
-  border-radius: 8px;
-  color: var(--white);
-  background: var(--accent-strong);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.16s ease;
 }
 
 /* 디자인 시스템: 주요 버튼은 hover에도 배경색을 유지하고 그림자로만 반응 */
 .item-submit-btn:hover {
-  box-shadow: 0 2px 8px rgba(200, 79, 0, 0.28);
+  box-shadow: var(--shadow-sm);
 }
 
 .item-summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: var(--p4);
+  margin-bottom: var(--p7);
 }
 
 .item-summary-card {
-  padding: 20px;
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
+  padding: var(--p5);
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r3);
   background: var(--gray-50);
   box-shadow: var(--shadow-card);
 }
 
 .item-summary-card__label {
-  margin-bottom: 8px;
+  margin-bottom: var(--p2);
   color: var(--gray-600);
-  font-size: var(--text-sm);
+  font-size: var(--text-footnote);
   font-weight: 600;
 }
 
 .item-summary-card__value {
   color: var(--accent-text);
-  font-size: var(--text-h1);
-  font-weight: 700;
+  font-size: var(--text-title2);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -569,26 +619,26 @@
 .item-month-filter {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--p2);
   color: var(--gray-600);
-  font-size: var(--text-sm);
+  font-size: var(--text-footnote);
   font-weight: 600;
 }
 
 .item-month-filter select {
-  padding: 7px 12px;
-  font-size: var(--text-sm);
+  padding: var(--p2) var(--p3);
+  font-size: var(--text-footnote);
   font-weight: 600;
 }
 
 .item-row-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--p2);
 }
 
 .item-row-action {
-  padding: 5px 10px;
-  font-size: var(--text-xs);
+  padding: var(--p1) var(--p2);
+  font-size: var(--text-caption1);
 }
 
 .item-row-action--danger {
@@ -604,43 +654,43 @@
 }
 
 .item-detail-empty {
-  padding: 48px 32px;
-  border: 1px dashed var(--gray-300);
-  border-radius: 12px;
+  padding: var(--p9) var(--p7);
+  border: var(--bordered1) dashed var(--gray-300);
+  border-radius: var(--r3);
   color: var(--gray-400);
   text-align: center;
 }
 
 .item-detail-empty__hint {
-  margin-top: 8px;
-  font-size: var(--text-xs);
+  margin-top: var(--p2);
+  font-size: var(--text-caption1);
 }
 
 .item-suggestions {
-  margin-top: 12px;
+  margin-top: var(--p3);
 }
 
 .item-suggestions__label {
-  margin-bottom: 6px;
+  margin-bottom: var(--p1);
   color: var(--gray-600);
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   font-weight: 600;
 }
 
 .item-suggestions__list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--p1);
 }
 
 .item-suggestion {
-  padding: 4px 8px;
+  padding: var(--p1) var(--p2);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r2);
   color: var(--gray-700);
   background: var(--gray-100);
   font: inherit;
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   font-weight: 600;
   cursor: pointer;
 }
@@ -656,11 +706,11 @@
 
 @media (max-width: 768px) {
   .item-page-container {
-    padding: 16px;
+    padding: var(--p4);
   }
 
   .item-card {
-    padding: 22px 18px;
+    padding: var(--p5) var(--p4);
   }
 
   .item-list-head,
@@ -683,4 +733,23 @@
   .item-form-group.full-width {
     grid-column: span 1;
   }
+}
+/* 헤더 등록 버튼 — 빈 상태 카드(.item-empty__card)와 배경·글자·테두리를 동일하게 맞춘다.
+   목록에 데이터가 있을 때만 노출되며, 등록 폼의 .item-submit-btn 등은 공용 규격 유지. */
+.item-list-head__actions .item-register-btn {
+  border: var(--bordered1) solid var(--accent-soft);
+  background: var(--accent-bg);
+  color: var(--accent-strong);
+}
+
+.item-list-head__actions .item-register-btn:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* 빈 목록일 때 헤더 글자는 종전 톤(--gray-400)으로 되돌린다 —
+   데이터가 없으면 헤더가 값과 위계를 겨룰 필요가 없어 옅게 눌러 둔다.
+   :has()로 tbody의 빈 행을 보고 판단하므로 JSX·상태 로직은 건드리지 않는다. */
+.item-table:has(.item-table__empty-row) th {
+  color: var(--gray-400);
 }

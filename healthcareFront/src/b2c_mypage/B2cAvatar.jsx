@@ -397,7 +397,7 @@ function B2cAvatar() {
 
       {/* 시연용 실시간 아바타 성장 조절 슬라이더 */}
       <div style={{ margin: '15px 0 10px 0', width: '100%', padding: '0 8px', boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--gray-500)', marginBottom: '6px', fontWeight: '750' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-caption2)', color: 'var(--gray-500)', marginBottom: '6px', fontWeight: '600' }}>
           <span>슬라이더로 시연 (0일)</span>
           <span>(30일)</span>
         </div>

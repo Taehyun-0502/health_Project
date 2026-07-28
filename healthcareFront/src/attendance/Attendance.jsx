@@ -63,7 +63,7 @@ function Attendance() {
     <main className="attendance-kiosk">
       <header className="attendance-kiosk__header">
         <h1 className="attendance-kiosk__title">
-          <NavIcon id="dumbbell" size={24} className="ui-icon" /> 출석 체크
+          <span className="attendance-kiosk__title-emoji" aria-hidden="true">🏋️</span> 출석 체크
         </h1>
         <p className="attendance-kiosk__description">출석 유형을 선택한 뒤 본인 계정으로 확인해 주세요.</p>
       </header>
@@ -71,7 +71,7 @@ function Attendance() {
       {/* 3화면: 출석 완료 안내 */}
       {result ? (
         <section className="attendance-kiosk__result">
-          <div className="attendance-kiosk__result-icon" aria-hidden="true"><NavIcon id="check" size={40} /></div>
+          <div className="attendance-kiosk__result-icon" aria-hidden="true">✅</div>
           <h2 className="attendance-kiosk__result-title">{result.memberName}님 출석 완료!</h2>
           {result.inoutType === 2 ? (
             <p className="attendance-kiosk__result-copy">
@@ -89,11 +89,11 @@ function Attendance() {
         /* 1화면: 출석 유형 선택 버튼 2개 */
         <section className="attendance-kiosk__chooser" aria-label="출석 유형 선택">
           <button onClick={() => setMode('gym')} className="attendance-kiosk__type-button attendance-kiosk__type-button--gym">
-            <span className="attendance-kiosk__type-icon" aria-hidden="true"><NavIcon id="dumbbell" size={32} /></span>
+            <span className="attendance-kiosk__type-icon" aria-hidden="true">💪</span>
             <span className="attendance-kiosk__type-label">헬스장 출석</span>
           </button>
           <button onClick={() => setMode('pt')} className="attendance-kiosk__type-button attendance-kiosk__type-button--pt">
-            <span className="attendance-kiosk__type-icon" aria-hidden="true"><NavIcon id="handshake" size={32} /></span>
+            <span className="attendance-kiosk__type-icon" aria-hidden="true">🤝</span>
             <span className="attendance-kiosk__type-label">PT 출석</span>
           </button>
         </section>
@@ -101,7 +101,7 @@ function Attendance() {
         /* 2화면: 계정 입력 폼 (로그인 형식 본인 확인) */
         <section className={`attendance-kiosk__card attendance-kiosk__card--${mode}`}>
           <h2 className="attendance-kiosk__card-title">
-            <NavIcon id={mode === 'gym' ? 'dumbbell' : 'handshake'} size={20} className="ui-icon" />
+            <span aria-hidden="true">{mode === 'gym' ? '💪' : '🤝'}</span>
             {' '}{mode === 'gym' ? '헬스장 출석' : 'PT 출석'}
           </h2>
           {mode === 'pt' && (

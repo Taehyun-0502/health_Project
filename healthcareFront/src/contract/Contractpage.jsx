@@ -15,12 +15,25 @@ const CONTRACT_LABEL = {
 
 // 로그인 권한별 발행 가능한 계약서 버튼 목록
 // ADMIN: 제휴 / OWNER: 임금·회원(이용권/PT 통합)·PT 체험(체험권 대상 목록 진입) / TRAINER·MEMBER: 발행 불가
+// desc는 계약이 하나도 없을 때 보여주는 빈 상태 카드의 설명 문구(대시보드 KPI 카드 규격)
 const CREATE_BUTTONS = {
-  admin: [{ to: '/fitb/contract/new?contract=1', label: '+ 제휴 계약서', title: '제휴 계약서 작성' }],
+  admin: [{
+    to: '/fitb/contract/new?contract=1', label: '+ 제휴 계약서', title: '제휴 계약서 작성',
+    desc: '체육관 사장님과 제휴 계약을 맺어요',
+  }],
   owner: [
-    { to: '/fitb/contract/new?contract=2', label: '+ 임금', title: '임금 계약서 작성' },
-    { to: '/fitb/contract/new?contract=3', label: '+ 회원', title: '회원 계약서 작성 (이용권/PT)' },
-    { to: '/fitb/contractpage/trial', label: '+ PT 체험', title: 'PT 체험 계약서 작성 (체험권 대상)' },
+    {
+      to: '/fitb/contract/new?contract=2', label: '+ 임금', title: '임금 계약서 작성',
+      desc: '소속 트레이너와 임금 계약을 맺어요',
+    },
+    {
+      to: '/fitb/contract/new?contract=3', label: '+ 회원', title: '회원 계약서 작성 (이용권/PT)',
+      desc: '회원에게 이용권 또는 PT를 발행해요',
+    },
+    {
+      to: '/fitb/contractpage/trial', label: '+ PT 체험', title: 'PT 체험 계약서 작성 (체험권 대상)',
+      desc: '체험권을 받은 회원에게 발행해요',
+    },
   ],
 };
 
@@ -65,7 +78,6 @@ function Contractpage() {
   const navigate = useNavigate();
   const [userList, setUserList] = useState([]);
   const [pager, setPager] = useState(null);
-  const [totalCount, setTotalCount] = useState(0);
   const [typeFilter, setTypeFilter] = useState(0); // 계약 유형 필터 (0=전체 / 1~5)
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState(''); // 검색 입력값(검색창)
@@ -74,6 +86,7 @@ function Contractpage() {
   const [hireModalOpen, setHireModalOpen] = useState(false); // '트레이너 구하기' 안내 팝업 (OWNER 전용)
 
   const loginUser = JSON.parse(localStorage.getItem('user') || 'null');
+  const isLoggedIn = !!localStorage.getItem('accessToken');
   const loginRole = loginUser?.role?.toLowerCase();
   const createButtons = CREATE_BUTTONS[loginRole] ?? [];
   const isOwner = loginRole === 'owner';
@@ -83,11 +96,9 @@ function Contractpage() {
   const handleList = async (signal) => {
     setMessage('');
 
+    // 미로그인은 별도 안내 문구 없이 빈 목록의 로그인 카드가 동선을 안내한다
     const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setMessage('로그인이 필요합니다. 먼저 로그인해 주세요.');
-      return;
-    }
+    if (!token) return;
 
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: '10' });
@@ -103,13 +114,11 @@ function Contractpage() {
         const result = await response.json();
         setUserList(result.items || []);
         setPager(result.pager || null);
-        setTotalCount(result.totalCount || 0);
         setMessage('');
       } else {
         // 401(미로그인/토큰만료), 403(MEMBER 접근 차단) 등
         setUserList([]);
         setPager(null);
-        setTotalCount(0);
         setMessage(`조회 실패(${response.status}): ${await response.text()}`);
       }
     } catch (error) {
@@ -251,11 +260,6 @@ function Contractpage() {
       {/* 조회 상태·오류 안내 (401/403 등) */}
       {message && <p className="contract-message">{message}</p>}
 
-      {/* 현재 조회 조건의 전체 건수 (서버 페이징 전환으로 칩별 건수 대신 여기서만 표시) */}
-      <p className="salary-page__summary">
-        총 <strong>{totalCount}</strong>건
-      </p>
-
       {/* 공통 리스트 칼럼: 계약 ID | 계약 유형 | 이름 | 상태 | 금액 | 시작일 | 종료일 | 발행일 | 갱신 */}
       <div className="contract-table-card">
         <table className="contract-table">
@@ -274,8 +278,41 @@ function Contractpage() {
           </thead>
           <tbody>
             {userList.length === 0 && (
-              <tr>
-                <td colSpan="9" className="contract-table__muted">조건에 해당하는 계약이 없어요.</td>
+              <tr className="contract-table__empty-row">
+                <td colSpan="9" className="contract-table__empty">
+                  <p className="contract-empty__msg">
+                    {isLoggedIn ? '조건에 해당하는 계약이 없어요.' : '로그인하면 계약서를 볼 수 있어요.'}
+                  </p>
+                  {/* 미로그인은 로그인 카드 하나, 로그인 상태면 발행 권한이 있는 역할에만
+                      버튼 개수만큼 카드를 노출한다(TRAINER는 발행 권한이 없어 문구만 남는다) */}
+                  {!isLoggedIn ? (
+                    <div className="contract-empty__grid">
+                      <button
+                        type="button"
+                        className="contract-empty__card"
+                        onClick={() => navigate('/login')}
+                      >
+                        <span className="contract-empty__card-label">로그인</span>
+                        <span className="contract-empty__card-desc">로그인 후 이용할 수 있어요</span>
+                      </button>
+                    </div>
+                  ) : createButtons.length > 0 && (
+                    <div className="contract-empty__grid">
+                      {createButtons.map((btn) => (
+                        <button
+                          key={btn.to}
+                          type="button"
+                          className="contract-empty__card"
+                          title={btn.title}
+                          onClick={() => navigate(btn.to)}
+                        >
+                          <span className="contract-empty__card-label">{btn.label}</span>
+                          <span className="contract-empty__card-desc">{btn.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </td>
               </tr>
             )}
             {userList.map((item) => (

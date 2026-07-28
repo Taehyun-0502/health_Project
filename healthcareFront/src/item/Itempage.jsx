@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import './Itempage.css';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import NavIcon from '../components/uiIcons.jsx';
 import Pagination from './Pagination';
 import useHeaderAction from '../hooks/useHeaderAction.js';
@@ -39,6 +39,7 @@ const expiryMeta = (expiryDate) => {
 
 function Itempage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const activeTab = searchParams.get('view') === 'form' ? 'form' : 'list';
   const [selectedItem, setSelectedItem] = useState(null); // 선택된 상세 물품 상태
   const [detailList, setDetailList] = useState([]); // 선택된 물품의 상세 구매 이력 리스트
@@ -515,7 +516,9 @@ function Itempage() {
           <h2 className="item-list-head__title">물품</h2>
           <p className="item-list-head__desc">센터 물품의 재고, 사용 현황과 교체 일정을 관리합니다.</p>
         </div>
-        {isPlainListView && (
+        {/* 등록 버튼 노출 기준: 목록에 데이터가 있을 때만 헤더에 둔다.
+            데이터가 없을 때는 표 안의 빈 상태 카드(.item-empty__card)가 같은 역할을 한다. */}
+        {isPlainListView && items.length > 0 && (
           <div className="item-list-head__actions">
             <button type="button" className="item-register-btn" onClick={() => setActiveTab('form')}>
               + 물품 등록
@@ -739,9 +742,35 @@ function Itempage() {
                           );
                         })
                       ) : (
-                        <tr>
+                        <tr className="item-table__empty-row">
                           <td colSpan="6" className="item-table__empty">
-                            검색 조건에 맞는 물품이 없거나 현재 사업장에 등록된 물품이 없어요.
+                            <p className="item-empty__msg">
+                              {token
+                                ? '검색 조건에 맞는 물품이 없거나 현재 사업장에 등록된 물품이 없어요.'
+                                : '로그인하면 물품을 볼 수 있어요.'}
+                            </p>
+                            {/* 빈 목록 안내 카드 — 미로그인은 로그인 카드, 로그인 상태면 등록 카드 */}
+                            <div className="item-empty__grid">
+                              {token ? (
+                                <button
+                                  type="button"
+                                  className="item-empty__card"
+                                  onClick={() => setActiveTab('form')}
+                                >
+                                  <span className="item-empty__card-label">+ 물품 등록</span>
+                                  <span className="item-empty__card-desc">체육관 비품과 재고를 등록해요</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="item-empty__card"
+                                  onClick={() => navigate('/login')}
+                                >
+                                  <span className="item-empty__card-label">로그인</span>
+                                  <span className="item-empty__card-desc">로그인 후 이용할 수 있어요</span>
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       )}
@@ -827,7 +856,7 @@ function Itempage() {
 
                 {filteredDetails.length > 0 ? (
                   <div className="item-table-wrapper">
-                    <table className="item-table">
+                    <table className="item-table item-table--detail">
                       <thead>
                         <tr>
                           <th>물품 ID</th>

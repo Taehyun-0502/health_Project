@@ -708,7 +708,13 @@ function FactorList({ items, gymId, mode, period }) {
           <button type="button" className="cs-facc-row" onClick={() => openInDrawer(f)}>
             <span className="cs-facc-name"><span className="cs-facc-chev" aria-hidden="true">›</span>{factorLabel(f.statKey)}</span>
             <span className="cs-facc-bar">
-              {f.pct != null ? <i style={{ width: `${Math.min(f.pct, 100)}%` }} /> : null}
+              {/* 50% 이상은 accent, 49% 이하는 accent-strong (색 지정은 CSS가 담당) */}
+              {f.pct != null ? (
+                <i
+                  className={f.pct >= 50 ? 'is-high' : 'is-low'}
+                  style={{ width: `${Math.min(f.pct, 100)}%` }}
+                />
+              ) : null}
             </span>
             <span className="cs-facc-pct cs-num">
               {f.pct != null ? (<><b>{f.pct}%</b><span className="cs-facc-cnt">{f.memberCount}명</span></>) : '-'}

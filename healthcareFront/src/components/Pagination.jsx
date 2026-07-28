@@ -33,7 +33,8 @@ function Pagination({ pager, onPageChange, classPrefix }) {
           <button
             key={p}
             type="button"
-            className={`${classPrefix}-page-btn ${isCurrent ? 'active' : ''}`}
+            // is-num: 숫자 버튼 표식 — 이전/다음 버튼과 색 규격이 달라 CSS에서 구분한다
+            className={`${classPrefix}-page-btn is-num ${isCurrent ? 'active' : ''}`}
             // 현재 페이지는 class 외에 aria로도 알려준다(CSS를 걷어내도 상태가 남도록)
             aria-current={isCurrent ? 'page' : undefined}
             onClick={() => onPageChange(p)}

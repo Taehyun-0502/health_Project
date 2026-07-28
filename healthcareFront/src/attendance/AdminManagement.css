@@ -7,18 +7,19 @@
 /* 상단 칩형 탭 (계약 .roster-filter-btn와 동일 규격) */
 .admin-management__tabs {
   display: flex;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: var(--p1);
+  margin-bottom: var(--p4);
 }
 
 .admin-management__tab {
-  padding: 8px 16px;
-  font-size: var(--text-sm);
+  padding: var(--p2) var(--p4);
+  font-size: var(--text-footnote);
   font-weight: 600;
-  color: var(--gray-600);
-  background: var(--gray-100);
-  border: none;
-  border-radius: 999px;
+  line-height: 1.5;
+  color: var(--gray-400);
+  background: var(--white);
+  border: var(--bordered1) solid var(--gray-300);
+  border-radius: var(--r6);
   cursor: pointer;
 }
 
@@ -28,37 +29,38 @@
 
 .admin-management__tab--active {
   color: var(--white);
-  background: var(--black);
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
 }
 
 .admin-management__tab--active:hover {
-  background: var(--black);
+  background: var(--accent-strong);
 }
 
 /* 회원 명단 드릴다운 헤더 (뒤로가기). 새로고침은 usePageHeaderAction으로 페이지 헤더에 등록된다. */
 .admin-management__header {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--p4);
   align-items: flex-start;
   flex-wrap: wrap;
 }
 
 .admin-management__title {
-  margin: 0 0 8px;
+  margin: 0 0 var(--p2);
 }
 
 .admin-management__back {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 8px;
-  padding: 4px 10px;
-  font-size: var(--text-sm);
+  gap: var(--p2);
+  margin: 0 0 var(--p2);
+  padding: var(--p1) var(--p2);
+  font-size: var(--text-footnote);
   color: var(--gray-700);
   background: var(--white);
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
+  border: var(--bordered1) solid var(--gray-300);
+  border-radius: var(--r2);
   cursor: pointer;
 }
 
@@ -70,21 +72,21 @@
 .admin-management__summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(120px, 1fr));
-  gap: 10px;
-  margin: 20px 0;
+  gap: var(--p2);
+  margin: var(--p5) 0;
 }
 
 .admin-management__summary-card {
-  padding: 14px;
-  border-radius: 12px;
+  padding: var(--p3);
+  border-radius: var(--r3);
 }
 
 .admin-management__summary-label {
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
 }
 
 .admin-management__summary-value {
-  font-size: 22px;
+  font-size: var(--text-title2);
   font-variant-numeric: tabular-nums;
 }
 
@@ -105,27 +107,27 @@
 
 /* 메시지 */
 .admin-management__error {
-  padding: 12px;
-  border-radius: 8px;
+  padding: var(--p3);
+  border-radius: var(--r2);
   background: var(--danger-bg);
   color: var(--danger);
 }
 
 .admin-management__empty {
-  padding: 40px 24px;
+  padding: var(--p8) var(--p6);
   text-align: center;
   color: var(--gray-500);
   background: var(--white);
-  border: 1px dashed var(--gray-300);
-  border-radius: 12px;
+  border: var(--bordered1) dashed var(--gray-300);
+  border-radius: var(--r3);
 }
 
 /* 테이블 (계약 .contract-table-card/.contract-table와 동일 규격) —
    border·radius는 카드 래퍼에 두고 테이블 본체는 배경 없이 채운다. */
 .admin-management__table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r3);
   background: var(--white);
 }
 
@@ -133,24 +135,25 @@
   width: 100%;
   min-width: 680px;
   border-collapse: collapse;
-  font-size: var(--text-body);
+  font-size: var(--text-subhead);
 }
 
 .admin-management__table th {
-  padding: 12px 16px;
+  padding: var(--p3) var(--p4);
   text-align: center;
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   font-weight: 600;
-  color: var(--gray-400);
+  color: var(--gray-900);
   background: var(--gray-50);
 }
 
 .admin-management__table td {
-  padding: 12px 16px;
+  padding: var(--p3) var(--p4);
   text-align: center;
-  border-top: 1px solid var(--gray-200);
+  border-top: var(--bordered1) solid var(--gray-100);
   color: var(--gray-900);
   vertical-align: middle;
+  font-size: var(--text-subhead);
 }
 
 .admin-management__table tbody tr:hover {
@@ -162,18 +165,18 @@
 }
 
 .admin-management__cell--name {
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .admin-management__cell--gym {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* 운동시설명 = 회원 명단 드릴다운 진입 버튼 (텍스트 링크 형태) */
 .admin-management__gym-link {
   padding: 0;
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--accent-text);
   background: none;
   border: none;
@@ -197,9 +200,9 @@
 .admin-management__badge {
   display: inline-block;
   min-width: 60px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-size: var(--text-xs);
+  padding: var(--bordered3) var(--p2);
+  border-radius: var(--r6);
+  font-size: var(--text-caption1);
   font-weight: 600;
   line-height: 1.5;
   text-align: center;
@@ -229,4 +232,9 @@
 .admin-management__badge--normal {
   color: var(--success);
   background: var(--success-bg);
+}
+
+/* 마지막 행 아래 경계 — td가 border-top만 가지므로 바닥선은 따로 그린다 (계약 테이블과 동일 규격) */
+.admin-management__table tbody tr:last-child td {
+  border-bottom: var(--bordered1) solid var(--gray-100);
 }

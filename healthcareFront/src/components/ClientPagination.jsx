@@ -28,7 +28,8 @@ function ClientPagination({ currentPage, totalItems, pageSize, onPageChange, ari
         <button
           key={page}
           type="button"
-          className={`client-pagination__button${page === currentPage ? ' client-pagination__button--active' : ''}`}
+          // is-num: 숫자 버튼 표식 — 이전/다음 버튼과 색 규격이 달라 CSS에서 구분한다
+          className={`client-pagination__button is-num${page === currentPage ? ' client-pagination__button--active' : ''}`}
           onClick={() => onPageChange(page)}
           aria-label={`${page}페이지`}
           aria-current={page === currentPage ? 'page' : undefined}

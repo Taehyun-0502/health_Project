@@ -157,9 +157,11 @@ export const getB2bPageTitle = (pathname) => (
 
 // 리스트(1Depth)에서 이동해 들어가는 드릴인 페이지 — 상단 유틸바 백버튼 노출 판정의 단일 원천.
 // 계약 작성(/fitb/contract/new) · 계약 상세(/fitb/contract/:dataId) · 결제(/fitb/payment/:dataId)
+// · PT 체험권 계약 대상 목록(/fitb/contractpage/trial, 계약 리스트 index는 매칭 제외)
 const B2B_DETAIL_PAGE_RULES = [
   /^\/fitb\/contract\//,
   /^\/fitb\/payment\//,
+  /^\/fitb\/contractpage\/trial/,
 ];
 
 export const isB2bDetailPage = (pathname) => (

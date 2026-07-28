@@ -3,21 +3,14 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-top: 24px;
+  gap: var(--p1);
+  margin-top: var(--p6);
 }
 
 .client-pagination__button {
   min-width: 36px;
-  padding: 8px 12px;
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
   color: var(--gray-700);
   background: var(--white);
-  font: inherit;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  cursor: pointer;
 }
 
 .client-pagination__button:hover:not(:disabled) {
@@ -30,11 +23,12 @@
   outline-offset: 2px;
 }
 
+/* 현재 페이지 — 칩형 필터 탭 활성과 같은 규격(2026-07-28, 종전 --gray-900 채움은 폐기) */
 .client-pagination__button--active,
 .client-pagination__button--active:hover:not(:disabled) {
-  border-color: var(--gray-900);
+  border-color: var(--accent-strong);
   color: var(--white);
-  background: var(--gray-900);
+  background: var(--accent-strong);
 }
 
 .client-pagination__button:disabled {

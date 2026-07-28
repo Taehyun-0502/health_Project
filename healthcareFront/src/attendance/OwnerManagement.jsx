@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ClientPagination from '../components/ClientPagination';
 import usePageHeaderAction from '../hooks/usePageHeaderAction.js';
 import './OwnerManagement.css';
@@ -27,6 +27,8 @@ const getRateLevel = (rate) => {
 //          2) 재등록 임박 리스트(PT+이용권)  3) 지점 PT 일정 캘린더(읽기 전용)
 // gymId prop이 있으면 해당 매장을 조회(총괄 관리자의 매장 드릴다운용), 없으면 본인 지점
 function OwnerManagement({ onGoPromotion, gymId }) {
+  const navigate = useNavigate();
+  const isLoggedIn = !!localStorage.getItem('accessToken');
   const [members, setMembers] = useState([]); // ACTIVE 계약 보유 회원 명단 (기존 /contract/roster 재사용)
   const [payCouponMap, setPayCouponMap] = useState(null); // 계약(dataId) -> 결제 건(쿠폰 사용 여부, 기존 /fitb/payment/paylist/export 재사용)
   const [payCouponStatus, setPayCouponStatus] = useState('loading'); // loading | loaded | error
@@ -189,7 +191,33 @@ function OwnerManagement({ onGoPromotion, gymId }) {
       {activeTab === 'members' && (
         <div role="tabpanel">
           {members.length === 0 ? (
-            <p className="owner-mgmt__empty">이용 중인 회원이 없어요.</p>
+            <div className="owner-mgmt__empty">
+              <p className="owner-mgmt__empty-msg">
+                {isLoggedIn ? '이용 중인 회원이 없어요.' : '로그인하면 회원 명단을 볼 수 있어요.'}
+              </p>
+              {/* 회원은 계약이 ACTIVE가 되면 명단에 잡히므로 빈 상태 카드는 계약 페이지로 보낸다 */}
+              <div className="owner-mgmt__empty-grid">
+                {isLoggedIn ? (
+                  <button
+                    type="button"
+                    className="owner-mgmt__empty-card"
+                    onClick={() => navigate('/fitb/contractpage')}
+                  >
+                    <span className="owner-mgmt__empty-card-label">계약서 보러가기</span>
+                    <span className="owner-mgmt__empty-card-desc">회원 계약을 발행하면 명단에 나와요</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="owner-mgmt__empty-card"
+                    onClick={() => navigate('/login')}
+                  >
+                    <span className="owner-mgmt__empty-card-label">로그인</span>
+                    <span className="owner-mgmt__empty-card-desc">로그인 후 이용할 수 있어요</span>
+                  </button>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="owner-mgmt__table-wrap">
               <table className="owner-mgmt__table">
@@ -267,7 +295,32 @@ function OwnerManagement({ onGoPromotion, gymId }) {
       {activeTab === 'trainers' && (
       <div role="tabpanel">
         {trainers.length === 0 ? (
-          <p className="owner-mgmt__empty">지점에 소속된 트레이너가 없어요.</p>
+          <div className="owner-mgmt__empty">
+            <p className="owner-mgmt__empty-msg">
+              {isLoggedIn ? '지점에 소속된 트레이너가 없어요.' : '로그인하면 트레이너 명단을 볼 수 있어요.'}
+            </p>
+            <div className="owner-mgmt__empty-grid">
+              {isLoggedIn ? (
+                <button
+                  type="button"
+                  className="owner-mgmt__empty-card"
+                  onClick={() => navigate('/fitb/contractpage')}
+                >
+                  <span className="owner-mgmt__empty-card-label">계약서 보러가기</span>
+                  <span className="owner-mgmt__empty-card-desc">임금 계약을 발행하면 명단에 나와요</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="owner-mgmt__empty-card"
+                  onClick={() => navigate('/login')}
+                >
+                  <span className="owner-mgmt__empty-card-label">로그인</span>
+                  <span className="owner-mgmt__empty-card-desc">로그인 후 이용할 수 있어요</span>
+                </button>
+              )}
+            </div>
+          </div>
         ) : (
           <div className="owner-mgmt__table-wrap">
             <table className="owner-mgmt__table">
@@ -327,7 +380,32 @@ function OwnerManagement({ onGoPromotion, gymId }) {
       {activeTab === 'rebooks' && (
       <div role="tabpanel">
         {rebooks.length === 0 ? (
-          <p className="owner-mgmt__empty">재등록 임박 회원이 없어요.</p>
+          <div className="owner-mgmt__empty">
+            <p className="owner-mgmt__empty-msg">
+              {isLoggedIn ? '재등록 임박 회원이 없어요.' : '로그인하면 재등록 임박 회원을 볼 수 있어요.'}
+            </p>
+            <div className="owner-mgmt__empty-grid">
+              {isLoggedIn ? (
+                <button
+                  type="button"
+                  className="owner-mgmt__empty-card"
+                  onClick={() => navigate('/fitb/contractpage')}
+                >
+                  <span className="owner-mgmt__empty-card-label">계약서 보러가기</span>
+                  <span className="owner-mgmt__empty-card-desc">회원 계약 만료가 다가오면 나와요</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="owner-mgmt__empty-card"
+                  onClick={() => navigate('/login')}
+                >
+                  <span className="owner-mgmt__empty-card-label">로그인</span>
+                  <span className="owner-mgmt__empty-card-desc">로그인 후 이용할 수 있어요</span>
+                </button>
+              )}
+            </div>
+          </div>
         ) : (
           <div className="owner-mgmt__table-wrap">
             <table className="owner-mgmt__table">

@@ -8,19 +8,20 @@
 /* ===== 칩형 필터 탭 (계약 .roster-filter-btn와 동일 규격) ===== */
 .att-confirm__tabs {
   display: flex;
-  gap: 6px;
+  gap: var(--p1);
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: var(--p4);
 }
 
 .att-confirm__tab {
-  padding: 8px 16px;
-  font-size: var(--text-sm);
+  padding: var(--p2) var(--p4);
+  font-size: var(--text-footnote);
   font-weight: 600;
-  color: var(--gray-600);
-  background: var(--gray-100);
-  border: none;
-  border-radius: 999px;
+  line-height: 1.5;
+  color: var(--gray-400);
+  background: var(--white);
+  border: var(--bordered1) solid var(--gray-300);
+  border-radius: var(--r6);
   cursor: pointer;
   font-family: inherit;
 }
@@ -32,43 +33,38 @@
 .att-confirm__tab--active,
 .att-confirm__tab--active:hover {
   color: var(--white);
-  background: var(--black);
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
 }
 
 /* 새로고침 액션은 usePageHeaderAction으로 페이지 헤더에 등록된다 (B2bManagementPage.css 참조). */
 
 /* ===== 섹션 헤더·문구 (탭 내 두 번째 하위 섹션 "내 PT 캘린더"에서 사용) ===== */
 .att-confirm__title {
-  margin: 0 0 8px;
+  margin: 0 0 var(--p2);
 }
 
 .att-confirm__desc {
-  margin: 0 0 16px;
-  font-size: var(--text-sm);
+  margin: 0 0 var(--p4);
+  font-size: var(--text-footnote);
   color: var(--gray-600);
   line-height: 1.5;
 }
 
 .att-confirm__accent {
   color: var(--pt-text);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .att-confirm__danger {
   color: var(--danger);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* ===== 버튼 ===== */
 .att-confirm__confirm-btn {
-  padding: 6px 14px;
-  font-size: var(--text-sm);
-  font-weight: 700;
   color: var(--white);
   background: var(--pt);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
   font-family: inherit;
 }
 
@@ -79,20 +75,20 @@
 
 /* ===== 빈 상태 ===== */
 .att-confirm__empty {
-  padding: 40px 24px;
+  padding: var(--p8) var(--p6);
   text-align: center;
   color: var(--gray-500);
   background: var(--white);
-  border: 1px dashed var(--gray-300);
-  border-radius: 12px;
+  border: var(--bordered1) dashed var(--gray-300);
+  border-radius: var(--r3);
 }
 
 /* ===== 카드형 테이블 (계약 .contract-table-card/.contract-table와 동일 규격) =====
    border·radius는 카드 래퍼(.table-wrap)에 두고, 테이블 본체는 배경 없이 채운다. */
 .att-confirm__table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r3);
   background: var(--white);
 }
 
@@ -100,22 +96,22 @@
   width: 100%;
   min-width: 680px;
   border-collapse: collapse;
-  font-size: var(--text-body);
+  font-size: var(--text-subhead);
 }
 
 .att-confirm__table th {
-  padding: 12px 16px;
+  padding: var(--p3) var(--p4);
   text-align: center;
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   font-weight: 600;
-  color: var(--gray-400);
+  color: var(--gray-900);
   background: var(--gray-50);
 }
 
 .att-confirm__table td {
-  padding: 12px 16px;
+  padding: var(--p3) var(--p4);
   text-align: center;
-  border-top: 1px solid var(--gray-200);
+  border-top: var(--bordered1) solid var(--gray-100);
   color: var(--gray-900);
   vertical-align: middle;
 }
@@ -132,7 +128,7 @@
 .att-confirm__name-btn {
   padding: 0;
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--info-solid);
   background: none;
   border: none;
@@ -147,9 +143,9 @@
 
 .att-confirm__trial-tag {
   display: block;
-  margin-top: 3px;
-  font-size: var(--text-2xs);
-  font-weight: 700;
+  margin-top: var(--bordered3);
+  font-size: var(--text-caption2);
+  font-weight: 600;
   color: var(--warning-solid);
 }
 
@@ -157,20 +153,20 @@
 .att-confirm__progress-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--p2);
 }
 
 .att-confirm__progress {
   flex: 1;
   height: 8px;
   background: var(--gray-200);
-  border-radius: 999px;
+  border-radius: var(--r6);
   overflow: hidden;
 }
 
 .att-confirm__progress-fill {
   height: 100%;
-  transition: width 0.3s;
+  transition: width var(--duration-slow);
   background: var(--pt);
 }
 
@@ -183,7 +179,7 @@
 }
 
 .att-confirm__progress-label {
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   color: var(--gray-500);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -191,7 +187,7 @@
 
 /* 잔여 횟수 색상 등급 */
 .att-confirm__remaining {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--pt-text);
 }
 
@@ -205,7 +201,7 @@
 
 /* 최근 수업 셀 */
 .att-confirm__last {
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   color: var(--gray-500);
 }
 
@@ -215,13 +211,13 @@
 
 .att-confirm__care-badge {
   display: inline-block;
-  margin-left: 4px;
-  padding: 1px 6px;
-  font-size: var(--text-2xs);
-  font-weight: 700;
+  margin-left: var(--p1);
+  padding: var(--bordered1) var(--p1);
+  font-size: var(--text-caption2);
+  font-weight: 600;
   color: var(--white);
   background: var(--danger-solid);
-  border-radius: 999px;
+  border-radius: var(--r6);
 }
 
 .att-confirm__muted {
@@ -229,7 +225,7 @@
 }
 
 .att-confirm__period {
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   color: var(--gray-500);
 }
 
@@ -237,12 +233,12 @@
 .att-confirm__badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 9px;
-  font-size: var(--text-xs);
+  padding: var(--bordered3) var(--p2);
+  font-size: var(--text-caption1);
   font-weight: 600;
   line-height: 1.5;
-  border-radius: 999px;
-  border: 1px solid transparent;
+  border-radius: var(--r6);
+  border: var(--bordered1) solid transparent;
 }
 
 .att-confirm__badge--done {
@@ -262,10 +258,10 @@
 
 /* ===== 회원 상세 드릴다운 패널 ===== */
 .att-confirm__drill {
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px solid var(--info-soft);
-  border-radius: 12px;
+  margin-top: var(--p4);
+  padding: var(--p4);
+  border: var(--bordered1) solid var(--info-soft);
+  border-radius: var(--r3);
   background: var(--info-bg);
 }
 
@@ -273,7 +269,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: var(--p3);
 }
 
 .att-confirm__drill-title {
@@ -284,19 +280,19 @@
 .att-confirm__drill-close {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  font-size: var(--text-xs);
+  gap: var(--p1);
+  padding: var(--p1) var(--p3);
+  font-size: var(--text-caption1);
   color: var(--gray-700);
   background: var(--white);
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
+  border: var(--bordered1) solid var(--gray-300);
+  border-radius: var(--r2);
   cursor: pointer;
   font-family: inherit;
 }
 
 .att-confirm__drill-section {
-  margin-bottom: 12px;
+  margin-bottom: var(--p3);
 }
 
 .att-confirm__drill-section:last-child {
@@ -304,8 +300,8 @@
 }
 
 .att-confirm__drill-h {
-  margin: 0 0 8px;
-  font-size: var(--text-sm);
+  margin: 0 0 var(--p2);
+  font-size: var(--text-footnote);
 }
 
 .att-confirm__drill-h--contract { color: var(--gray-700); }
@@ -314,8 +310,8 @@
 .att-confirm__drill-h--history { color: var(--pt-text); }
 
 .att-confirm__drill-line {
-  margin: 2px 0;
-  font-size: var(--text-sm);
+  margin: var(--bordered2) 0;
+  font-size: var(--text-footnote);
   color: var(--gray-700);
 }
 
@@ -325,56 +321,56 @@
 
 .att-confirm__drill-line--empty {
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-footnote);
   color: var(--gray-400);
 }
 
 .att-confirm__drill-sub {
   color: var(--gray-500);
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
 }
 
 /* ===== 구분선 ===== */
 .att-confirm__divider {
-  margin: 24px 0;
+  margin: var(--p6) 0;
   border: none;
-  border-top: 1px solid var(--gray-200);
+  border-top: var(--bordered1) solid var(--gray-200);
 }
 
 /* ===== 월간 실적 요약 카드 ===== */
 .att-confirm__stats {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--p3);
+  margin-bottom: var(--p4);
   flex-wrap: wrap;
 }
 
 .att-confirm__stat {
   flex: 1;
   min-width: 140px;
-  padding: 12px;
-  border-radius: 12px;
+  padding: var(--p3);
+  border-radius: var(--r3);
   text-align: center;
 }
 
 .att-confirm__stat--pt {
-  border: 1px solid var(--pt-soft);
+  border: var(--bordered1) solid var(--pt-soft);
   background: var(--pt-bg);
 }
 
 .att-confirm__stat--success {
-  border: 1px solid var(--success-soft);
+  border: var(--bordered1) solid var(--success-soft);
   background: var(--success-bg);
 }
 
 .att-confirm__stat--info {
-  border: 1px solid var(--info-soft);
+  border: var(--bordered1) solid var(--info-soft);
   background: var(--info-bg);
 }
 
 .att-confirm__stat-label {
-  font-size: var(--text-xs);
-  font-weight: 700;
+  font-size: var(--text-caption1);
+  font-weight: 600;
 }
 
 .att-confirm__stat--pt .att-confirm__stat-label { color: var(--pt-text); }
@@ -382,8 +378,8 @@
 .att-confirm__stat--info .att-confirm__stat-label { color: var(--info); }
 
 .att-confirm__stat-value {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--text-title2);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -392,7 +388,7 @@
 .att-confirm__stat--info .att-confirm__stat-value { color: var(--info); }
 
 .att-confirm__stat-sub {
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   color: var(--gray-500);
 }
 
@@ -404,17 +400,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--p4);
 }
 
 .att-confirm__cal-btn {
-  padding: 6px 12px;
-  font-size: var(--text-sm);
   color: var(--gray-700);
   background: var(--white);
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
-  cursor: pointer;
   font-family: inherit;
 }
 
@@ -423,8 +414,8 @@
 }
 
 .att-confirm__cal-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: var(--text-headline);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -432,11 +423,11 @@
 .att-confirm__weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: var(--p2);
   text-align: center;
-  font-weight: 700;
-  font-size: var(--text-sm);
-  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: var(--text-footnote);
+  margin-bottom: var(--p2);
 }
 
 .att-confirm__weekdays--sun { color: var(--danger-solid); }
@@ -446,7 +437,7 @@
 .att-confirm__cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: var(--p2);
 }
 
 .att-confirm__cal-blank {
@@ -455,17 +446,17 @@
 
 .att-confirm__cal-cell {
   min-height: 64px;
-  padding: 4px;
-  border: 1px solid var(--gray-200);
-  border-radius: 8px;
+  padding: var(--p1);
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r2);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: var(--bordered2);
   background: var(--gray-50);
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color var(--duration-base);
 }
 
 .att-confirm__cal-cell--done { background: var(--pt-bg); }
@@ -473,26 +464,26 @@
 .att-confirm__cal-cell--missed { background: var(--danger-bg); }
 
 .att-confirm__cal-cell--selected {
-  border: 2px solid var(--pt);
+  border: var(--bordered2) solid var(--pt);
 }
 
 .att-confirm__cal-day {
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   font-weight: 400;
   color: var(--gray-700);
   font-variant-numeric: tabular-nums;
 }
 
 .att-confirm__cal-day--active {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .att-confirm__cal-badge {
-  font-size: var(--text-2xs);
-  font-weight: 700;
+  font-size: var(--text-caption2);
+  font-weight: 600;
   color: var(--white);
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: var(--bordered2) var(--p1);
+  border-radius: var(--r1);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -503,34 +494,34 @@
 
 /* ===== 선택 날짜 상세 패널 ===== */
 .att-confirm__day-panel {
-  margin-top: 20px;
-  padding: 16px;
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
+  margin-top: var(--p5);
+  padding: var(--p4);
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r3);
   background: var(--gray-50);
 }
 
 .att-confirm__day-title {
-  margin: 0 0 12px;
+  margin: 0 0 var(--p3);
   font-variant-numeric: tabular-nums;
 }
 
 .att-confirm__day-list {
   list-style: none;
   padding: 0;
-  margin: 0 0 16px;
+  margin: 0 0 var(--p4);
 }
 
 .att-confirm__day-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  font-size: var(--text-sm);
+  gap: var(--p2);
+  padding: var(--p2) var(--p3);
+  margin-bottom: var(--p2);
+  border: var(--bordered1) solid transparent;
+  border-radius: var(--r2);
+  font-size: var(--text-footnote);
 }
 
 .att-confirm__day-item--done {
@@ -549,8 +540,8 @@
 }
 
 .att-confirm__day-status {
-  font-weight: 700;
-  margin-right: 8px;
+  font-weight: 600;
+  margin-right: var(--p2);
 }
 
 .att-confirm__day-status--done { color: var(--pt-text); }
@@ -559,18 +550,18 @@
 
 .att-confirm__session-note {
   color: var(--pt-text);
-  font-size: var(--text-xs);
-  margin-left: 8px;
+  font-size: var(--text-caption1);
+  margin-left: var(--p2);
 }
 
 .att-confirm__day-del {
   flex-shrink: 0;
-  padding: 4px 12px;
-  font-size: var(--text-xs);
+  padding: var(--p1) var(--p3);
+  font-size: var(--text-caption1);
   color: var(--danger-solid);
   background: var(--white);
-  border: 1px solid var(--danger-soft);
-  border-radius: 8px;
+  border: var(--bordered1) solid var(--danger-soft);
+  border-radius: var(--r2);
   cursor: pointer;
   font-family: inherit;
 }
@@ -582,11 +573,11 @@
 
 /* 일정 외 진행 수업 (워크인) */
 .att-confirm__walkins {
-  margin-bottom: 16px;
+  margin-bottom: var(--p4);
 }
 
 .att-confirm__walkins-h {
-  margin: 0 0 8px;
+  margin: 0 0 var(--p2);
   color: var(--pt-text);
 }
 
@@ -599,13 +590,13 @@
 .att-confirm__walkin-item {
   display: flex;
   justify-content: space-between;
-  padding: 8px 4px;
-  border-bottom: 1px solid var(--pt-bg);
-  font-size: var(--text-sm);
+  padding: var(--p2) var(--p1);
+  border-bottom: var(--bordered1) solid var(--pt-bg);
+  font-size: var(--text-footnote);
 }
 
 .att-confirm__walkin-name {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .att-confirm__walkin-time {
@@ -613,43 +604,43 @@
 }
 
 .att-confirm__day-empty {
-  font-size: var(--text-sm);
+  font-size: var(--text-footnote);
   color: var(--gray-400);
-  margin: 0 0 16px;
+  margin: 0 0 var(--p4);
 }
 
 /* 일정 등록 폼 */
 .att-confirm__form-box {
-  padding: 12px;
-  border: 1px solid var(--success-soft);
-  border-radius: 12px;
+  padding: var(--p3);
+  border: var(--bordered1) solid var(--success-soft);
+  border-radius: var(--r3);
   background: var(--success-bg);
 }
 
 .att-confirm__form-h {
-  margin: 0 0 8px;
+  margin: 0 0 var(--p2);
   color: var(--success);
 }
 
 .att-confirm__form {
   display: flex;
-  gap: 8px;
+  gap: var(--p2);
   flex-wrap: wrap;
   align-items: center;
 }
 
 .att-confirm__input {
-  padding: 8px 12px;
-  font-size: var(--text-sm);
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
+  padding: var(--p2) var(--p3);
+  font-size: var(--text-footnote);
+  border: var(--bordered1) solid var(--gray-300);
+  border-radius: var(--r2);
   font-family: inherit;
   background-color: var(--white);
 }
 
 /* select에만 화살표 폭만큼 오른쪽 여백(텍스트 입력엔 미적용) */
 select.att-confirm__input {
-  padding-right: 36px;
+  padding-right: var(--p7);
 }
 
 .att-confirm__input:focus {
@@ -663,13 +654,13 @@ select.att-confirm__input {
 }
 
 .att-confirm__form-submit {
-  padding: 8px 16px;
-  font-size: var(--text-sm);
-  font-weight: 700;
+  padding: var(--p2) var(--p4);
+  font-size: var(--text-footnote);
+  font-weight: 600;
   color: var(--white);
   background: var(--success-solid);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r2);
   cursor: pointer;
   font-family: inherit;
 }
@@ -677,4 +668,9 @@ select.att-confirm__input {
 .att-confirm__form-submit:disabled {
   cursor: default;
   opacity: 0.6;
+}
+
+/* 마지막 행 아래 경계 — td가 border-top만 가지므로 바닥선은 따로 그린다 (계약 테이블과 동일 규격) */
+.att-confirm__table tbody tr:last-child td {
+  border-bottom: var(--bordered1) solid var(--gray-100);
 }

@@ -6,34 +6,34 @@
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  padding: 40px 24px;
+  padding: var(--p8) var(--p6);
   background: var(--gray-50);
   text-align: center;
 }
 
 .attendance-kiosk__header {
   max-width: 600px;
-  margin-bottom: 40px;
+  margin-bottom: var(--p8);
 }
 
 .attendance-kiosk__title {
-  margin: 0 0 8px;
+  margin: 0 0 var(--p2);
   color: var(--gray-900);
-  font-size: var(--text-h1);
-  font-weight: 700;
+  font-size: var(--text-title2);
+  font-weight: 600;
 }
 
 .attendance-kiosk__description {
   margin: 0;
   color: var(--gray-500);
-  font-size: var(--text-body);
+  font-size: var(--text-subhead);
 }
 
 .attendance-kiosk__chooser {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 260px));
   justify-content: center;
-  gap: 32px;
+  gap: var(--p7);
   width: 100%;
 }
 
@@ -42,11 +42,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: var(--p3);
   min-height: 160px;
-  padding: 24px;
+  padding: var(--p6);
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--r4);
   box-shadow: var(--shadow-md);
   color: var(--white);
   cursor: pointer;
@@ -61,20 +61,21 @@
 }
 
 .attendance-kiosk__type-icon {
-  font-size: 40px;
   line-height: 1;
+  /* 이모지 글리프 크기 — 디자인 시스템 타이포 스케일 예외(💪·🤝 이모지) */
+  font-size: 40px;
 }
 
 .attendance-kiosk__type-label {
-  font-size: var(--text-h2);
-  font-weight: 700;
+  font-size: var(--text-title3);
+  font-weight: 600;
 }
 
 .attendance-kiosk__card {
   width: min(100%, 360px);
-  padding: 32px;
-  border: 1px solid var(--gray-200);
-  border-radius: 16px;
+  padding: var(--p7);
+  border: var(--bordered1) solid var(--gray-200);
+  border-radius: var(--r4);
   background: var(--white);
   box-shadow: var(--shadow-card);
   text-align: left;
@@ -82,8 +83,8 @@
 
 .attendance-kiosk__card-title {
   margin: 0;
-  font-size: var(--text-h2);
-  font-weight: 700;
+  font-size: var(--text-title3);
+  font-weight: 600;
   text-align: center;
 }
 
@@ -96,43 +97,43 @@
 }
 
 .attendance-kiosk__note {
-  margin: 8px 0 20px;
+  margin: var(--p2) 0 var(--p5);
   color: var(--gray-500);
-  font-size: var(--text-xs);
+  font-size: var(--text-caption1);
   text-align: center;
 }
 
 .attendance-kiosk__form {
-  margin-top: 24px;
+  margin-top: var(--p6);
 }
 
 .attendance-kiosk__field {
   display: grid;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: var(--p2);
+  margin-bottom: var(--p4);
 }
 
 .attendance-kiosk__field:last-of-type {
-  margin-bottom: 24px;
+  margin-bottom: var(--p6);
 }
 
 .attendance-kiosk__label {
   color: var(--gray-700);
-  font-size: var(--text-sm);
+  font-size: var(--text-footnote);
   font-weight: 600;
 }
 
 .attendance-kiosk__input {
   width: 100%;
   min-height: 52px;
-  padding: 12px 16px;
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
+  padding: var(--p3) var(--p4);
+  border: var(--bordered1) solid var(--gray-300);
+  border-radius: var(--r2);
   outline: none;
   background: var(--white);
   color: var(--gray-900);
   font: inherit;
-  font-size: var(--text-h3);
+  font-size: var(--text-headline);
 }
 
 .attendance-kiosk__input:focus {
@@ -154,18 +155,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--p2);
   width: 100%;
   min-height: 52px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: var(--text-body);
-  font-weight: 700;
+  padding: var(--p3) var(--p4);
+  border-radius: var(--r2);
+  font: var(--text-subhead-strong);
   cursor: pointer;
 }
 
 .attendance-kiosk__submit {
-  border: 0;
   color: var(--white);
 }
 
@@ -183,42 +182,43 @@
 }
 
 .attendance-kiosk__reset {
-  margin-top: 12px;
-  border: 1px solid var(--gray-300);
+  margin-top: var(--p3);
+  border: var(--bordered1) solid var(--gray-300);
   background: var(--white);
   color: var(--gray-700);
 }
 
 .attendance-kiosk__result {
   width: min(100%, 600px);
-  padding: 40px 32px;
-  border: 2px solid var(--tier-good);
-  border-radius: 16px;
+  padding: var(--p8) var(--p7);
+  border: var(--bordered2) solid var(--tier-good);
+  border-radius: var(--r4);
   background: var(--success-bg);
 }
 
 .attendance-kiosk__result-icon {
-  margin-bottom: 16px;
-  font-size: 48px;
+  margin-bottom: var(--p4);
   line-height: 1;
+  /* 이모지 글리프 크기 — 디자인 시스템 타이포 스케일 예외(✅ 이모지) */
+  font-size: 48px;
 }
 
 .attendance-kiosk__result-title {
-  margin: 0 0 12px;
+  margin: 0 0 var(--p3);
   color: var(--success);
-  font-size: var(--text-h1);
+  font-size: var(--text-title2);
 }
 
 .attendance-kiosk__result-copy {
   margin: 0;
   color: var(--gray-700);
-  font-size: var(--text-body);
+  font-size: var(--text-subhead);
 }
 
 .attendance-kiosk__result .attendance-kiosk__reset {
   width: auto;
   min-width: 120px;
-  margin-top: 20px;
+  margin-top: var(--p5);
 }
 
 .attendance-kiosk__type-button:focus-visible,
@@ -230,16 +230,16 @@
 
 @media (max-width: 640px) {
   .attendance-kiosk {
-    padding: 32px 16px;
+    padding: var(--p7) var(--p4);
   }
 
   .attendance-kiosk__header {
-    margin-bottom: 32px;
+    margin-bottom: var(--p7);
   }
 
   .attendance-kiosk__chooser {
     grid-template-columns: minmax(0, 320px);
-    gap: 16px;
+    gap: var(--p4);
   }
 
   .attendance-kiosk__type-button {
@@ -247,10 +247,10 @@
   }
 
   .attendance-kiosk__card {
-    padding: 24px 20px;
+    padding: var(--p6) var(--p5);
   }
 
   .attendance-kiosk__result {
-    padding: 32px 20px;
+    padding: var(--p7) var(--p5);
   }
 }
