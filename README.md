@@ -8,7 +8,6 @@
 
 - **결제:** 사장님이 확정한 결제를 회원의 결제·매출 원장에 기록하고 계약 활성화까지 연결했습니다.
 - **정산·출석:** 지점별 advisory lock으로 정산 생성을 직렬화하고, 트레이너가 출석을 확인할 때 PT 사용 횟수를 반영했습니다.
-- **후속 쿼리 실험:** 더미 매출 50만 건에서 **날짜 범위 조건과 `(gym_id, pay_date)` 인덱스를 함께 적용해** 월 합계 조회의 실행 시간 중앙값을 **58.526ms → 1.321ms**로 줄였습니다. 로컬 단일 쿼리 측정이며 조건과 결과는 [SQL 측정](#sql-측정)에 정리했습니다.
 - **다음 프로젝트에 적용:** 여기서 남긴 인증·알림 처리의 과제를 [댕댕댕](https://github.com/Taehyun-0502/pet_project)에서 JWT 필터와 커밋 후 방송으로 개선했습니다.
 
 ## 프로젝트 소개
@@ -62,7 +61,7 @@ Spring Boot                           │
 | 영역 | 구현한 내용 |
 | --- | --- |
 | 결제·매출 | 계약·쿠폰 검증, 결제 확정, 매출 등록·조회·삭제, 계약 활성화 호출 |
-| 정산·물품 | 월 커미션 생성, 지급 처리, 매출 삭제 후 재계산, 물품 구매와 지출 연결 |
+| 정산·물품 | 월 정산 생성, 지급 처리, 매출 삭제 후 재계산, 물품 구매와 지출 연결 |
 | 출석·PT | 키오스크 접수, 트레이너 확인, PT 사용량 관리, 일정과 재등록 대상 조회 |
 | 알림 | SSE 구독 티켓, 다중 탭 연결, 이력 저장·읽음 처리, 배치 알림 |
 
@@ -204,8 +203,8 @@ Haru Health에서는 Security를 전역 `permitAll`로 열고 컨트롤러마다
 
 | Haru Health에서 남긴 과제 | 댕댕댕에서 적용한 방식 |
 | --- | --- |
-| 전역 `permitAll`과 컨트롤러별 수동 JWT 파싱 | [`OncePerRequestFilter`에서 토큰을 검증하고 `SecurityContext`에 인증 정보 등록](https://github.com/Taehyun-0502/pet_project/blob/sub/pet_backend/src/main/java/com/pet/backend/security/JwtAuthenticationFilter.java) |
-| 업무 트랜잭션 안에서 알림 저장·전송 호출 | [채팅 메시지 방송을 `AFTER_COMMIT` 이벤트 리스너에서 처리](https://github.com/Taehyun-0502/pet_project/blob/sub/pet_backend/src/main/java/com/pet/backend/chat/websocket/ChatBroadcaster.java) |
+| 전역 `permitAll`과 컨트롤러별 수동 JWT 파싱 | [`OncePerRequestFilter`에서 토큰을 검증하고 `SecurityContext`에 인증 정보 등록](https://github.com/Taehyun-0502/pet_project/blob/main/pet_backend/src/main/java/com/pet/backend/security/JwtAuthenticationFilter.java) |
+| 업무 트랜잭션 안에서 알림 저장·전송 호출 | [채팅 메시지 방송을 `AFTER_COMMIT` 이벤트 리스너에서 처리](https://github.com/Taehyun-0502/pet_project/blob/main/pet_backend/src/main/java/com/pet/backend/chat/websocket/ChatBroadcaster.java) |
 
 댕댕댕에서는 DB 커밋에 성공한 뒤 채팅 메시지를 방송하도록 바꿨습니다. Haru Health의 SSE에 소급 적용한 변경은 아니지만, 예외 처리에만 의존하던 방식에서 전송 시점 자체를 분리한 경험입니다.
 
