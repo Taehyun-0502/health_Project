@@ -23,7 +23,7 @@ Haru Health는 관계사 관리자, 헬스장 사장님, 트레이너, 회원이
 | --- | --- |
 | 개발 기간 | 2026.06.29 ~ 2026.07.28 |
 | 팀 구성 | 4명 |
-| 제 역할 | `payment`, `settle`, `item`, `checkInout`, `alarm`의 Service·Mapper 중심 개발, 관련 API·화면 연동 및 단위 테스트 |
+| 내 역할 | `payment`, `settle`, `item`, `checkInout`, `alarm`의 Service·Mapper 중심 개발, 관련 API·화면 연동 |
 | 팀원과 연결한 영역 | 계약·회원 정보, 전자서명, 역할별 대시보드 |
 | 실행 환경 | 로컬 검증, 운영 서버 미배포 |
 
@@ -36,7 +36,6 @@ Haru Health는 관계사 관리자, 헬스장 사장님, 트레이너, 회원이
 | Backend | Java 21, Spring Boot 3.5, Spring MVC, Spring JDBC |
 | DB · Data Access | PostgreSQL/Supabase, MyBatis 3 |
 | 인증 · 알림 | Spring Security, JWT, BCrypt, SSE (`SseEmitter`) |
-| 테스트 | JUnit 5, Mockito, Spring Boot Test |
 | Frontend · Build | React 19, Vite, Gradle, npm |
 
 ## 아키텍처
@@ -172,21 +171,11 @@ warm cache에서 월 매출 합계 쿼리 하나를 비교한 결과입니다.
 
 재현용 SQL·측정 스크립트·40회 실행 계획은 [`benchmark/`](./benchmark) 폴더에 있습니다.
 
-## 테스트와 협업
+## 협업
 
-저는 Mockito로 매출·정산·물품의 서비스 분기를 확인했습니다. 특히 요청의 `gym_id`가 서버 값으로 교체되는지, 다른 지점의 매출을 삭제하지 못하는지, 정산 금액을 변조해도 DB 값을 사용하는지를 테스트했습니다.
+팀에서는 브랜치 변경을 PR로 통합했습니다. 저는 결제·정산·출석·알림 변경과 SQL 공통 조각을 정리하면서 여러 화면의 조건을 맞췄습니다. 계약 담당자와는 출석 쪽에서 원본 계약을 차감하지 않고 PT 관리 테이블에 사용량을 기록하는 방식으로 역할을 나눴습니다.
 
-저장소에는 Mockito 기반 테스트 클래스 5개와 Spring 컨텍스트 테스트 1개가 있습니다. `concurrentCommissionPaymentIsRejected`는 갱신 결과가 0일 때 예외를 내는 분기를 mock으로 확인합니다. 실제 두 트랜잭션을 동시에 실행하는 테스트는 아닙니다.
-
-| 테스트 | 확인한 내용 |
-| --- | --- |
-| `ItemControllerTest`, `PaymentControllerTest` | 토큰 누락, 권한 부족, 조회할 수 없는 대상의 응답 |
-| `ItemServiceTest`, `PaymentServiceTest` | 서버에서 결정한 지점 사용, 다른 지점의 데이터 변경 차단 |
-| `SettleServiceTest` | DB 원본 금액 사용, 지급 상태 변경 실패, 현재 월 조기 정산 차단 |
-
-팀에서는 브랜치 변경을 PR로 통합했습니다. 저는 결제·정산·출석·알림 변경과 관련 테스트를 커밋했고, SQL 공통 조각을 정리하면서 여러 화면의 조건을 맞췄습니다. 계약 담당자와는 출석 쪽에서 원본 계약을 차감하지 않고 PT 관리 테이블에 사용량을 기록하는 방식으로 역할을 나눴습니다.
-
-[테스트 코드](https://github.com/Taehyun-0502/health_Project/tree/fb8c87e/healthcareBack/app/src/test/java/com/health/app) · [지점 검증·테스트 변경](https://github.com/Taehyun-0502/health_Project/commit/c396ae1) · [알림·출석 변경](https://github.com/Taehyun-0502/health_Project/commit/d1638e0) · [PR 통합 이력](https://github.com/Taehyun-0502/health_Project/commit/fb8c87e)
+[알림·출석 변경](https://github.com/Taehyun-0502/health_Project/commit/d1638e0) · [PR 통합 이력](https://github.com/Taehyun-0502/health_Project/commit/fb8c87e)
 
 ## 프로젝트 구조
 
